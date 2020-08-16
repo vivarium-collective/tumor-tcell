@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import copy
+import math
 import random
 import argparse
 
@@ -14,9 +15,7 @@ from vivarium.core.composition import (
     plot_simulation_output,
     PROCESS_OUT_DIR,
 )
-from vivarium.core.process import Generator
-from vivarium.processes.meta_division import MetaDivision
-import math
+
 
 NAME = 'Tumor'
 TIMESTEP = 60

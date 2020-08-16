@@ -15,9 +15,7 @@ from vivarium.core.composition import (
     plot_simulation_output,
     PROCESS_OUT_DIR,
 )
-from vivarium.core.process import Generator
-from vivarium.processes.meta_division import MetaDivision
-import math
+
 
 NAME = 'T_cell'
 TIMESTEP = 60 # seconds
