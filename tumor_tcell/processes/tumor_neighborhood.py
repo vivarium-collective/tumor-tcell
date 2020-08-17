@@ -191,6 +191,8 @@ class MultibodyNeighbors(Process):
 
         # TODO -- get neighbors
 
+        # import ipdb; ipdb.set_trace()
+
         return {
             'cells': cell_positions}
 
@@ -322,44 +324,42 @@ def simulate_growth_division(config, settings):
             # update
             growth_rate2 = (growth_rate + np.random.normal(0.0, growth_rate_noise)) * timestep
             new_mass = mass + mass * growth_rate2
-            new_diameter = diameter * growth_rate2
+            new_diameter = diameter + diameter * growth_rate2
             new_volume = sphere_volume_from_diameter(new_diameter)
 
             if new_volume > division_volume:
-                pass
-                # daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
-                #
-                # daughter_updates = []
-                # for daughter_id in daughter_ids:
-                #     daughter_updates.append({
-                #         'daughter': daughter_id,
-                #         'path': (daughter_id,),
-                #         'processes': {},
-                #         'topology': {},
-                #         'initial_state': {}})
-                #
-                # # initial state will be provided by division in the tree
-                # update = {
-                #     '_divide': {
-                #         'mother': cell_id,
-                #         'daughters': daughter_updates}}
-                # invoked_update = InvokeUpdate({'cells': update})
-                # experiment.send_updates([invoked_update])
+                daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
+
+                daughter_updates = []
+                for daughter_id in daughter_ids:
+                    daughter_updates.append({
+                        'daughter': daughter_id,
+                        'path': (daughter_id,),
+                        'processes': {},
+                        'topology': {},
+                        'initial_state': {}})
+
+                # initial state will be provided by division in the tree
+                update = {
+                    '_divide': {
+                        'mother': cell_id,
+                        'daughters': daughter_updates}}
+                invoked_update = [(InvokeUpdate({'cells': update}), None, None)]
             else:
                 cell_updates[cell_id] = {
                     'boundary': {
                         'volume': new_volume,
                         'diameter': new_diameter,
                         'mass': new_mass * units.fg}}
+                invoked_update = [(InvokeUpdate({'cells': cell_updates}), None, None)]
 
         # update experiment
-        invoked_update = [(InvokeUpdate({'cells': cell_updates}), None, None)]
         experiment.send_updates(invoked_update)
 
     return experiment.emitter.get_data()
 
 def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors'):
-    n_cells = 1
+    n_cells = 2
     cell_ids = [str(cell_id) for cell_id in range(n_cells)]
 
     bounds = [20, 20]
@@ -367,17 +367,20 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
         'growth_rate': 0.02,
         'growth_rate_noise': 0.02,
         'division_volume': 2.6,
-        'total_time': 140}
+        'total_time': 120}
 
     gd_config = {
         'animate': True,
-        'jitter_force': 0.0,
+        'jitter_force': 1e1,
         'bounds': bounds}
     body_config = {
         'bounds': bounds,
         'cell_ids': cell_ids}
     gd_config.update(cell_body_config(body_config))
     gd_data = simulate_growth_division(gd_config, settings)
+
+    import ipdb; ipdb.set_trace()
+
 
 if __name__ == '__main__':
     out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
