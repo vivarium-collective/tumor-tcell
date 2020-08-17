@@ -1,4 +1,5 @@
 
+from vivarium.core.process import Generator
 from tumor_tcell.processes.tumor import TumorProcess
 
 
