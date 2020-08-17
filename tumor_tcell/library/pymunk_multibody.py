@@ -21,23 +21,23 @@ DEBUG_SIZE = 600  # size of the pygame debug screen
 
 def random_body_position(body):
     ''' pick a random point along the boundary'''
-    width, length = body.dimensions
+    diameter = body.diameter
     if random.randint(0, 1) == 0:
         # force along ends
         if random.randint(0, 1) == 0:
             # force on the left end
-            location = (random.uniform(0, width), 0)
+            location = (random.uniform(0, diameter), 0)
         else:
             # force on the right end
-            location = (random.uniform(0, width), length)
+            location = (random.uniform(0, diameter), diameter)
     else:
         # force along length
         if random.randint(0, 1) == 0:
             # force on the bottom end
-            location = (0, random.uniform(0, length))
+            location = (0, random.uniform(0, diameter))
         else:
             # force on the top end
-            location = (width, random.uniform(0, length))
+            location = (diameter, random.uniform(0, diameter))
     return location
 
 
@@ -118,31 +118,12 @@ class PymunkMultibody(object):
             # apply forces
             for body in self.space.bodies:
                 self.apply_jitter_force(body)
-                self.apply_motile_force(body)
                 self.apply_viscous_force(body)
 
             # run for a physics timestep
             self.space.step(self.physics_dt)
 
         self.screen.update_screen()
-
-    def apply_motile_force(self, body):
-        width, length = body.dimensions
-        motile_location = (width / 2, 0)  # apply force at back end of body
-        thrust = 0.0
-        torque = 0.0
-        motile_force = [thrust, torque]
-
-        if hasattr(body, 'thrust'):
-            thrust = body.thrust
-            torque = body.torque
-            motile_force = [thrust, 0.0]
-
-            # add to angular velocity
-            body.angular_velocity += torque
-
-        scaled_motile_force = [force * self.force_scaling for force in motile_force]
-        body.apply_impulse_at_local_point(scaled_motile_force, motile_location)
 
     def apply_jitter_force(self, body):
         jitter_location = random_body_position(body)
@@ -159,9 +140,6 @@ class PymunkMultibody(object):
     def apply_viscous_force(self, body):
         # dampen velocity
         body.velocity = body.velocity * self.damping + (body.force / body.mass) * self.physics_dt
-
-        # dampen angular velocity
-        body.angular_velocity = body.angular_velocity * self.angular_damping + (body.torque / body.moment) * self.physics_dt
 
     def add_barriers(self, bounds, barriers):
         """ Create static barriers """
@@ -244,7 +222,7 @@ class PymunkMultibody(object):
         body.position = (
             center_position[0],
             center_position[1])
-        body.dimensions = (diameter, diameter)
+        body.diameter = diameter
 
         shape.elasticity = self.elasticity
         shape.friction = self.friction
@@ -257,11 +235,8 @@ class PymunkMultibody(object):
 
     def update_body(self, body_id, specs):
         boundary = specs['boundary']
-        length = boundary['length']
-        width = boundary['width']
+        diameter = boundary['diameter']
         mass = boundary['mass']
-        thrust = boundary['thrust']
-        torque = boundary['torque']
 
         body, shape = self.bodies[body_id]
         position = body.position
@@ -275,9 +250,7 @@ class PymunkMultibody(object):
         new_body.position = position
         new_body.velocity = body.velocity
         new_body.angular_velocity = body.angular_velocity
-        new_body.dimensions = (width, length)
-        new_body.thrust = thrust
-        new_body.torque = torque
+        new_body.diameter = diameter
 
         new_shape.elasticity = shape.elasticity
         new_shape.friction = shape.friction

@@ -111,7 +111,7 @@ class MultibodyNeighbors(Process):
     name = NAME
     defaults = {
         'cells': {},
-        'jitter_force': 1e-3,  # pN
+        'jitter_force': 0.0,  # pN
         'bounds': DEFAULT_BOUNDS,
         'animate': False,
         'time_step': 2,
@@ -254,7 +254,7 @@ def cell_body_config(config):
 def get_baseline_config(config={}):
     animate = config.get('animate', False)
     bounds = config.get('bounds', [500, 500])
-    jitter_force = config.get('jitter_force', 0)
+    jitter_force = config.get('jitter_force', 0.0)
     n_cells = config.get('n_cells', 1)
     initial_location = config.get('initial_location')
 
@@ -277,86 +277,6 @@ class InvokeUpdate(object):
         self.update = update
     def get(self, timeout=0):
         return self.update
-
-def simulate_multibody_neighbors(config, settings):
-    initial_cells_state = config['cells']
-
-    # make the process
-    multibody = MultibodyNeighbors(config)
-    experiment = process_in_experiment(multibody)
-    # experiment.state.update_subschema(
-    #     ('cells',), {
-    #         'boundary': {
-    #             'mass': {
-    #                 '_divider': 'split'},
-    #             'length': {
-    #                 '_divider': 'split'}}})
-    # experiment.state.apply_subschemas()
-
-    # get initial cell state
-    experiment.state.set_value({'cells': initial_cells_state})
-    cells_store = experiment.state.get_path(['cells'])
-
-    ## run simulation
-    growth_rate = settings.get('growth_rate', 0.0006)
-    growth_rate_noise = settings.get('growth_rate_noise', 0.0)
-    division_volume = settings.get('division_volume', 0.4)
-    total_time = settings.get('total_time', 10)
-    timestep = 1
-
-    time = 0
-    while time < total_time:
-        experiment.update(timestep)
-        time += timestep
-        cells_state = cells_store.get_value()
-
-        cell_updates = {}
-        remove_cells = []
-        add_cells = {}
-        for cell_id, state in cells_state.items():
-            state = state['boundary']
-            location = state['location']
-            diameter = state['diameter']
-            mass = state['mass'].magnitude
-
-            # update
-            growth_rate2 = (growth_rate + np.random.normal(0.0, growth_rate_noise)) * timestep
-            new_mass = mass + mass * growth_rate2
-            new_diameter = diameter * growth_rate2
-            new_volume = sphere_volume_from_diameter(new_diameter)
-
-            if new_volume > division_volume:
-                daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
-
-                daughter_updates = []
-                for daughter_id in daughter_ids:
-                    daughter_updates.append({
-                        'daughter': daughter_id,
-                        'path': (daughter_id,),
-                        'processes': {},
-                        'topology': {},
-                        'initial_state': {}})
-
-                # initial state will be provided by division in the tree
-                update = {
-                    '_divide': {
-                        'mother': cell_id,
-                        'daughters': daughter_updates}}
-                invoked_update = InvokeUpdate({'cells': update})
-                experiment.send_updates([invoked_update])
-            else:
-                cell_updates[cell_id] = {
-                    'boundary': {
-                        'volume': new_volume,
-                        'diameter': new_diameter,
-                        'mass': new_mass * units.fg}}
-
-        # update experiment
-        invoked_update = InvokeUpdate({'cells': cell_updates})
-        experiment.send_updates([invoked_update])
-
-    return experiment.emitter.get_data()
-
 
 def simulate_growth_division(config, settings):
     initial_cells_state = config['cells']
@@ -406,24 +326,25 @@ def simulate_growth_division(config, settings):
             new_volume = sphere_volume_from_diameter(new_diameter)
 
             if new_volume > division_volume:
-                daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
-
-                daughter_updates = []
-                for daughter_id in daughter_ids:
-                    daughter_updates.append({
-                        'daughter': daughter_id,
-                        'path': (daughter_id,),
-                        'processes': {},
-                        'topology': {},
-                        'initial_state': {}})
-
-                # initial state will be provided by division in the tree
-                update = {
-                    '_divide': {
-                        'mother': cell_id,
-                        'daughters': daughter_updates}}
-                invoked_update = InvokeUpdate({'cells': update})
-                experiment.send_updates([invoked_update])
+                pass
+                # daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
+                #
+                # daughter_updates = []
+                # for daughter_id in daughter_ids:
+                #     daughter_updates.append({
+                #         'daughter': daughter_id,
+                #         'path': (daughter_id,),
+                #         'processes': {},
+                #         'topology': {},
+                #         'initial_state': {}})
+                #
+                # # initial state will be provided by division in the tree
+                # update = {
+                #     '_divide': {
+                #         'mother': cell_id,
+                #         'daughters': daughter_updates}}
+                # invoked_update = InvokeUpdate({'cells': update})
+                # experiment.send_updates([invoked_update])
             else:
                 cell_updates[cell_id] = {
                     'boundary': {
@@ -432,26 +353,12 @@ def simulate_growth_division(config, settings):
                         'mass': new_mass * units.fg}}
 
         # update experiment
-        invoked_update = InvokeUpdate({'cells': cell_updates})
-        experiment.send_updates([invoked_update])
+        invoked_update = [(InvokeUpdate({'cells': cell_updates}), None, None)]
+        experiment.send_updates(invoked_update)
 
     return experiment.emitter.get_data()
 
 def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors'):
-    # total_time = config.get('total_time', 30)
-    # timestep = config.get('timestep', 0.05)
-    # config['initial_location'] = [0.5, 0.5]
-    # motility_config = get_baseline_config(config)
-    #
-    # # simulation settings
-    # motility_sim_settings = {
-    #     'timestep': timestep,
-    #     'total_time': total_time}
-    #
-    # # run motility sim
-    # motility_data = simulate_multibody_neighbors(motility_config, motility_sim_settings)
-    # motility_timeseries = timeseries_from_data(motility_data)
-
     n_cells = 1
     cell_ids = [str(cell_id) for cell_id in range(n_cells)]
 
@@ -464,7 +371,7 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
 
     gd_config = {
         'animate': True,
-        'jitter_force': 1e-3,
+        'jitter_force': 0.0,
         'bounds': bounds}
     body_config = {
         'bounds': bounds,
