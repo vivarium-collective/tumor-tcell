@@ -17,27 +17,6 @@ PI = math.pi
 
 DEBUG_SIZE = 600  # size of the pygame debug screen
 
-def get_force_with_angle(force, angle):
-    x = force * math.cos(angle)
-    y = force * math.sin(angle)
-    return [x, y]
-
-
-def front_from_corner(width, length, corner_position, angle):
-    half_width = width/2
-    dx = length * math.cos(angle) + half_width * math.cos(angle + PI/2)  # PI/2 gives a half-rotation for the width component
-    dy = length * math.sin(angle) + half_width * math.sin(angle + PI/2)
-    front_position = [corner_position[0] + dx, corner_position[1] + dy]
-    return np.array([front_position[0], front_position[1], angle])
-
-
-def corner_from_center(width, length, center_position, angle):
-    half_length = length/2
-    half_width = width/2
-    dx = half_length * math.cos(angle) + half_width * math.cos(angle + PI/2)
-    dy = half_length * math.sin(angle) + half_width * math.sin(angle + PI/2)
-    corner_position = [center_position[0] - dx, center_position[1] - dy]
-    return np.array([corner_position[0], corner_position[1], angle])
 
 
 def random_body_position(body):
@@ -75,7 +54,7 @@ class PymunkMultibody(object):
     """
 
     defaults = {
-        'agent_shape': 'segment',
+        'cell_shape': 'segment',
         # hardcoded parameters
         'elasticity': 0.9,
         'damping': 0.5,  # 1 is no damping, 0 is full damping
@@ -87,7 +66,7 @@ class PymunkMultibody(object):
         'jitter_force': 1e-3,  # pN
         'bounds': [20, 20],
         'barriers': False,
-        'initial_agents': {},
+        'initial_cells': {},
         # for debugging
         'screen': None,
     }
@@ -102,7 +81,7 @@ class PymunkMultibody(object):
         self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
-        self.agent_shape = config.get('agent_shape', self.defaults['agent_shape'])
+        self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
         self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
         self.bounds = config.get('bounds', self.defaults['bounds'])
         barriers = config.get('barriers', self.defaults['barriers'])
@@ -121,11 +100,11 @@ class PymunkMultibody(object):
         # add static barriers
         self.add_barriers(self.bounds, barriers)
 
-        # initialize agents
-        initial_agents = config.get('initial_agents', self.defaults['initial_agents'])
+        # initialize cells
+        initial_cells = config.get('initial_cells', self.defaults['initial_cells'])
         self.bodies = {}
-        for agent_id, specs in initial_agents.items():
-            self.add_body_from_center(agent_id, specs)
+        for cell_id, specs in initial_cells.items():
+            self.add_body_from_center(cell_id, specs)
 
     def run(self, timestep):
         if self.physics_dt > timestep:
@@ -239,58 +218,22 @@ class PymunkMultibody(object):
         shape documentation at: https://pymunk-tutorial.readthedocs.io/en/latest/shape/shape.html
         '''
 
-        if self.agent_shape == 'segment':
-            width = boundary['width']
-            length = boundary['length']
-
-            half_width = width / 2
-            half_length = length / 2 - half_width
-            shape = pymunk.Segment(
-                None,
-                (-half_length, 0),
-                (half_length, 0),
-                radius=half_width)
-
-        elif self.agent_shape == 'circle':
-            length = boundary['length']
-            half_length = length / 2
-            shape = pymunk.Circle(None, radius=half_length, offset=(0, 0))
-
-        elif self.agent_shape == 'rectangle':
-            width = boundary['width']
-            length = boundary['length']
-            half_length = length / 2
-            half_width = width / 2
-            shape = pymunk.Poly(None,
-                ((-half_length, -half_width),
-                 (half_length, -half_width),
-                 (half_length, half_width),
-                 (-half_length, half_width)))
+        diameter = boundary['diameter']
+        half_diameter = diameter / 2
+        shape = pymunk.Circle(None, radius=half_diameter, offset=(0, 0))
 
         return shape
 
     def get_inertia(self, shape, mass):
-        if self.agent_shape == 'rectangle':
-            inertia = pymunk.moment_for_poly(mass, shape.get_vertices())
-        elif self.agent_shape == 'circle':
-            radius = shape.radius
-            inertia = pymunk.moment_for_circle(mass, radius, radius)
-        elif self.agent_shape == 'segment':
-            a = shape.a
-            b = shape.b
-            radius = shape.radius
-            inertia = pymunk.moment_for_segment(mass, a, b, radius)
-
+        radius = shape.radius
+        inertia = pymunk.moment_for_circle(mass, radius, radius)
         return inertia
 
     def add_body_from_center(self, body_id, specs):
         boundary = specs['boundary']
         mass = boundary['mass']
         center_position = boundary['location']
-        angle = boundary['angle']
-        angular_velocity = boundary.get('angular_velocity', 0.0)
-        width = boundary['width']
-        length = boundary['length']
+        diameter = boundary['diameter']
 
         # get shape, inertia, make body, assign body to shape
         shape = self.get_shape(boundary)
@@ -301,9 +244,7 @@ class PymunkMultibody(object):
         body.position = (
             center_position[0],
             center_position[1])
-        body.angle = angle
-        body.dimensions = (width, length)
-        body.angular_velocity = angular_velocity
+        body.dimensions = (diameter, diameter)
 
         shape.elasticity = self.elasticity
         shape.friction = self.friction
@@ -311,7 +252,7 @@ class PymunkMultibody(object):
         # add body and shape to space
         self.space.add(body, shape)
 
-        # add body to agents dictionary
+        # add body to cells dictionary
         self.bodies[body_id] = (body, shape)
 
     def update_body(self, body_id, specs):
@@ -324,7 +265,6 @@ class PymunkMultibody(object):
 
         body, shape = self.bodies[body_id]
         position = body.position
-        angle = body.angle
 
         # get shape, inertia, make body, assign body to shape
         new_shape = self.get_shape(boundary)
@@ -333,7 +273,6 @@ class PymunkMultibody(object):
         new_shape.body = new_body
 
         new_body.position = position
-        new_body.angle = angle
         new_body.velocity = body.velocity
         new_body.angular_velocity = body.angular_velocity
         new_body.dimensions = (width, length)
@@ -351,7 +290,7 @@ class PymunkMultibody(object):
         self.bodies[body_id] = (new_body, new_shape)
 
     def update_bodies(self, bodies):
-        # if an agent has been removed from the agents store,
+        # if an cell has been removed from the cells store,
         # remove it from space and bodies
         removed_bodies = [
             body_id for body_id in self.bodies.keys()
@@ -361,18 +300,17 @@ class PymunkMultibody(object):
             self.space.remove(body, shape)
             del self.bodies[body_id]
 
-        # update agents, add new agents
+        # update cells, add new cells
         for body_id, specs in bodies.items():
             if body_id in self.bodies:
                 self.update_body(body_id, specs)
             else:
                 self.add_body_from_center(body_id, specs)
 
-    def get_body_position(self, agent_id):
-        body, shape = self.bodies[agent_id]
+    def get_body_position(self, cell_id):
+        body, shape = self.bodies[cell_id]
         return {
             'location': [pos for pos in body.position],
-            'angle': body.angle,
         }
 
     def get_body_positions(self):
@@ -385,32 +323,28 @@ class PymunkMultibody(object):
 
 def test_multibody(
         total_time=2,
-        agent_shape='rectangle',
-        n_agents=1,
+        cell_shape='rectangle',
+        n_cells=1,
         jitter_force=1e1,
         screen=None):
 
     bounds = [500, 500]
     center_location = [0.5*loc for loc in bounds]
-    agents = {
-        str(agent_idx): {
+    cells = {
+        str(cell_idx): {
             'boundary': {
                 'location': center_location,
-                'angle': random.uniform(0,2*PI),
                 'volume': 15,
-                'length': 30,
-                'width': 10,
-                'mass': 1,
-                'thrust': 1e3,
-                'torque': 0.0}}
-        for agent_idx in range(n_agents)
+                'diameter': 30,
+                'mass': 1}}
+        for cell_idx in range(n_cells)
     }
     config = {
-        'agent_shape': agent_shape,
+        'cell_shape': cell_shape,
         'jitter_force': jitter_force,
         'bounds': bounds,
         'barriers': False,
-        'initial_agents': agents,
+        'initial_cells': cells,
         'screen': screen
     }
     multibody = PymunkMultibody(config)

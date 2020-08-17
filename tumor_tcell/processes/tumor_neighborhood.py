@@ -41,13 +41,9 @@ PI = math.pi
 
 
 
-def volume_from_length(length, width):
-    '''
-    inverse of length_from_volume
-    '''
-    radius = width / 2
-    cylinder_length = length - width
-    volume = cylinder_length * (PI * radius**2) + (4 / 3) * PI * radius**3
+def sphere_volume_from_diameter(diameter):
+    radius = diameter / 2
+    volume = 4 / 3 * (PI * radius**3)
     return volume
 
 def make_random_position(bounds):
@@ -76,34 +72,31 @@ def random_body_position(body):
             location = (width, random.uniform(0, length))
     return location
 
-
 def daughter_locations(parent_location, parent_values):
-    parent_length = parent_values['length']
-    parent_angle = parent_values['angle']
+    parent_diameter = parent_values['diameter']
+    parent_angle = 0.0  # TODO -- random angle?
     pos_ratios = [-0.25, 0.25]
     daughter_locations = []
     for daughter in range(2):
-        dx = parent_length * pos_ratios[daughter] * math.cos(parent_angle)
-        dy = parent_length * pos_ratios[daughter] * math.sin(parent_angle)
+        dx = parent_diameter * pos_ratios[daughter] * math.cos(parent_angle)
+        dy = parent_diameter * pos_ratios[daughter] * math.sin(parent_angle)
         location = [parent_location[0] + dx, parent_location[1] + dy]
         daughter_locations.append(location)
     return daughter_locations
 
 
 class MultibodyNeighbors(Process):
-    """Simulates collisions and forces between agent bodies with a multi-body physics engine.
+    """Simulates collisions and forces between cell bodies with a multi-body physics engine.
 
     :term:`Ports`:
-    * ``agents``: The store containing all agent sub-compartments. Each agent in
-      this store has values for location, angle, length, width, mass, thrust, and torque.
+    * ``cells``: The store containing all cell sub-compartments. Each cell in
+      this store has values for location, diameter, mass.
 
     Arguments:
         parameters(dict): Accepts the following configuration keys:
 
-        * **jitter_force**: force applied to random positions along agent
+        * **jitter_force**: force applied to random positions along cell
           bodies to mimic thermal fluctuations. Produces Brownian motion.
-        * **agent_shape** (:py:class:`str`): agents can take the shapes
-          ``rectangle``, ``segment``, or ``circle``.
         * **bounds** (:py:class:`list`): size of the environment in
           micrometers, with ``[x, y]``.
         * ***animate*** (:py:class:`bool`): interactive matplotlib option to
@@ -117,9 +110,8 @@ class MultibodyNeighbors(Process):
 
     name = NAME
     defaults = {
-        'agents': {},
+        'cells': {},
         'jitter_force': 1e-3,  # pN
-        'agent_shape': 'circle',
         'bounds': DEFAULT_BOUNDS,
         'animate': False,
         'time_step': 2,
@@ -130,13 +122,12 @@ class MultibodyNeighbors(Process):
 
         # multibody parameters
         jitter_force = self.parameters['jitter_force']
-        self.agent_shape = self.parameters['agent_shape']
         self.bounds = self.parameters['bounds']
 
         # make the multibody object
         time_step = self.parameters['time_step']
         multibody_config = {
-            'agent_shape': self.agent_shape,
+            'cell_shape': 'circle',
             'jitter_force': jitter_force,
             'bounds': self.bounds,
             'physics_dt': time_step / 10,
@@ -161,12 +152,12 @@ class MultibodyNeighbors(Process):
                         '_divider': {
                             'divider': daughter_locations,
                             'topology': {
-                                'length': ('length',),
-                                'angle': ('angle',)}}},
+                                'diameter': ('diameter',),
+                                }}},
                     'diameter': {
                         '_emit': True,
                         '_default': 2.0,
-                        '_divider': 'split',  # TODO -- might want this to be set by agent
+                        '_divider': 'split',  # TODO -- might want this to be set by cell
                         '_updater': 'set'},
                     'mass': {
                         '_emit': True,
@@ -189,54 +180,43 @@ class MultibodyNeighbors(Process):
         if self.animate:
             self.animate_frame(cells)
 
-        # update multibody with new agents
+        # update multibody with new calls
         self.physics.update_bodies(remove_units(cells))
 
         # run simulation
         self.physics.run(timestep)
 
-        # get new agent positions
+        # get new cell positions
         cell_positions = self.physics.get_body_positions()
 
-
-        import ipdb; ipdb.set_trace()
         # TODO -- get neighbors
-
 
         return {
             'cells': cell_positions}
 
     ## matplotlib interactive plot
-    def animate_frame(self, agents):
+    def animate_frame(self, cells):
         plt.cla()
-        for agent_id, data in agents.items():
+        for cell_id, data in cells.items():
             # location, orientation, length
             data = data['boundary']
             x_center = data['location'][0]
             y_center = data['location'][1]
-            angle = data['angle'] / PI * 180 + 90  # rotate 90 degrees to match field
-            length = data['length']
-            width = data['width']
+            diameter = data['diameter']
 
             # get bottom left position
-            x_offset = (width / 2)
-            y_offset = (length / 2)
+            offset = (diameter / 2)
+            angle = 0.0  # TODO -- get rid of angle?
             theta_rad = math.radians(angle)
-            dx = x_offset * math.cos(theta_rad) - y_offset * math.sin(theta_rad)
-            dy = x_offset * math.sin(theta_rad) + y_offset * math.cos(theta_rad)
+            dx = offset * math.cos(theta_rad) - offset * math.sin(theta_rad)
+            dy = offset * math.sin(theta_rad) + offset * math.cos(theta_rad)
 
             x = x_center - dx
             y = y_center - dy
 
-            if self.agent_shape == 'rectangle' or self.agent_shape == 'segment':
-                # Create a rectangle
-                rect = patches.Rectangle((x, y), width, length, angle=angle, linewidth=1, edgecolor='b')
-                self.ax.add_patch(rect)
-
-            elif self.agent_shape == 'circle':
-                # Create a circle
-                circle = patches.Circle((x, y), width, linewidth=1, edgecolor='b')
-                self.ax.add_patch(circle)
+            # Create a circle
+            circle = patches.Circle((x, y), diameter, linewidth=1, edgecolor='b')
+            self.ax.add_patch(circle)
 
         plt.xlim([0, self.bounds[0]])
         plt.ylim([0, self.bounds[1]])
@@ -245,11 +225,10 @@ class MultibodyNeighbors(Process):
 
 
 # configs
-def single_agent_config(config):
+def single_cell_config(config):
     # cell dimensions
-    width = 1
-    length = 2
-    volume = volume_from_length(length, width)
+    diameter = 1
+    volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
     if location:
@@ -259,39 +238,37 @@ def single_agent_config(config):
 
     return {'boundary': {
         'location': location,
-        'angle': np.random.uniform(0, 2 * PI),
         'volume': volume,
-        'length': length,
-        'width': width,
+        'diameter': diameter,
         'mass': 1339 * units.fg,
         'thrust': 0,
         'torque': 0}}
 
-def agent_body_config(config):
-    agent_ids = config['agent_ids']
-    agent_config = {
-        agent_id: single_agent_config(config)
-        for agent_id in agent_ids}
-    return {'agents': agent_config}
+def cell_body_config(config):
+    cell_ids = config['cell_ids']
+    cell_config = {
+        cell_id: single_cell_config(config)
+        for cell_id in cell_ids}
+    return {'cells': cell_config}
 
 def get_baseline_config(config={}):
     animate = config.get('animate', False)
     bounds = config.get('bounds', [500, 500])
     jitter_force = config.get('jitter_force', 0)
-    n_agents = config.get('n_agents', 1)
+    n_cells = config.get('n_cells', 1)
     initial_location = config.get('initial_location')
 
-    # agent settings
-    agent_ids = [str(agent_id) for agent_id in range(n_agents)]
+    # cell settings
+    cell_ids = [str(cell_id) for cell_id in range(n_cells)]
     motility_config = {
         'animate': animate,
         'jitter_force': jitter_force,
         'bounds': bounds}
     body_config = {
         'bounds': bounds,
-        'agent_ids': agent_ids,
+        'cell_ids': cell_ids,
         'location': initial_location}
-    motility_config.update(agent_body_config(body_config))
+    motility_config.update(cell_body_config(body_config))
     return motility_config
 
 # tests and simulations
@@ -302,13 +279,13 @@ class InvokeUpdate(object):
         return self.update
 
 def simulate_multibody_neighbors(config, settings):
-    initial_agents_state = config['agents']
+    initial_cells_state = config['cells']
 
     # make the process
     multibody = MultibodyNeighbors(config)
     experiment = process_in_experiment(multibody)
     # experiment.state.update_subschema(
-    #     ('agents',), {
+    #     ('cells',), {
     #         'boundary': {
     #             'mass': {
     #                 '_divider': 'split'},
@@ -316,9 +293,9 @@ def simulate_multibody_neighbors(config, settings):
     #                 '_divider': 'split'}}})
     # experiment.state.apply_subschemas()
 
-    # get initial agent state
-    experiment.state.set_value({'agents': initial_agents_state})
-    agents_store = experiment.state.get_path(['agents'])
+    # get initial cell state
+    experiment.state.set_value({'cells': initial_cells_state})
+    cells_store = experiment.state.get_path(['cells'])
 
     ## run simulation
     growth_rate = settings.get('growth_rate', 0.0006)
@@ -331,27 +308,25 @@ def simulate_multibody_neighbors(config, settings):
     while time < total_time:
         experiment.update(timestep)
         time += timestep
-        agents_state = agents_store.get_value()
+        cells_state = cells_store.get_value()
 
-        agent_updates = {}
-        remove_agents = []
-        add_agents = {}
-        for agent_id, state in agents_state.items():
+        cell_updates = {}
+        remove_cells = []
+        add_cells = {}
+        for cell_id, state in cells_state.items():
             state = state['boundary']
             location = state['location']
-            angle = state['angle']
-            length = state['length']
-            width = state['width']
+            diameter = state['diameter']
             mass = state['mass'].magnitude
 
             # update
             growth_rate2 = (growth_rate + np.random.normal(0.0, growth_rate_noise)) * timestep
             new_mass = mass + mass * growth_rate2
-            new_length = length + length * growth_rate2
-            new_volume = volume_from_length(new_length, width)
+            new_diameter = diameter * growth_rate2
+            new_volume = sphere_volume_from_diameter(new_diameter)
 
             if new_volume > division_volume:
-                daughter_ids = [str(agent_id) + '0', str(agent_id) + '1']
+                daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
 
                 daughter_updates = []
                 for daughter_id in daughter_ids:
@@ -365,42 +340,137 @@ def simulate_multibody_neighbors(config, settings):
                 # initial state will be provided by division in the tree
                 update = {
                     '_divide': {
-                        'mother': agent_id,
+                        'mother': cell_id,
                         'daughters': daughter_updates}}
-                invoked_update = InvokeUpdate({'agents': update})
-
-                import ipdb;
-                ipdb.set_trace()
-
+                invoked_update = InvokeUpdate({'cells': update})
                 experiment.send_updates([invoked_update])
             else:
-                agent_updates[agent_id] = {
+                cell_updates[cell_id] = {
                     'boundary': {
                         'volume': new_volume,
-                        'length': new_length,
+                        'diameter': new_diameter,
                         'mass': new_mass * units.fg}}
 
         # update experiment
-        invoked_update = InvokeUpdate({'agents': agent_updates})
+        invoked_update = InvokeUpdate({'cells': cell_updates})
+        experiment.send_updates([invoked_update])
+
+    return experiment.emitter.get_data()
+
+
+def simulate_growth_division(config, settings):
+    initial_cells_state = config['cells']
+
+    # make the process
+    multibody = MultibodyNeighbors(config)
+    experiment = process_in_experiment(multibody)
+    experiment.state.update_subschema(
+        ('cells',), {
+            'boundary': {
+                'mass': {
+                    '_divider': 'split'},
+                }})
+    experiment.state.apply_subschemas()
+
+    # get initial cell state
+    experiment.state.set_value({'cells': initial_cells_state})
+    cells_store = experiment.state.get_path(['cells'])
+
+    ## run simulation
+    # get simulation settings
+    growth_rate = settings.get('growth_rate', 0.0006)
+    growth_rate_noise = settings.get('growth_rate_noise', 0.0)
+    division_volume = settings.get('division_volume', 0.4)
+    total_time = settings.get('total_time', 10)
+    timestep = 1
+
+    time = 0
+    while time < total_time:
+        experiment.update(timestep)
+        time += timestep
+        cells_state = cells_store.get_value()
+
+        cell_updates = {}
+        remove_cells = []
+        add_cells = {}
+        for cell_id, state in cells_state.items():
+            state = state['boundary']
+            location = state['location']
+            diameter = state['diameter']
+            mass = state['mass'].magnitude
+
+            # update
+            growth_rate2 = (growth_rate + np.random.normal(0.0, growth_rate_noise)) * timestep
+            new_mass = mass + mass * growth_rate2
+            new_diameter = diameter * growth_rate2
+            new_volume = sphere_volume_from_diameter(new_diameter)
+
+            if new_volume > division_volume:
+                daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
+
+                daughter_updates = []
+                for daughter_id in daughter_ids:
+                    daughter_updates.append({
+                        'daughter': daughter_id,
+                        'path': (daughter_id,),
+                        'processes': {},
+                        'topology': {},
+                        'initial_state': {}})
+
+                # initial state will be provided by division in the tree
+                update = {
+                    '_divide': {
+                        'mother': cell_id,
+                        'daughters': daughter_updates}}
+                invoked_update = InvokeUpdate({'cells': update})
+                experiment.send_updates([invoked_update])
+            else:
+                cell_updates[cell_id] = {
+                    'boundary': {
+                        'volume': new_volume,
+                        'diameter': new_diameter,
+                        'mass': new_mass * units.fg}}
+
+        # update experiment
+        invoked_update = InvokeUpdate({'cells': cell_updates})
         experiment.send_updates([invoked_update])
 
     return experiment.emitter.get_data()
 
 def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors'):
-    total_time = config.get('total_time', 30)
-    timestep = config.get('timestep', 0.05)
-    config['initial_location'] = [0.5, 0.5]
-    motility_config = get_baseline_config(config)
+    # total_time = config.get('total_time', 30)
+    # timestep = config.get('timestep', 0.05)
+    # config['initial_location'] = [0.5, 0.5]
+    # motility_config = get_baseline_config(config)
+    #
+    # # simulation settings
+    # motility_sim_settings = {
+    #     'timestep': timestep,
+    #     'total_time': total_time}
+    #
+    # # run motility sim
+    # motility_data = simulate_multibody_neighbors(motility_config, motility_sim_settings)
+    # motility_timeseries = timeseries_from_data(motility_data)
 
-    # simulation settings
-    motility_sim_settings = {
-        'timestep': timestep,
-        'total_time': total_time}
+    n_cells = 1
+    cell_ids = [str(cell_id) for cell_id in range(n_cells)]
 
-    # run motility sim
-    motility_data = simulate_multibody_neighbors(motility_config, motility_sim_settings)
-    motility_timeseries = timeseries_from_data(motility_data)
+    bounds = [20, 20]
+    settings = {
+        'growth_rate': 0.02,
+        'growth_rate_noise': 0.02,
+        'division_volume': 2.6,
+        'total_time': 140}
 
+    gd_config = {
+        'animate': True,
+        'jitter_force': 1e-3,
+        'bounds': bounds}
+    body_config = {
+        'bounds': bounds,
+        'cell_ids': cell_ids}
+    gd_config.update(cell_body_config(body_config))
+    gd_data = simulate_growth_division(gd_config, settings)
 
 if __name__ == '__main__':
     out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
