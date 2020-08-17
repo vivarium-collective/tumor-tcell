@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from vivarium.library.pymunk_multibody import PymunkMultibody
+from tumor_tcell.library.pymunk_multibody import PymunkMultibody
 from vivarium.library.units import units, remove_units
 from vivarium.core.emitter import timeseries_from_data
 from vivarium.core.process import Process
@@ -29,21 +29,7 @@ from vivarium.core.composition import (
     simulate_experiment,
     PROCESS_OUT_DIR,
 )
-from vivarium.processes.coarse_motor import run, tumble
-from vivarium.processes.derive_globals import volume_from_length
-from vivarium.processes.multibody_physics import (
-    random_body_position,
-    daughter_locations,
-    make_random_position,
-)
 
-
-# plotting
-from vivarium.plots.multibody_physics import (
-    plot_agent,
-    plot_agents,
-    plot_snapshots,
-)
 
 
 NAME = 'multibody_neighbors'
@@ -52,6 +38,56 @@ DEFAULT_BOUNDS = [10, 10]
 
 # constants
 PI = math.pi
+
+
+
+def volume_from_length(length, width):
+    '''
+    inverse of length_from_volume
+    '''
+    radius = width / 2
+    cylinder_length = length - width
+    volume = cylinder_length * (PI * radius**2) + (4 / 3) * PI * radius**3
+    return volume
+
+def make_random_position(bounds):
+    return [
+        np.random.uniform(0, bounds[0]),
+        np.random.uniform(0, bounds[1])]
+
+def random_body_position(body):
+    # pick a random point along the boundary
+    width, length = body.dimensions
+    if random.randint(0, 1) == 0:
+        # force along ends
+        if random.randint(0, 1) == 0:
+            # force on the left end
+            location = (random.uniform(0, width), 0)
+        else:
+            # force on the right end
+            location = (random.uniform(0, width), length)
+    else:
+        # force along length
+        if random.randint(0, 1) == 0:
+            # force on the bottom end
+            location = (0, random.uniform(0, length))
+        else:
+            # force on the top end
+            location = (width, random.uniform(0, length))
+    return location
+
+
+def daughter_locations(parent_location, parent_values):
+    parent_length = parent_values['length']
+    parent_angle = parent_values['angle']
+    pos_ratios = [-0.25, 0.25]
+    daughter_locations = []
+    for daughter in range(2):
+        dx = parent_length * pos_ratios[daughter] * math.cos(parent_angle)
+        dy = parent_length * pos_ratios[daughter] * math.sin(parent_angle)
+        location = [parent_location[0] + dx, parent_location[1] + dy]
+        daughter_locations.append(location)
+    return daughter_locations
 
 
 class MultibodyNeighbors(Process):
@@ -271,14 +307,14 @@ def simulate_multibody_neighbors(config, settings):
     # make the process
     multibody = MultibodyNeighbors(config)
     experiment = process_in_experiment(multibody)
-    experiment.state.update_subschema(
-        ('agents',), {
-            'boundary': {
-                'mass': {
-                    '_divider': 'split'},
-                'length': {
-                    '_divider': 'split'}}})
-    experiment.state.apply_subschemas()
+    # experiment.state.update_subschema(
+    #     ('agents',), {
+    #         'boundary': {
+    #             'mass': {
+    #                 '_divider': 'split'},
+    #             'length': {
+    #                 '_divider': 'split'}}})
+    # experiment.state.apply_subschemas()
 
     # get initial agent state
     experiment.state.set_value({'agents': initial_agents_state})
