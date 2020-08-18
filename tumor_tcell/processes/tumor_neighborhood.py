@@ -147,17 +147,14 @@ class MultibodyNeighbors(Process):
                 'boundary': {
                     'location': {
                         '_emit': True,
-                        '_default': [0.5 * bound for bound in self.bounds],
+                        '_default': [
+                            0.5 * bound for bound in self.bounds],
                         '_updater': 'set',
-                        '_divider': {
-                            'divider': daughter_locations,
-                            'topology': {
-                                'diameter': ('diameter',),
-                                }}},
+                        '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        '_default': 2.0,
-                        '_divider': 'split',  # TODO -- might want this to be set by cell
+                        '_default': 1.0,
+                        '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
                         '_emit': True,
@@ -190,7 +187,6 @@ class MultibodyNeighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # TODO -- get neighbors
-
         # import ipdb; ipdb.set_trace()
 
         return {
@@ -207,17 +203,12 @@ class MultibodyNeighbors(Process):
             diameter = data['diameter']
 
             # get bottom left position
-            offset = (diameter / 2)
-            angle = 0.0  # TODO -- get rid of angle?
-            theta_rad = math.radians(angle)
-            dx = offset * math.cos(theta_rad) - offset * math.sin(theta_rad)
-            dy = offset * math.sin(theta_rad) + offset * math.cos(theta_rad)
-
-            x = x_center - dx
-            y = y_center - dy
+            radius = (diameter / 2)
+            x = x_center - radius
+            y = y_center - radius
 
             # Create a circle
-            circle = patches.Circle((x, y), diameter, linewidth=1, edgecolor='b')
+            circle = patches.Circle((x, y), radius, linewidth=1, edgecolor='b')
             self.ax.add_patch(circle)
 
         plt.xlim([0, self.bounds[0]])
@@ -312,9 +303,7 @@ def simulate_growth_division(config, settings):
         time += timestep
         cells_state = cells_store.get_value()
 
-        cell_updates = {}
-        remove_cells = []
-        add_cells = {}
+        invoked_update = []
         for cell_id, state in cells_state.items():
             state = state['boundary']
             location = state['location']
@@ -329,7 +318,6 @@ def simulate_growth_division(config, settings):
 
             if new_volume > division_volume:
                 daughter_ids = [str(cell_id) + '0', str(cell_id) + '1']
-
                 daughter_updates = []
                 for daughter_id in daughter_ids:
                     daughter_updates.append({
@@ -338,20 +326,19 @@ def simulate_growth_division(config, settings):
                         'processes': {},
                         'topology': {},
                         'initial_state': {}})
-
-                # initial state will be provided by division in the tree
                 update = {
                     '_divide': {
                         'mother': cell_id,
                         'daughters': daughter_updates}}
-                invoked_update = [(InvokeUpdate({'cells': update}), None, None)]
             else:
-                cell_updates[cell_id] = {
-                    'boundary': {
-                        'volume': new_volume,
-                        'diameter': new_diameter,
-                        'mass': new_mass * units.fg}}
-                invoked_update = [(InvokeUpdate({'cells': cell_updates}), None, None)]
+                update = {
+                    cell_id: {
+                        'boundary': {
+                            'volume': new_volume,
+                            'diameter': new_diameter,
+                            'mass': new_mass * units.fg}}}
+
+            invoked_update.append((InvokeUpdate({'cells': update}), None, None))
 
         # update experiment
         experiment.send_updates(invoked_update)
@@ -368,10 +355,9 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
         'growth_rate_noise': 0.02,
         'division_volume': 2.6,
         'total_time': 120}
-
     gd_config = {
         'animate': True,
-        'jitter_force': 1e1,
+        'jitter_force': 1e0,
         'bounds': bounds}
     body_config = {
         'bounds': bounds,
@@ -379,7 +365,6 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
     gd_config.update(cell_body_config(body_config))
     gd_data = simulate_growth_division(gd_config, settings)
 
-    import ipdb; ipdb.set_trace()
 
 
 if __name__ == '__main__':
