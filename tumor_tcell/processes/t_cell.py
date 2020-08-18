@@ -13,6 +13,7 @@ from vivarium.core.process import Process
 from vivarium.core.composition import (
     simulate_process_in_experiment,
     plot_simulation_output,
+    plot_agents_multigen,
     PROCESS_OUT_DIR,
 )
 
@@ -156,7 +157,7 @@ class TCellProcess(Process):
                 50400,  # 14 hours (14*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_death:
-                print('DEATH PD1- cell!')
+                # print('DEATH PD1- cell!')
                 return {
                     '_delete': {
                         'path': self.self_path
@@ -170,7 +171,7 @@ class TCellProcess(Process):
                     50400,  # 14 hours (14*60*60 seconds)
                     timestep)
                 if random.uniform(0, 1) < prob_death:
-                    print('DEATH PD1+ cell with PDL1!')
+                    # print('DEATH PD1+ cell with PDL1!')
                     return {
                         '_delete': {
                             'path': self.self_path
@@ -183,7 +184,7 @@ class TCellProcess(Process):
                     50400,  # 14 hours (14*60*60 seconds)
                     timestep)
                 if random.uniform(0, 1) < prob_death:
-                    print('DEATH PD1+ cell without PDL1!')
+                    # print('DEATH PD1+ cell without PDL1!')
                     return {
                         '_delete': {
                             'path': self.self_path
@@ -197,7 +198,7 @@ class TCellProcess(Process):
                 28800,  # 8 hours (8*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
-                print('DIVIDE PD1- cell!')
+                # print('DIVIDE PD1- cell!')
                 return {
                     'globals': {
                         'divide': True
@@ -210,7 +211,7 @@ class TCellProcess(Process):
                 28800,  # 8 hours (8*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
-                print('DIVIDE PD1+ cell!')
+                # print('DIVIDE PD1+ cell!')
                 return {
                     'globals': {
                         'divide': True
@@ -373,8 +374,37 @@ def test_single_t_cell(
     plot_settings = {
         'remove_zeros': False
     }
-    plot_simulation_output(timeseries, plot_settings, out_dir)
+    plot_simulation_output(timeseries, plot_settings, out_dir, NAME + '_single')
 
+
+def test_batch_t_cell(
+    total_time=43200,
+    batch_size=2,
+    timeline=None,
+    out_dir='out'):
+
+    combined_raw_data = {}
+    for single_idx in range(batch_size):
+        t_cell_process = TCellProcess({})
+        if timeline is not None:
+            settings = {
+                'timeline': {
+                    'timeline': timeline},
+                'return_raw_data': True}
+        else:
+            settings = {
+                'total_time': total_time,
+                'return_raw_data': True}
+        # run experiment
+        raw_data = simulate_process_in_experiment(t_cell_process, settings)
+        for time, time_data in raw_data.items():
+            if time not in combined_raw_data:
+                combined_raw_data[time] = {'agents': {}}
+            combined_raw_data[time]['agents'][single_idx] = time_data
+
+    settings = {
+        'agents_key': 'agents'}
+    plot_agents_multigen(combined_raw_data, settings, out_dir, NAME + '_batch')
 
 
 if __name__ == '__main__':
@@ -384,18 +414,27 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='ODE expression')
     parser.add_argument('--single', '-s', action='store_true', default=False)
+    parser.add_argument('--batch', '-b', action='store_true', default=False)
     parser.add_argument('--timeline', '-t', action='store_true', default=False)
     args = parser.parse_args()
     no_args = (len(sys.argv) == 1)
 
     total_time = 43200
+    if args.timeline or no_args:
+        timeline = get_timeline()
+        test_single_t_cell(
+            timeline=timeline,
+            out_dir=out_dir)
+
     if args.single:
         test_single_t_cell(
             total_time=total_time,
             out_dir=out_dir)
 
-    if args.timeline or no_args:
+    if args.batch:
         timeline = get_timeline()
-        test_single_t_cell(
+        test_batch_t_cell(
+            batch_size=10,
+            # total_time=300,
             timeline=timeline,
             out_dir=out_dir)
