@@ -105,7 +105,7 @@ class MultibodyNeighbors(Process):
 
           .. code-block:: console
 
-              $ MPLBACKEND=TKAgg python vivarium/processes/tumor_neighborhood.py
+              $ MPLBACKEND=TKAgg python vivarium/processes/multibody_neighbors.py
     """
 
     name = NAME
