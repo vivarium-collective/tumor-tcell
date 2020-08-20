@@ -307,7 +307,7 @@ class TCellProcess(Process):
 
 
 def get_timeline(
-        total_time=600000,
+        total_time=500,
         number_steps=10):
 
     interval = total_time / (number_steps * TIMESTEP)
@@ -387,24 +387,24 @@ def test_batch_t_cell(
     for single_idx in range(batch_size):
         t_cell_process = TCellProcess({})
         if timeline is not None:
-            settings = {
+            sim_settings = {
                 'timeline': {
                     'timeline': timeline},
                 'return_raw_data': True}
         else:
-            settings = {
+            sim_settings = {
                 'total_time': total_time,
                 'return_raw_data': True}
         # run experiment
-        raw_data = simulate_process_in_experiment(t_cell_process, settings)
+        raw_data = simulate_process_in_experiment(t_cell_process, sim_settings)
         for time, time_data in raw_data.items():
             if time not in combined_raw_data:
                 combined_raw_data[time] = {'agents': {}}
             combined_raw_data[time]['agents'][single_idx] = time_data
 
-    settings = {
+    plot_settings = {
         'agents_key': 'agents'}
-    plot_agents_multigen(combined_raw_data, settings, out_dir, NAME + '_batch')
+    plot_agents_multigen(combined_raw_data, plot_settings, out_dir, NAME + '_batch')
 
 
 if __name__ == '__main__':

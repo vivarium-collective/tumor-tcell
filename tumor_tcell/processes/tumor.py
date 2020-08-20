@@ -141,7 +141,6 @@ class TumorProcess(Process):
         IFNg_timer = states['boundary']['IFNg_timer']
 
         # death by apoptosis
-
         prob_death = get_probability_timestep(
             self.parameters['death_apoptosis'],
             432000,  # 5 days (5*24*60*60 seconds)
@@ -191,24 +190,21 @@ class TumorProcess(Process):
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PDL1n':
-            if IFNg >= 1*units.ng/units.mL:
-                if IFNg_timer > 6*60*60: # Need at least 6 hours for state transition to occur
-                    #print('PDL1n become PDL1p!')
+            if IFNg >= 1*units.ng/units.mL:  # TODO -- make this threshold a parameter
+                if IFNg_timer > 6*60*60:  # Need at least 6 hours for state transition to occur. TODO -- make time a parameter
+                    print('PDL1n become PDL1p!')
                     new_cell_state = 'PDL1p'
-                    #TODO - @Eran - how does this get updated in the simulation?
-                    # I see that this gets printed but the cell state gets reversed
-                    # I tried returning this in update but did not work
-                    # Does it not update the next cell in simulation with previous?
-                    # This also does not work for MHCI/PDL1 - not updated in simulation
+                    update.update({
+                        'internal': {
+                            'cell_state': new_cell_state}})
 
                 else:
                     update.update({
                         'boundary': {
-                            'IFNg_timer':timestep
+                            'IFNg_timer': timestep
                         }
                     })
 
-            pass
         elif cell_state == 'PDL1p':
             pass
 
@@ -220,9 +216,14 @@ class TumorProcess(Process):
         #  anyways so that we would have them
 
         if new_cell_state == 'PDL1p':
-
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
             MHCI = self.parameters['PDL1p_MHCI_equilibrium']
+
+            if 'boundary' not in update:
+                update['boundary'] = {}
+            update['boundary'].update({
+                'PDL1': PDL1,
+                'MHCI': MHCI})
 
         elif new_cell_state == 'PDL1n':
             pass
@@ -235,7 +236,7 @@ class TumorProcess(Process):
 
 def get_combined_timeline(
         total_time=600000,
-        number_steps=10):
+        number_steps=100):
 
     interval = total_time/(number_steps*TIMESTEP)
 
