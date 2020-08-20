@@ -10,9 +10,9 @@ setup(
     name='tumor-tcell',
     version='0.0.1',
     packages=[
-        'embodied',
-        'embodied.compartments',
-        'embodied.processes'
+        'tumor_tcell',
+        'tumor_tcell.compartments',
+        'tumor_tcell.processes'
     ],
     author='John Hickey, Eran Agmon',
     author_email='jwhickey@stanford.edu, eagmon@stanford.edu',
