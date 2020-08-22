@@ -13,6 +13,7 @@ from vivarium.core.process import Process
 from vivarium.core.composition import (
     simulate_process_in_experiment,
     plot_simulation_output,
+    plot_agents_multigen,
     PROCESS_OUT_DIR,
 )
 
@@ -52,11 +53,16 @@ class TumorProcess(Process):
 
         # death rates
         'death_apoptosis': 0.95,  # negligible compared to growth/killing 0.95 by 5 day (Gong, 2017)
+        'cytotoxic_packet_threshold': 128 * 10,  # need at least 128 packets for death (multiply by 10 for T cells)
 
         # division rate
         'PDL1n_growth': 0.95,  # probability of division 24 hr (Eden, 2011)
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
+        #cell_state transition
+        'IFNg_threshold': 1 * units.ng / units.mL,
+        'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
+        
         # migration
         'tumor_migration': 0.25,  # um/minute (Weigelin 2012)
         #TODO - @Eran - how to manage migration with square grids if migration is smaller than grid?
@@ -159,7 +165,7 @@ class TumorProcess(Process):
         # should take about 120 min from start of T cell contact and about 2-3 contacts
         # need to multiply total number by 10 because multiplied T cell number by this amount
         # number needed for death refs: (Verret, 1987), (Betts, 2004), (Zhang, 2006)
-        if cytotoxic_packets >= 128*10:
+        if cytotoxic_packets >= self.parameters['cytotoxic_packet_threshold']:
             print('Tcell_death!')
             return {
                 '_delete': {
@@ -190,8 +196,8 @@ class TumorProcess(Process):
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PDL1n':
-            if IFNg >= 1*units.ng/units.mL:  # TODO -- make this threshold a parameter
-                if IFNg_timer > 6*60*60:  # Need at least 6 hours for state transition to occur. TODO -- make time a parameter
+            if IFNg >= self.parameters['IFNg_threshold']:
+                if IFNg_timer > self.parameters['cellstate_transition_time']:
                     print('PDL1n become PDL1p!')
                     new_cell_state = 'PDL1p'
                     update.update({
@@ -212,8 +218,6 @@ class TumorProcess(Process):
         MHCI = 0
         PDL1 = 0
 
-        # TODO - @Eran - I do not think dynamics of these receptors matters as much, but I put in
-        #  anyways so that we would have them
 
         if new_cell_state == 'PDL1p':
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
@@ -234,7 +238,7 @@ class TumorProcess(Process):
 
 
 
-def get_combined_timeline(
+def get_timeline(
         total_time=600000,
         number_steps=100):
 
@@ -310,8 +314,36 @@ def test_single_Tumor(
 
     # plot
     plot_settings = {'remove_zeros': False}
-    plot_simulation_output(timeseries, plot_settings, out_dir)
+    plot_simulation_output(timeseries, plot_settings, out_dir, NAME + '_single')
 
+def test_batch_tumor(
+    total_time=43200,
+    batch_size=2,
+    timeline=None,
+    out_dir='out'):
+
+    combined_raw_data = {}
+    for single_idx in range(batch_size):
+        Tumor_process = TumorProcess({})
+        if timeline is not None:
+            sim_settings = {
+                'timeline': {
+                    'timeline': timeline},
+                'return_raw_data': True}
+        else:
+            sim_settings = {
+                'total_time': total_time,
+                'return_raw_data': True}
+        # run experiment
+        raw_data = simulate_process_in_experiment(Tumor_process, sim_settings)
+        for time, time_data in raw_data.items():
+            if time not in combined_raw_data:
+                combined_raw_data[time] = {'agents': {}}
+            combined_raw_data[time]['agents'][single_idx] = time_data
+
+    plot_settings = {
+        'agents_key': 'agents'}
+    plot_agents_multigen(combined_raw_data, plot_settings, out_dir, NAME + '_batch')
 
 
 if __name__ == '__main__':
@@ -321,6 +353,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='tumor cells')
     parser.add_argument('--single', '-s', action='store_true', default=False)
+    parser.add_argument('--batch', '-b', action='store_true', default=False)
     parser.add_argument('--timeline', '-t', action='store_true', default=False)
     args = parser.parse_args()
     no_args = (len(sys.argv) == 1)
@@ -332,7 +365,15 @@ if __name__ == '__main__':
             out_dir=out_dir)
 
     if args.timeline or no_args:
-        timeline = get_combined_timeline()
+        timeline = get_timeline()
         test_single_Tumor(
+            timeline=timeline,
+            out_dir=out_dir)
+
+    if args.batch:
+        timeline = get_timeline()
+        test_batch_tumor(
+            batch_size=10,
+            # total_time=300,
             timeline=timeline,
             out_dir=out_dir)

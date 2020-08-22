@@ -61,6 +61,8 @@ class TCellProcess(Process):
         'PD1p_IFNg_production': 0.0,  # molecules/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
 
+        'Ligand_threshold': 1e4,  # molecules/neighbor cell
+
         # division rate (Petrovas 2007)
         'PD1n_growth_8hr': 0.95,  # 95% division in 8 hours
         'PD1p_growth_8hr': 0.05,  # 5% division in 8 hours
@@ -80,6 +82,10 @@ class TCellProcess(Process):
 
         # 1:10 fold reduction of PD1+ T cell cytotoxic production (Zelinskyy, 2005)
         'PD1p_cytotoxic_packets': 4,  # number of packets/min to each contacted tumor cell
+
+        # 4 fold reduction in production in T cells in contact with MHCI- tumor
+        # (Bohm, 1998), (Merritt, 2003)
+        'MHCIn_reduction_production': 4,
 
         # settings
         'self_path': tuple(),
@@ -217,7 +223,7 @@ class TCellProcess(Process):
                         'divide': True
                     }
                 }
-
+        update = {}
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PD1n':
@@ -227,6 +233,9 @@ class TCellProcess(Process):
                 timestep)
             if random.uniform(0, 1) < prob_transition:
                 new_cell_state = 'PD1p'
+                update.update({
+                    'internal': {
+                        'cell_state': new_cell_state}})
         elif cell_state == 'PD1p':
             pass
 
@@ -246,7 +255,7 @@ class TCellProcess(Process):
             # TODO - @Eran - how do we make T cells only interact with 1 of neighbors at a time?
             # and how do we reference this cell - see last elif
             # check conditional 4 fold reduction
-            if MHCI >= 1e4: #molecules/neighbor cell
+            if MHCI >= self.parameters['Ligand_threshold']:
 
                 # Max production for both happens for PD1- T cells in contact with MHCI+ tumor
                 cytotoxic_packets = self.parameters['PD1n_cytotoxic_packets'] * timestep
@@ -254,24 +263,25 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
 
-            elif MHCI < 1e4:  # molecules/neighbor cell
+            elif MHCI < self.parameters['Ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
-                cytotoxic_packets = self.parameters['PD1n_cytotoxic_packets'] / 4 * timestep
+                cytotoxic_packets = self.parameters['PD1n_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
 
                 # produce IFNg  # rates are determined above
-                IFNg = self.parameters['PD1n_IFNg_production'] / 4 * timestep
+                IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
 
             # target behavior 3 contacts required for cell death, 1-4 cells killed/day
 
             # TODO  - elif T cell is not in contact with tumor (no cytotoxic packets)
             #   continue
+            # TODO - @Eran I have not finished with the update of transition here
 
         elif new_cell_state == 'PD1p':
             PD1 = self.parameters['PD1p_PD1_equilibrium']
 
-            if MHCI >= 1e4:  # molecules/neighbor cell
+            if MHCI >= self.parameters['Ligand_threshold']:
 
                 # Max production for both happens for T cells in contact with MHCI+ tumor
                 cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] * timestep
@@ -279,14 +289,14 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
 
-            elif MHCI < 1e4:  # molecules/neighbor cell
+            elif MHCI < self.parameters['Ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
-                cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / 4 * timestep
+                cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
 
                 # produce IFNg  # rates are determined above
-                IFNg = self.parameters['PD1p_IFNg_production'] / 4 * timestep
+                IFNg = self.parameters['PD1p_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
 
             # target behavior 3 contacts required for cell death, 1-4 cells killed/day
 
@@ -307,7 +317,7 @@ class TCellProcess(Process):
 
 
 def get_timeline(
-        total_time=500,
+        total_time=5000,
         number_steps=10):
 
     interval = total_time / (number_steps * TIMESTEP)
