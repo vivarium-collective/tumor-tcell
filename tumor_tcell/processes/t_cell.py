@@ -110,14 +110,26 @@ class TCellProcess(Process):
                 'divide': {
                     '_default': False,
                     '_emit': True,
-                    '_updater': 'set'}
+                    '_updater': 'set'},
+				'PD1n_divide_count': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'accumulate'},
+				'PD1p_divide_count': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'accumulate'}
             },
             'internal': {
                 'cell_state': {
                     '_default': self.initial_state,
                     '_emit': True,
                     '_updater': 'set'
-                }
+                },
+				'cell_state_count': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'accumulate'}
             },
             'boundary': {
                 'diameter': {
@@ -136,7 +148,7 @@ class TCellProcess(Process):
                 'cytotoxic_packets': {
                     '_default': 0,
                     '_emit': True,
-                    '_updater': 'set',
+                    '_updater': 'accumulate',
                 },  # release into the tumor cells
             },
             'neighbors': {
@@ -167,6 +179,9 @@ class TCellProcess(Process):
                 return {
                     '_delete': {
                         'path': self.self_path
+                    },
+					'globals': {
+                        'death': True,
                     }
                 }
 
@@ -181,7 +196,10 @@ class TCellProcess(Process):
                     return {
                         '_delete': {
                             'path': self.self_path
-                        }
+                        },
+						'globals': {
+							'death': True,
+						}
                     }
 
             else:
@@ -194,7 +212,10 @@ class TCellProcess(Process):
                     return {
                         '_delete': {
                             'path': self.self_path
-                        }
+                        },
+						'globals': {
+							'death': True,
+						}
                     }
 
         # division
@@ -205,9 +226,11 @@ class TCellProcess(Process):
                 timestep)
             if random.uniform(0, 1) < prob_divide:
                 # print('DIVIDE PD1- cell!')
+                PD1n_divide_count = 1
                 return {
                     'globals': {
-                        'divide': True
+                        'divide': True,
+						'PD1n_divide_count': PD1n_divide_count
                     }
                 }
 
@@ -218,11 +241,14 @@ class TCellProcess(Process):
                 timestep)
             if random.uniform(0, 1) < prob_divide:
                 # print('DIVIDE PD1+ cell!')
+                PD1p_divide_count = 1
                 return {
                     'globals': {
-                        'divide': True
+                        'divide': True,
+						'PD1p_divide_count': PD1p_divide_count
                     }
                 }
+				
         update = {}
         # state transition
         new_cell_state = cell_state
@@ -233,11 +259,15 @@ class TCellProcess(Process):
                 timestep)
             if random.uniform(0, 1) < prob_transition:
                 new_cell_state = 'PD1p'
-                update.update({
+				update.update({
                     'internal': {
                         'cell_state': new_cell_state}})
+				cell_state_count = 1
+				
         elif cell_state == 'PD1p':
             pass
+
+        #import ipdb; ipdb.set_trace()
 
         # behavior
         IFNg = 0
@@ -305,7 +335,8 @@ class TCellProcess(Process):
 
         return {
             'internal': {
-                'cell_state': new_cell_state
+                'cell_state': new_cell_state,
+				'cell_state_count': cell_state_count
             },
             'boundary': {
                 'IFNg': IFNg,
@@ -317,7 +348,7 @@ class TCellProcess(Process):
 
 
 def get_timeline(
-        total_time=5000,
+        total_time=129600,
         number_steps=10):
 
     interval = total_time / (number_steps * TIMESTEP)
