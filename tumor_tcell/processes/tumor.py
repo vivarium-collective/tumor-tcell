@@ -94,14 +94,22 @@ class TumorProcess(Process):
                 'divide': {
                     '_default': False,
                     '_emit': True,
-                    '_updater': 'set'}
+                    '_updater': 'set'},
+                'PDL1n_divide_count': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'accumulate'}
             },
             'internal': {
                 'cell_state': {
                     '_default': self.initial_state,
                     '_emit': True,
                     '_updater': 'set'
-                }
+                },
+                'cell_state_count': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'accumulate'}
             },
             'boundary': {
                 'diameter': {
@@ -152,7 +160,7 @@ class TumorProcess(Process):
             432000,  # 5 days (5*24*60*60 seconds)
             timestep)
         if random.uniform(0, 1) < prob_death:
-            print('Apoptosis!')
+            #print('Apoptosis!')
             return {
                 '_delete': {
                     'path': self.self_path},
@@ -166,7 +174,7 @@ class TumorProcess(Process):
         # need to multiply total number by 10 because multiplied T cell number by this amount
         # number needed for death refs: (Verret, 1987), (Betts, 2004), (Zhang, 2006)
         if cytotoxic_packets >= self.parameters['cytotoxic_packet_threshold']:
-            print('Tcell_death!')
+            #print('Tcell_death!')
             return {
                 '_delete': {
                     'path': self.self_path},
@@ -182,10 +190,12 @@ class TumorProcess(Process):
                 86400,  # 24 hours (24*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
-                print('PDL1n DIVIDE!')
+                #print('PDL1n DIVIDE!')
+                PDL1n_divide_count = 1
                 return {
                     'globals': {
-                        'divide': True
+                        'divide': True,
+                        'PDL1n_divide_count': PDL1n_divide_count
                     }
                 }
 
@@ -200,11 +210,14 @@ class TumorProcess(Process):
                 if IFNg_timer > self.parameters['cellstate_transition_time']:
                     print('PDL1n become PDL1p!')
                     new_cell_state = 'PDL1p'
+                    cell_state_count = 1
                     update.update({
                         'internal': {
-                            'cell_state': new_cell_state}})
+                            'cell_state': new_cell_state,
+                            'cell_state_count': cell_state_count}})
 
                 else:
+                    cell_state_count = 0
                     update.update({
                         'boundary': {
                             'IFNg_timer': timestep
@@ -212,7 +225,7 @@ class TumorProcess(Process):
                     })
 
         elif cell_state == 'PDL1p':
-            pass
+            cell_state_count = 0
 
         # behavior
         MHCI = 0
@@ -239,8 +252,8 @@ class TumorProcess(Process):
 
 
 def get_timeline(
-        total_time=600000,
-        number_steps=100):
+        total_time=129600,
+        number_steps=10):
 
     interval = total_time/(number_steps*TIMESTEP)
 
@@ -251,42 +264,42 @@ def get_timeline(
             ('neighbors', 'PD1'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 10.0,
+            ('neighbors', 'cytotoxic_packets'): 100.0,
             ('boundary', 'IFNg'): 1.0*units.ng/units.mL,
             ('neighbors', 'PD1'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 20.0,
+            ('neighbors', 'cytotoxic_packets'): 200.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'PD1'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 30.0,
+            ('neighbors', 'cytotoxic_packets'): 300.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
             ('neighbors', 'PD1'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 40.0,
+            ('neighbors', 'cytotoxic_packets'): 400.0,
             ('boundary', 'IFNg'): 4.0 * units.ng / units.mL,
             ('neighbors', 'PD1'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 70.0,
+            ('neighbors', 'cytotoxic_packets'): 700.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
             ('neighbors', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 100.0,
+            ('neighbors', 'cytotoxic_packets'): 1000.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'PD1'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 150.0,
+            ('neighbors', 'cytotoxic_packets'): 1500.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'PD1'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 160.0,
+            ('neighbors', 'cytotoxic_packets'): 1600.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'PD1'): 5e4,
         }),

@@ -181,7 +181,7 @@ class TCellProcess(Process):
                         'path': self.self_path
                     },
 					'globals': {
-                        'death': True,
+                        'death': 'PD1n_apoptosis',
                     }
                 }
 
@@ -198,7 +198,7 @@ class TCellProcess(Process):
                             'path': self.self_path
                         },
 						'globals': {
-							'death': True,
+							'death': 'PD1p_PDL1_death',
 						}
                     }
 
@@ -214,7 +214,7 @@ class TCellProcess(Process):
                             'path': self.self_path
                         },
 						'globals': {
-							'death': True,
+							'death': 'PD1p_apoptosis',
 						}
                     }
 
@@ -259,13 +259,15 @@ class TCellProcess(Process):
                 timestep)
             if random.uniform(0, 1) < prob_transition:
                 new_cell_state = 'PD1p'
-				update.update({
+                cell_state_count = 1
+                update.update({
                     'internal': {
                         'cell_state': new_cell_state}})
-				cell_state_count = 1
-				
+            else:
+                cell_state_count = 0
+
         elif cell_state == 'PD1p':
-            pass
+            cell_state_count = 0
 
         #import ipdb; ipdb.set_trace()
 
