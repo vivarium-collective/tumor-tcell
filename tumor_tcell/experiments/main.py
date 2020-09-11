@@ -9,9 +9,9 @@ import argparse
 
 from vivarium.core.composition import agent_environment_experiment
 
-from tumor_tcell.compartments.tumor import TumorCompartment
-from tumor_tcell.compartments.t_cell import TCellCompartment
-from tumor_tcell.compartments.tumor_microenvironment import TumorMicroEnvironment
+from tumor_tcell.composites.tumor import TumorCompartment
+from tumor_tcell.composites.t_cell import TCellAgent
+from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 # directories
 from tumor_tcell import EXPERIMENT_OUT_DIR
@@ -28,7 +28,7 @@ def simulation_1():
         {
         'number': 1,
         'ids': ['tcell'],
-        'type': TCellCompartment,
+        'type': TCellAgent,
         'config': {},
         }]
 

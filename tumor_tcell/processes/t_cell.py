@@ -115,11 +115,11 @@ class TCellProcess(Process):
                     '_default': False,
                     '_emit': True,
                     '_updater': 'set'},
-				'PD1n_divide_count': {
+                'PD1n_divide_count': {
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate'},
-				'PD1p_divide_count': {
+                'PD1p_divide_count': {
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate'}
@@ -130,7 +130,7 @@ class TCellProcess(Process):
                     '_emit': True,
                     '_updater': 'set'
                 },
-				'cell_state_count': {
+                'cell_state_count': {
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate'}
@@ -190,7 +190,7 @@ class TCellProcess(Process):
                     '_delete': {
                         'path': self.self_path
                     },
-					'globals': {
+                    'globals': {
                         'death': 'PD1n_apoptosis',
                     }
                 }
@@ -207,9 +207,9 @@ class TCellProcess(Process):
                         '_delete': {
                             'path': self.self_path
                         },
-						'globals': {
-							'death': 'PD1p_PDL1_death',
-						}
+                        'globals': {
+                            'death': 'PD1p_PDL1_death',
+                        }
                     }
 
             else:
@@ -223,9 +223,9 @@ class TCellProcess(Process):
                         '_delete': {
                             'path': self.self_path
                         },
-						'globals': {
-							'death': 'PD1p_apoptosis',
-						}
+                        'globals': {
+                            'death': 'PD1p_apoptosis',
+                        }
                     }
 
         # division
@@ -240,7 +240,7 @@ class TCellProcess(Process):
                 return {
                     'globals': {
                         'divide': True,
-						'PD1n_divide_count': PD1n_divide_count
+                        'PD1n_divide_count': PD1n_divide_count
                     }
                 }
 
@@ -255,10 +255,10 @@ class TCellProcess(Process):
                 return {
                     'globals': {
                         'divide': True,
-						'PD1p_divide_count': PD1p_divide_count
+                        'PD1p_divide_count': PD1p_divide_count
                     }
                 }
-				
+
         update = {}
         # state transition
         new_cell_state = cell_state
@@ -271,8 +271,7 @@ class TCellProcess(Process):
                     update['internal'] = {}
                 update['internal'].update({
                     'cell_state': new_cell_state,
-                        'cell_state_count': cell_state_count})
-
+                    'cell_state_count': cell_state_count})
 
             else:
                 cell_state_count = 0
@@ -287,8 +286,6 @@ class TCellProcess(Process):
                         update['boundary'] = {}
                     update['boundary'].update({
                         'MHCI_timer': timestep})
-
-
 
         elif cell_state == 'PDL1p':
             cell_state_count = 0

@@ -2,13 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
-import copy
 import math
 import random
 import argparse
 
 from vivarium.library.units import units
-from vivarium.library.dict_utils import deep_merge
 from vivarium.core.process import Process
 from vivarium.core.composition import (
     simulate_process_in_experiment,
@@ -61,7 +59,7 @@ class TumorProcess(Process):
         'PDL1n_growth': 0.95,  # probability of division 24 hr (Eden, 2011)
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
-        #cell_state transition
+        # cell_state transition
         'IFNg_threshold': 1 * units.ng / units.mL,
         'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
         
@@ -69,7 +67,7 @@ class TumorProcess(Process):
         'tumor_migration': 0.25,  # um/minute (Weigelin 2012)
         #TODO - @Eran - how to manage migration with square grids if migration is smaller than grid?
 
-        #membrane equillibrium amounts
+        # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4, #TODO ref
         'PDL1p_MHCI_equilibrium': 5e4, #TODO ref
 

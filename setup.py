@@ -11,7 +11,7 @@ setup(
     version='0.0.1',
     packages=[
         'tumor_tcell',
-        'tumor_tcell.compartments',
+        'tumor_tcell.composites',
         'tumor_tcell.processes'
     ],
     author='John Hickey, Eran Agmon',
