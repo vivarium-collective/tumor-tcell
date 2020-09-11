@@ -32,7 +32,7 @@ AVOGADRO = constants.N_A
 
 
 
-class DiffusionField(Process):
+class Fields(Process):
     '''
     Diffusion in 2-dimensional fields of molecules with agent exchange
     '''
@@ -51,7 +51,7 @@ class DiffusionField(Process):
     }
 
     def __init__(self, parameters=None):
-        super(DiffusionField, self).__init__(parameters)
+        super(Fields, self).__init__(parameters)
 
     def ports_schema(self):
         local_concentration_schema = {

@@ -7,9 +7,6 @@ Multibody physics process with neighbor tracking
 from __future__ import absolute_import, division, print_function
 
 import os
-import sys
-import argparse
-
 import random
 import math
 
@@ -21,18 +18,14 @@ import matplotlib.patches as patches
 # vivarium imports
 from tumor_tcell.library.pymunk_multibody import PymunkMultibody
 from vivarium.library.units import units, remove_units
-from vivarium.core.emitter import timeseries_from_data
 from vivarium.core.process import Process
-from vivarium.core.composition import (
-    process_in_experiment,
-    simulate_experiment,
-)
+from vivarium.core.composition import process_in_experiment
 
 # directories
 from tumor_tcell import PROCESS_OUT_DIR
 
 
-NAME = 'multibody_neighbors'
+NAME = 'neighbors'
 DEFAULT_BOUNDS = [10, 10]
 
 # constants
@@ -50,42 +43,11 @@ def make_random_position(bounds):
         np.random.uniform(0, bounds[0]),
         np.random.uniform(0, bounds[1])]
 
-def random_body_position(body):
-    # pick a random point along the boundary
-    width, length = body.dimensions
-    if random.randint(0, 1) == 0:
-        # force along ends
-        if random.randint(0, 1) == 0:
-            # force on the left end
-            location = (random.uniform(0, width), 0)
-        else:
-            # force on the right end
-            location = (random.uniform(0, width), length)
-    else:
-        # force along length
-        if random.randint(0, 1) == 0:
-            # force on the bottom end
-            location = (0, random.uniform(0, length))
-        else:
-            # force on the top end
-            location = (width, random.uniform(0, length))
-    return location
 
-def daughter_locations(parent_location, parent_values):
-    parent_diameter = parent_values['diameter']
-    parent_angle = 0.0  # TODO -- random angle?
-    pos_ratios = [-0.25, 0.25]
-    daughter_locations = []
-    for daughter in range(2):
-        dx = parent_diameter * pos_ratios[daughter] * math.cos(parent_angle)
-        dy = parent_diameter * pos_ratios[daughter] * math.sin(parent_angle)
-        location = [parent_location[0] + dx, parent_location[1] + dy]
-        daughter_locations.append(location)
-    return daughter_locations
+class Neighbors(Process):
+    """ Neighbors process for tracking cell bodies.
 
-
-class MultibodyNeighbors(Process):
-    """Simulates collisions and forces between cell bodies with a multi-body physics engine.
+    Simulates collisions between cell bodies with a physics engine.
 
     :term:`Ports`:
     * ``cells``: The store containing all cell sub-compartments. Each cell in
@@ -104,7 +66,7 @@ class MultibodyNeighbors(Process):
 
           .. code-block:: console
 
-              $ MPLBACKEND=TKAgg python vivarium/processes/neighbors.py
+              $ MPLBACKEND=TKAgg python tumor_tcell/processes/neighbors.py
     """
 
     name = NAME
@@ -117,7 +79,7 @@ class MultibodyNeighbors(Process):
     }
 
     def __init__(self, parameters=None):
-        super(MultibodyNeighbors, self).__init__(parameters)
+        super(Neighbors, self).__init__(parameters)
 
         # multibody parameters
         jitter_force = self.parameters['jitter_force']
@@ -186,7 +148,6 @@ class MultibodyNeighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # TODO -- get neighbors
-        # import ipdb; ipdb.set_trace()
 
         return {
             'cells': cell_positions}
@@ -243,25 +204,6 @@ def cell_body_config(config):
         for cell_id in cell_ids}
     return {'cells': cell_config}
 
-def get_baseline_config(config={}):
-    animate = config.get('animate', False)
-    bounds = config.get('bounds', [500, 500])
-    jitter_force = config.get('jitter_force', 0.0)
-    n_cells = config.get('n_cells', 1)
-    initial_location = config.get('initial_location')
-
-    # cell settings
-    cell_ids = [str(cell_id) for cell_id in range(n_cells)]
-    motility_config = {
-        'animate': animate,
-        'jitter_force': jitter_force,
-        'bounds': bounds}
-    body_config = {
-        'bounds': bounds,
-        'cell_ids': cell_ids,
-        'location': initial_location}
-    motility_config.update(cell_body_config(body_config))
-    return motility_config
 
 # tests and simulations
 class InvokeUpdate(object):
@@ -270,11 +212,12 @@ class InvokeUpdate(object):
     def get(self, timeout=0):
         return self.update
 
+
 def simulate_growth_division(config, settings):
     initial_cells_state = config['cells']
 
     # make the process
-    multibody = MultibodyNeighbors(config)
+    multibody = Neighbors(config)
     experiment = process_in_experiment(multibody)
     experiment.state.update_subschema(
         ('cells',), {

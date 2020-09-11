@@ -5,8 +5,8 @@ Tumor microenvironment
 """
 
 from vivarium.core.process import Generator
-from tumor_tcell.processes.multibody_neighbors import MultibodyNeighbors
-
+from tumor_tcell.processes.neighbors import Neighbors
+from tumor_tcell.processes.fields import Fields
 
 
 class TumorMicroEnvironment(Generator):
@@ -14,10 +14,10 @@ class TumorMicroEnvironment(Generator):
     Models the environment in which tumors grow
     """
     defaults = {
-        'multibody': {
+        'neighbors': {
             'bounds': [10, 10]  # the size of the microenvironment
         },
-        'chemical_fields': {},
+        'fields': {},
         '_schema': {},
     }
 
@@ -25,15 +25,18 @@ class TumorMicroEnvironment(Generator):
         super(TumorMicroEnvironment, self).__init__(config)
 
     def generate_processes(self, config):
-        multibody = MultibodyNeighbors(config['multibody'])
+
+        # initialize processes
+        neighbors = Neighbors(config['neighbors'])
+
+        # make dictionary of processes
         return {
-            'multibody': multibody
+            'neighbors': neighbors
         }
 
     def generate_topology(self, config):
         return {
-            'multibody': {
+            'neighbors': {
                 'cells': ('cells',)
             }
         }
-
