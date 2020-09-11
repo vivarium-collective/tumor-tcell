@@ -44,28 +44,37 @@ def simulation_1(
     out_dir='out'
 ):
     total_time = 1000
+    time_step = 60
     tumor_id = 'tumor'
     tcell_id = 'tcell'
 
     # configure the cells
     cell_config = [{
-        'number': 5,
+        'number': 1,
         'name': tumor_id,
         'type': TumorAgent,
-        'config': {},
+        'config': {
+            'time_step': time_step,
+        },
         },
         {
-        'number': 5,
+        'number': 1,
         'name': tcell_id,
         'type': TCellAgent,
-        'config': {},
+        'config': {
+            'time_step': time_step,
+        },
         }]
     make_agent_ids(cell_config)
 
     # configure the environment
     environment_config = {
         'type': TumorMicroEnvironment,
-        'config': {},
+        'config': {
+            'neighbors': {
+                'time_step': time_step,
+            }
+        },
     }
 
     # make the experiment using helper function agent_environment_experiment

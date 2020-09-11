@@ -71,11 +71,11 @@ class Neighbors(Process):
 
     name = NAME
     defaults = {
+        'time_step': 2,
         'cells': {},
         'jitter_force': 0.0,  # pN
         'bounds': DEFAULT_BOUNDS,
         'animate': False,
-        'time_step': 2,
     }
 
     def __init__(self, parameters=None):
@@ -121,10 +121,15 @@ class Neighbors(Process):
                         '_emit': True,
                         '_default': 1 * units.fg,
                         '_updater': 'set'},
-                    'neighbors': {
-                        # TODO -- tumors required cytotoxic_packets and PD1
-                        # TODO -- t cells require PDL1 and MHCI
-                    }
+                },
+                'neighbors': {
+                    '*': {}
+                    # 'PD1': {},
+                    # 'cytotoxic_packets': {},
+                    # 'PDL1': {},
+                    # 'MHCI': {}
+                    # TODO -- tumors required cytotoxic_packets and PD1
+                    # TODO -- t cells require PDL1 and MHCI
                 }
             }
         }
@@ -148,7 +153,7 @@ class Neighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # TODO -- get neighbors
-        # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
 
 
         return {
