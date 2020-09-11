@@ -154,12 +154,6 @@ class TumorProcess(Process):
         IFNg = states['boundary']['IFNg']
         IFNg_timer = states['boundary']['IFNg_timer']
 
-
-
-        import ipdb; ipdb.set_trace()
-
-
-
         # death by apoptosis
         prob_death = get_probability_timestep(
             self.parameters['death_apoptosis'],

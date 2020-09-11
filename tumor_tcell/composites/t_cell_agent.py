@@ -53,7 +53,7 @@ class TCellAgent(Generator):
                 'internal': ('internal',),
                 'boundary': boundary_path,
                 'globals': boundary_path,
-                'neighbors': ('neighbors'),
+                'neighbors': ('neighbors',),
             },
         }
         if config['divide']:

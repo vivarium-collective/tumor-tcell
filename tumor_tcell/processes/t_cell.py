@@ -178,11 +178,6 @@ class TCellProcess(Process):
         MHCI = states['neighbors']['MHCI']
         MHCI_timer = states['boundary']['MHCI_timer']
 
-
-        import ipdb;
-        ipdb.set_trace()
-
-
         # death
         if cell_state == 'PD1n':
             prob_death = get_probability_timestep(
