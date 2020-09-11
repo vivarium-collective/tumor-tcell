@@ -37,6 +37,8 @@ class TumorMicroEnvironment(Generator):
     def generate_topology(self, config):
         return {
             'neighbors': {
-                'cells': ('cells',)
+                'cells': ('agents',)
+                # use agents store for integration with agent_environment_experiment in composition
+                # TODO (Eran) -- update agent_environment_experiment to allow for any store name
             }
         }

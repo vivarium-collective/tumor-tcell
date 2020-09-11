@@ -5,6 +5,7 @@ Experiments
 """
 
 import os
+import uuid
 import argparse
 
 from vivarium.core.composition import (
@@ -20,24 +21,46 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 from tumor_tcell import EXPERIMENT_OUT_DIR
 
 
+# helper functions
+def make_agent_ids(agents_config):
+    agent_ids = []
+    for config in agents_config:
+        number = config.get('number', 1)
+        if 'name' in config:
+            name = config['name']
+            if number > 1:
+                new_agent_ids = [name + '_' + str(num) for num in range(number)]
+            else:
+                new_agent_ids = [name]
+        else:
+            new_agent_ids = [str(uuid.uuid1()) for num in range(number)]
+        config['ids'] = new_agent_ids
+        agent_ids.extend(new_agent_ids)
+    return agent_ids
+
+
+
 def simulation_1(
     out_dir='out'
 ):
-    total_time = 100
+    total_time = 1000
+    tumor_id = 'tumor'
+    tcell_id = 'tcell'
 
     # configure the cells
     cell_config = [{
-        'number': 2,
-        'ids': ['tumor'],
+        'number': 5,
+        'name': tumor_id,
         'type': TumorAgent,
         'config': {},
         },
         {
-        'number': 2,
-        'ids': ['tcell'],
+        'number': 5,
+        'name': tcell_id,
         'type': TCellAgent,
         'config': {},
         }]
+    make_agent_ids(cell_config)
 
     # configure the environment
     environment_config = {
@@ -57,9 +80,26 @@ def simulation_1(
     # retrieve the data
     data = experiment.emitter.get_data()
 
-    # multigen plot
+    # separate out tcell and tumor data for multigen plots
+    tcell_data = {}
+    tumor_data = {}
+    for time, time_data in data.items():
+        all_agents_data = time_data['agents']
+        tcell_data[time] = {
+            'agents': {
+                agent_id: agent_data
+                for agent_id, agent_data in all_agents_data.items()
+                if tcell_id in agent_id}}
+        tumor_data[time] = {
+            'agents': {
+                agent_id: agent_data
+                for agent_id, agent_data in all_agents_data.items()
+                if tumor_id in agent_id}}
+
+    # multigen plot for tcells and tumors
     plot_settings = {}
-    plot_agents_multigen(data, plot_settings, out_dir)
+    plot_agents_multigen(tcell_data, plot_settings, out_dir, tcell_id)
+    plot_agents_multigen(tumor_data, plot_settings, out_dir, tumor_id)
 
 
 

@@ -114,7 +114,7 @@ class Neighbors(Process):
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0,
+                        '_default': 1.0 * units.um,
                         '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
@@ -148,6 +148,8 @@ class Neighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # TODO -- get neighbors
+        # import ipdb; ipdb.set_trace()
+
 
         return {
             'cells': cell_positions}
@@ -188,14 +190,15 @@ def single_cell_config(config):
         location = [loc * bounds[n] for n, loc in enumerate(location)]
     else:
         location = make_random_position(bounds)
-
-    return {'boundary': {
+    return {
+        'boundary': {
         'location': location,
         'volume': volume,
         'diameter': diameter,
         'mass': 1339 * units.fg,
         'thrust': 0,
         'torque': 0}}
+
 
 def cell_body_config(config):
     cell_ids = config['cell_ids']
