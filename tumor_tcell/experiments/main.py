@@ -7,7 +7,10 @@ Experiments
 import os
 import argparse
 
-from vivarium.core.composition import agent_environment_experiment
+from vivarium.core.composition import (
+    agent_environment_experiment,
+    plot_agents_multigen,
+)
 
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
@@ -17,16 +20,20 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 from tumor_tcell import EXPERIMENT_OUT_DIR
 
 
-def simulation_1():
+def simulation_1(
+    out_dir='out'
+):
+    total_time = 100
+
     # configure the cells
     cell_config = [{
-        'number': 1,
+        'number': 2,
         'ids': ['tumor'],
         'type': TumorAgent,
         'config': {},
         },
         {
-        'number': 1,
+        'number': 2,
         'ids': ['tcell'],
         'type': TCellAgent,
         'config': {},
@@ -44,7 +51,15 @@ def simulation_1():
         environment_config=environment_config
     )
 
-    import ipdb; ipdb.set_trace()
+    # run the simulation
+    experiment.update(total_time)
+
+    # retrieve the data
+    data = experiment.emitter.get_data()
+
+    # multigen plot
+    plot_settings = {}
+    plot_agents_multigen(data, plot_settings, out_dir)
 
 
 
@@ -53,6 +68,7 @@ simulation_experiments_library = {
     '1': simulation_1
 }
 
+# main experiment functions
 def add_arguments():
     parser = argparse.ArgumentParser(description='tumor-tcell experiments')
     parser.add_argument(
@@ -68,19 +84,18 @@ def make_dir(out_dir):
 
 def run_experiment():
     """ execute experiments """
-    out_dir = os.path.join(EXPERIMENT_OUT_DIR)
-    make_dir(out_dir)
     args = add_arguments()
+    make_dir(EXPERIMENT_OUT_DIR)
 
     if args.experiment_id:
         # retrieve preset experiment
         experiment_id = str(args.experiment_id)
         experiment_type = simulation_experiments_library[experiment_id]
-        control_out_dir = os.path.join(out_dir, experiment_id)
+        control_out_dir = os.path.join(EXPERIMENT_OUT_DIR, experiment_id)
         make_dir(control_out_dir)
 
         if callable(experiment_type):
-            data = experiment_type()
+            experiment_type(control_out_dir)
 
     else:
         print('provide experiment number')

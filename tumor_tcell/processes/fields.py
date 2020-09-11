@@ -4,25 +4,13 @@ Diffusion Field
 ===============
 '''
 
-import sys
-import os
-import argparse
-
 import numpy as np
 from scipy import constants
 
 from vivarium.core.process import Process
-from vivarium.core.composition import (
-    simulate_process,
-    PROCESS_OUT_DIR
-)
 from vivarium.library.units import units
 
-from cell.library.lattice_utils import (
-    count_to_concentration,
-    get_bin_site,
-    get_bin_volume,
-)
+
 
 NAME = 'diffusion_field'
 
