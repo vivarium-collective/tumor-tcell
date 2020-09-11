@@ -14,8 +14,10 @@ from vivarium.core.composition import (
     simulate_process_in_experiment,
     plot_simulation_output,
     plot_agents_multigen,
-    PROCESS_OUT_DIR,
 )
+
+# directories
+from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'T_cell'

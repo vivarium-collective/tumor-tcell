@@ -1,5 +1,6 @@
 
 from vivarium.core.process import Generator
+from vivarium.processes.meta_division import MetaDivision
 from tumor_tcell.processes.t_cell import TCellProcess
 
 
@@ -8,17 +9,12 @@ class TCellCompartment(Generator):
     defaults = {
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
-        'daughter_path': tuple()}
+        'daughter_path': tuple(),
+        '_schema': {},
+    }
 
     def __init__(self, config):
-        self.config = config
-        for key, value in self.defaults.items():
-            if key not in self.config:
-                self.config[key] = value
-
-        # paths
-        self.boundary_path = config.get('boundary_path', self.defaults['boundary_path'])
-        self.agents_path = config.get('agents_path', self.defaults['agents_path'])
+        super(TCellCompartment, self).__init__(config)
 
     def generate_processes(self, config):
         daughter_path = config['daughter_path']
@@ -38,12 +34,14 @@ class TCellCompartment(Generator):
             'division': division}
 
     def generate_topology(self, config):
+        boundary_path = config['boundary_path']
+        agents_path = config['agents_path']
         return {
             't_cell': {
                 'internal': ('internal',),
-                'boundary': self.boundary_path,
-                'global': self.boundary_path},
+                'boundary': boundary_path,
+                'global': boundary_path},
             'division': {
-                'global': self.boundary_path,
-                'cells': self.agents_path},
+                'global': boundary_path,
+                'cells': agents_path},
             }

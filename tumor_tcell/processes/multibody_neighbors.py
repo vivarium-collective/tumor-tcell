@@ -15,7 +15,6 @@ import math
 
 import numpy as np
 
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -27,13 +26,13 @@ from vivarium.core.process import Process
 from vivarium.core.composition import (
     process_in_experiment,
     simulate_experiment,
-    PROCESS_OUT_DIR,
 )
 
+# directories
+from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'multibody_neighbors'
-
 DEFAULT_BOUNDS = [10, 10]
 
 # constants
