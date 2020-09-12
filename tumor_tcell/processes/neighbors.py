@@ -33,8 +33,7 @@ PI = math.pi
 
 
 
-def sphere_volume_from_diameter(diameter_unit):
-    diameter = diameter_unit.magnitude
+def sphere_volume_from_diameter(diameter):
     radius = diameter / 2
     volume = 4 / 3 * (PI * radius**3)
     return volume
@@ -72,7 +71,7 @@ class Neighbors(Process):
 
     name = NAME
     defaults = {
-        'time_step': 10,
+        'time_step': 2,
         'cells': {},
         'jitter_force': 0.0,  # pN
         'bounds': DEFAULT_BOUNDS,
@@ -115,7 +114,7 @@ class Neighbors(Process):
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0 * units.um,
+                        '_default': 1.0, #* units.um,
                         '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
@@ -156,15 +155,16 @@ class Neighbors(Process):
         # get neighbors
         cell_neighbors = self.get_neighbors(cell_positions)
 
-        # TODO exchange molecules with neighbors
         # import ipdb; ipdb.set_trace()
 
         update = {
-            cell_id: {
-                'boundary': {
-                    'location': list(cell_positions[cell_id])
-                }
-            } for cell_id in cells.keys()
+            'cells': {
+                cell_id: {
+                    'boundary': {
+                        'location': list(cell_positions[cell_id])
+                    }
+                } for cell_id in cells.keys()
+            }
         }
         return update
 
@@ -189,7 +189,7 @@ class Neighbors(Process):
             data = data['boundary']
             x_center = data['location'][0]
             y_center = data['location'][1]
-            diameter = data['diameter'].magnitude
+            diameter = data['diameter']
 
             # get bottom left position
             radius = (diameter / 2)
@@ -209,7 +209,7 @@ class Neighbors(Process):
 # configs
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1 * units.um
+    diameter = 1
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
