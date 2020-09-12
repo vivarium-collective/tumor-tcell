@@ -114,7 +114,7 @@ class Neighbors(Process):
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0, #* units.um,
+                        '_default': 1.0 * units.um,
                         '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
@@ -192,7 +192,7 @@ class Neighbors(Process):
             diameter = data['diameter']
 
             # get bottom left position
-            radius = (diameter / 2)
+            radius = (diameter / 2).to('um').magnitude
             x = x_center - radius
             y = y_center - radius
 
@@ -209,7 +209,7 @@ class Neighbors(Process):
 # configs
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1
+    diameter = 1.0 * units.um
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -265,7 +265,7 @@ def simulate_growth_division(config, settings):
     # get simulation settings
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
-    division_volume = settings.get('division_volume', 0.4)
+    division_volume = settings.get('division_volume', 0.4) * units.um ** 3
     total_time = settings.get('total_time', 10)
     timestep = 1
 
