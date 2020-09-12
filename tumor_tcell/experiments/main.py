@@ -50,7 +50,7 @@ def simulation_1(
 
     # configure the cells
     cell_config = [{
-        'number': 1,
+        'number': 3,
         'name': tumor_id,
         'type': TumorAgent,
         'config': {
@@ -58,7 +58,7 @@ def simulation_1(
         },
         },
         {
-        'number': 1,
+        'number': 3,
         'name': tcell_id,
         'type': TCellAgent,
         'config': {

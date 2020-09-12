@@ -33,7 +33,8 @@ PI = math.pi
 
 
 
-def sphere_volume_from_diameter(diameter):
+def sphere_volume_from_diameter(diameter_unit):
+    diameter = diameter_unit.magnitude
     radius = diameter / 2
     volume = 4 / 3 * (PI * radius**3)
     return volume
@@ -71,7 +72,7 @@ class Neighbors(Process):
 
     name = NAME
     defaults = {
-        'time_step': 2,
+        'time_step': 10,
         'cells': {},
         'jitter_force': 0.0,  # pN
         'bounds': DEFAULT_BOUNDS,
@@ -152,12 +153,33 @@ class Neighbors(Process):
         # get new cell positions
         cell_positions = self.physics.get_body_positions()
 
-        # TODO -- get neighbors
-        import ipdb; ipdb.set_trace()
+        # get neighbors
+        cell_neighbors = self.get_neighbors(cell_positions)
 
+        # TODO exchange molecules with neighbors
+        # import ipdb; ipdb.set_trace()
 
-        return {
-            'cells': cell_positions}
+        update = {
+            cell_id: {
+                'boundary': {
+                    'location': list(cell_positions[cell_id])
+                }
+            } for cell_id in cells.keys()
+        }
+        return update
+
+    def get_neighbors(self, cell_positions):
+        cell_neighbors = {}
+        for cell_id, position in cell_positions.items():
+            other_cell_locations = {
+                location: other_id
+                for other_id, location in cell_positions.items()
+                if other_id is not cell_id}
+            dist = lambda x, y: (x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2
+            closest = min(list(other_cell_locations.keys()), key=lambda co: dist(co, position))
+            neighbor_id = other_cell_locations[closest]
+            cell_neighbors[cell_id] = neighbor_id
+        return cell_neighbors
 
     ## matplotlib interactive plot
     def animate_frame(self, cells):
@@ -167,7 +189,7 @@ class Neighbors(Process):
             data = data['boundary']
             x_center = data['location'][0]
             y_center = data['location'][1]
-            diameter = data['diameter']
+            diameter = data['diameter'].magnitude
 
             # get bottom left position
             radius = (diameter / 2)
@@ -187,7 +209,7 @@ class Neighbors(Process):
 # configs
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1
+    diameter = 1 * units.um
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')

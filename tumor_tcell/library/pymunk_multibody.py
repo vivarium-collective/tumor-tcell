@@ -1,11 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-
-# Python imports
 import random
 import math
-import numpy as nppython
 
 # pymunk imports
 import pymunkoptions
@@ -282,14 +278,11 @@ class PymunkMultibody(object):
 
     def get_body_position(self, cell_id):
         body, shape = self.bodies[cell_id]
-        return {
-            'location': [pos for pos in body.position],
-        }
+        return tuple(pos for pos in body.position)
 
     def get_body_positions(self):
         return {
-            body_id: {
-                'boundary': self.get_body_position(body_id)}
+            body_id: self.get_body_position(body_id)
             for body_id in self.bodies.keys()}
 
 
