@@ -35,7 +35,6 @@ class Fields(Process):
         'depth': 3000.0,  # um
         'diffusion': 5e-1,
         'gradient': {},
-        'agents': {},
     }
 
     def __init__(self, parameters=None):
@@ -48,10 +47,10 @@ class Fields(Process):
                 '_updater': 'set'}
             for molecule in self.molecule_ids}
 
-        schema = {'agents': {}}
+        schema = {'cells': {}}
         for agent_id, states in self.initial_agents.items():
             location = states['boundary'].get('location', [])
-            schema['agents'][agent_id] = {
+            schema['cells'][agent_id] = {
                 'boundary': {
                     'location': {
                         '_value': location},
@@ -64,7 +63,7 @@ class Fields(Process):
                         '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set'},
                     'external': local_concentration_schema}}}
-        schema['agents'].update(glob_schema)
+        schema['cells'].update(glob_schema)
 
         # fields
         fields_schema = {
@@ -104,17 +103,24 @@ class Fields(Process):
 
     def next_update(self, timestep, states):
         fields = states['fields']
-        agents = states['agents']
+        cells = states['cells']
 
         # diffuse field
         delta_fields = self.diffuse(fields, timestep)
 
+
+        # get neighbors
+        # secrete
+        # t-cells secrete a count of IFNg, needs to convert to concentration for tumors
+        # TODO -- IFNg gets secreted from t-cells in the environment based on tumor neighbors (in fields process)
+
+
         # get each agent's local environment
-        local_environments = self.get_local_environments(agents, fields)
+        local_environments = self.get_local_environments(cells, fields)
 
         update = {'fields': delta_fields}
         if local_environments:
-            update.update({'agents': local_environments})
+            update.update({'cells': local_environments})
 
         return update
 
@@ -133,10 +139,10 @@ class Fields(Process):
             local_environment[mol_id] = field[bin_site]
         return local_environment
 
-    def get_local_environments(self, agents, fields):
+    def get_local_environments(self, cells, fields):
         local_environments = {}
-        if agents:
-            for agent_id, specs in agents.items():
+        if cells:
+            for agent_id, specs in cells.items():
                 local_environments[agent_id] = {'boundary': {}}
                 local_environments[agent_id]['boundary']['external'] = \
                     self.get_single_local_environments(specs['boundary'], fields)

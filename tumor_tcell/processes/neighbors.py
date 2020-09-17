@@ -106,6 +106,7 @@ class Neighbors(Process):
         glob_schema = {
             '*': {
                 'boundary': {
+                    'cell_type': {},
                     'location': {
                         '_emit': True,
                         '_default': [
@@ -114,7 +115,7 @@ class Neighbors(Process):
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0 * units.um,
+                        # '_default': 1.0 * units.um,
                         '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
@@ -153,16 +154,31 @@ class Neighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
+        # TODO -- only count neighbor if they are within 1 um from outer boundary of cell
+        # TODO -- T-cells polarize to one tumor cell: find the closest
+        # TODO -- we need to know which cell is a tumor and which is a t-cell
+        # TODO tumors can have multiple t-cell neighbors (within 1 um), but t-cells only have one tumor neighbor.
         cell_neighbors = self.get_neighbors(cell_positions)
 
-        # import ipdb; ipdb.set_trace()
+
+        # exchange molecules based on neighbors
+        # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
+        # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
+        exchange = {}
+        # import ipdb;
+        # ipdb.set_trace()
+
+
+
+
 
         update = {
             'cells': {
                 cell_id: {
                     'boundary': {
                         'location': list(cell_positions[cell_id])
-                    }
+                    },
+                    'neighbors': exchange[cell_id]
                 } for cell_id in cells.keys()
             }
         }

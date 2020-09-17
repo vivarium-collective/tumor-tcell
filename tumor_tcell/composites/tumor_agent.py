@@ -10,6 +10,7 @@ class TumorAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
+        'tumor': {},
         'divide': True,
         '_schema': {},
     }
@@ -20,7 +21,7 @@ class TumorAgent(Generator):
     def generate_processes(self, config):
 
         # initialize processes
-        tumor = TumorProcess(config.get('tumor', {}))
+        tumor = TumorProcess(config['tumor'])
 
         # make dictionary of processes
         processes = {
@@ -64,3 +65,5 @@ class TumorAgent(Generator):
                     'agents': agents_path,
                 }})
         return topology
+
+# if __name__ == '__main__':

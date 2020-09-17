@@ -12,6 +12,7 @@ from vivarium.core.composition import (
     agent_environment_experiment,
     plot_agents_multigen,
 )
+from vivarium.library.units import units
 
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
@@ -44,27 +45,36 @@ def simulation_1(
     out_dir='out'
 ):
     total_time = 1000
+    bounds = [100, 100]  # TODO - add units to bounds
     time_step = 60
     tumor_id = 'tumor'
     tcell_id = 'tcell'
 
     # configure the cells
-    cell_config = [{
-        'number': 3,
-        'name': tumor_id,
-        'type': TumorAgent,
-        'config': {
-            'time_step': time_step,
-        },
+    cell_config = [
+        {
+            'number': 3,
+            'name': tumor_id,
+            'type': TumorAgent,
+            'config': {},
         },
         {
-        'number': 3,
-        'name': tcell_id,
-        'type': TCellAgent,
-        'config': {
-            'time_step': time_step,
+            'number': 1,
+            'name': 'big_tumor',
+            'type': TumorAgent,
+            'config': {
+                'tumor': {
+                    'diameter': 50 * units.um,
+                }
+            },
         },
-        }]
+        {
+            'number': 3,
+            'name': tcell_id,
+            'type': TCellAgent,
+            'config': {},
+        }
+    ]
     make_agent_ids(cell_config)
 
     # configure the environment
@@ -72,7 +82,7 @@ def simulation_1(
         'type': TumorMicroEnvironment,
         'config': {
             'neighbors': {
-                'time_step': time_step,
+                'bounds': bounds,
             }
         },
     }
@@ -116,6 +126,7 @@ def simulation_1(
 simulation_experiments_library = {
     '1': simulation_1
 }
+
 
 # main experiment functions
 def add_arguments():
