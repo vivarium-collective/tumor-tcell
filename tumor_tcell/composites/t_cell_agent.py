@@ -63,6 +63,3 @@ class TCellAgent(Generator):
                     'agents': agents_path,
                 }})
         return topology
-
-
-# if __name__ == '__main__':

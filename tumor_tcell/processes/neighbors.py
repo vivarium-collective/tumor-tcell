@@ -26,7 +26,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'neighbors'
-DEFAULT_BOUNDS = [10 * units.mm, 10 * units.mm]
+DEFAULT_BOUNDS = [10, 10]
 
 # constants
 PI = math.pi
@@ -42,12 +42,6 @@ def make_random_position(bounds):
     return [
         np.random.uniform(0, bounds[0]),
         np.random.uniform(0, bounds[1])]
-
-def convert_to_micron(value):
-    if isinstance(value, list):
-        return [v.to('um').magnitude for v in value]
-    else:
-        return v.to('um').magnitude
 
 
 class Neighbors(Process):
@@ -81,7 +75,6 @@ class Neighbors(Process):
         'cells': {},
         'jitter_force': 0.0,  # pN
         'bounds': DEFAULT_BOUNDS,
-        'neighbor_distance': 1 * units.um,
         'animate': False,
     }
 
@@ -97,7 +90,7 @@ class Neighbors(Process):
         multibody_config = {
             'cell_shape': 'circle',
             'jitter_force': jitter_force,
-            'bounds': convert_to_micron(self.bounds),
+            'bounds': self.bounds,
             'physics_dt': time_step / 10,
         }
         self.physics = PymunkMultibody(multibody_config)
@@ -113,9 +106,6 @@ class Neighbors(Process):
         glob_schema = {
             '*': {
                 'boundary': {
-                    'cell_type': {
-                        '_default': 'none',
-                    },
                     'location': {
                         '_emit': True,
                         '_default': [
@@ -124,7 +114,7 @@ class Neighbors(Process):
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        # '_default': 1.0 * units.um,
+                        '_default': 1.0, #* units.um,
                         '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
@@ -163,30 +153,16 @@ class Neighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
-        # TODO -- only count neighbor if they are within 1 um from outer boundary of cell
-        # TODO -- T-cells polarize to one tumor cell: find the closest
-        # TODO -- we need to know which cell is a tumor and which is a t-cell
-        # TODO tumors can have multiple t-cell neighbors (within 1 um), but t-cells only have one tumor neighbor.
         cell_neighbors = self.get_neighbors(cell_positions)
 
-
-        # exchange molecules based on neighbors
-        # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
-        # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
-        exchange = {}
-
-        # import ipdb;
-        # ipdb.set_trace()
-
-
+        # import ipdb; ipdb.set_trace()
 
         update = {
             'cells': {
                 cell_id: {
                     'boundary': {
                         'location': list(cell_positions[cell_id])
-                    },
-                    'neighbors': exchange.get(cell_id)
+                    }
                 } for cell_id in cells.keys()
             }
         }
@@ -203,12 +179,6 @@ class Neighbors(Process):
             closest = min(list(other_cell_locations.keys()), key=lambda co: dist(co, position))
             neighbor_id = other_cell_locations[closest]
             cell_neighbors[cell_id] = neighbor_id
-
-
-            # TODO -- use self.parameters['neighbor_distance'], and the cell's own radius
-
-
-
         return cell_neighbors
 
     ## matplotlib interactive plot
@@ -222,7 +192,7 @@ class Neighbors(Process):
             diameter = data['diameter']
 
             # get bottom left position
-            radius = (diameter / 2).to('um').magnitude
+            radius = (diameter / 2)
             x = x_center - radius
             y = y_center - radius
 
@@ -239,7 +209,7 @@ class Neighbors(Process):
 # configs
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1.0 * units.um
+    diameter = 1
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -295,7 +265,7 @@ def simulate_growth_division(config, settings):
     # get simulation settings
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
-    division_volume = settings.get('division_volume', 0.4) * units.um ** 3
+    division_volume = settings.get('division_volume', 0.4)
     total_time = settings.get('total_time', 10)
     timestep = 1
 

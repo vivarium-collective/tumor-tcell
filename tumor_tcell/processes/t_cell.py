@@ -136,9 +136,6 @@ class TCellProcess(Process):
                     '_updater': 'accumulate'}
             },
             'boundary': {
-                'cell_type': {
-                    '_value': 't-cell'
-                },
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },

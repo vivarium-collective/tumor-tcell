@@ -112,9 +112,6 @@ class TumorProcess(Process):
                     '_updater': 'accumulate'}
             },
             'boundary': {
-                'cell_type': {
-                    '_value': 'tumor'
-                },
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },
