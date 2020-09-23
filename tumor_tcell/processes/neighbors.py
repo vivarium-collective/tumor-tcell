@@ -26,7 +26,8 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'neighbors'
-DEFAULT_BOUNDS = [10, 10]
+DEFAULT_LENGTH_UNIT = units.mm
+DEFAULT_BOUNDS = [10 * units.mm, 10 * units.mm]
 
 # constants
 PI = math.pi
@@ -43,6 +44,11 @@ def make_random_position(bounds):
         np.random.uniform(0, bounds[0]),
         np.random.uniform(0, bounds[1])]
 
+def convert_to_unit(value, unit=None):
+    if isinstance(value, list):
+        return [v.to(unit).magnitude for v in value]
+    else:
+        return value.to(unit).magnitude
 
 class Neighbors(Process):
     """ Neighbors process for tracking cell bodies.
@@ -82,12 +88,14 @@ class Neighbors(Process):
     def __init__(self, parameters=None):
         super(Neighbors, self).__init__(parameters)
 
+        self.pymunk_dist_unit = DEFAULT_LENGTH_UNIT
+
         # make the multibody object
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
             'jitter_force': self.parameters['jitter_force'],
-            'bounds': self.parameters['bounds'],
+            'bounds': convert_to_unit(self.parameters['bounds'], self.pymunk_dist_unit),
             'physics_dt': time_step / 10}
         self.physics = PymunkMultibody(multibody_config)
 
@@ -134,6 +142,22 @@ class Neighbors(Process):
         schema = {'cells': glob_schema}
         return schema
 
+    def cells_to_pymunk_units(self, cell_data):
+        self.pymunk_dist_unit
+        cell_data_out={}
+        for cell_id, specs in cell_data.items():
+            if isinstance(value, dict):
+                dict_out[key] = _remove_units_dict(value)
+            else:
+                if isinstance(value, Quantity):
+                    dict_out[key] = value.magnitude
+                elif isinstance(value, list):
+                    dict_out[key] = _remove_units_list(value)
+                else:
+                    dict_out[key] = value
+
+        return cell_data_out
+
     def next_update(self, timestep, states):
         cells = states['cells']
 
@@ -142,7 +166,7 @@ class Neighbors(Process):
             self.animate_frame(cells)
 
         # update multibody with new calls
-        self.physics.update_bodies(remove_units(cells))
+        self.physics.update_bodies(self.to_pymunk_units(cells))
 
         # run simulation
         self.physics.run(timestep)

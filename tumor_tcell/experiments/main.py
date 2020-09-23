@@ -32,7 +32,7 @@ def simulation_1(out_dir='out'):
 
     # experiment parameters
     total_time = 100 #0
-    bounds = [100, 100]  #[100 * units.mm, 100 * units.mm]  # TODO - add units to bounds
+    bounds = [100 * units.mm, 100 * units.mm]
     time_step = 60
     tumor_id = 'tumor'
     tcell_id = 'tcell'
