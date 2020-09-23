@@ -27,6 +27,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'neighbors'
 DEFAULT_LENGTH_UNIT = units.mm
+DEFAULT_MASS_UNIT = units.fg
 DEFAULT_BOUNDS = [10 * units.mm, 10 * units.mm]
 
 # constants
@@ -40,9 +41,10 @@ def sphere_volume_from_diameter(diameter):
     return volume
 
 def make_random_position(bounds):
-    return [
-        np.random.uniform(0, bounds[0]),
-        np.random.uniform(0, bounds[1])]
+    return [np.random.uniform(0, bound.magnitude) for bound in bounds]
+    # return [
+    #     np.random.uniform(0, bounds[0]),
+    #     np.random.uniform(0, bounds[1])]
 
 def convert_to_unit(value, unit=None):
     if isinstance(value, list):
@@ -88,14 +90,17 @@ class Neighbors(Process):
     def __init__(self, parameters=None):
         super(Neighbors, self).__init__(parameters)
 
-        self.pymunk_dist_unit = DEFAULT_LENGTH_UNIT
+        self.pymunk_length_unit = DEFAULT_LENGTH_UNIT
+        self.pymunk_mass_unit = DEFAULT_MASS_UNIT
+        self.neighbor_distance = self.parameters['neighbor_distance'].to(self.pymunk_length_unit).magnitude
+        self.cell_loc_units = {}
 
         # make the multibody object
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
             'jitter_force': self.parameters['jitter_force'],
-            'bounds': convert_to_unit(self.parameters['bounds'], self.pymunk_dist_unit),
+            'bounds': convert_to_unit(self.parameters['bounds'], self.pymunk_length_unit),
             'physics_dt': time_step / 10}
         self.physics = PymunkMultibody(multibody_config)
 
@@ -142,46 +147,61 @@ class Neighbors(Process):
         schema = {'cells': glob_schema}
         return schema
 
-    def cells_to_pymunk_units(self, cell_data):
-        self.pymunk_dist_unit
-        cell_data_out={}
-        for cell_id, specs in cell_data.items():
-            if isinstance(value, dict):
-                dict_out[key] = _remove_units_dict(value)
-            else:
-                if isinstance(value, Quantity):
-                    dict_out[key] = value.magnitude
-                elif isinstance(value, list):
-                    dict_out[key] = _remove_units_list(value)
-                else:
-                    dict_out[key] = value
+    def cells_to_pymunk_units(self, cells):
+        for cell_id, specs in cells.items():
+            # convert location
+            cells[cell_id]['boundary']['location'] = [loc.to(self.pymunk_length_unit).magnitude for loc in specs['boundary']['location']]
+            # convert diameter
+            cells[cell_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.pymunk_length_unit).magnitude
+            # convert mass
+            cells[cell_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.pymunk_mass_unit).magnitude
+        return cells
 
-        return cell_data_out
+    def pymunk_to_cell_units(self, locations, cells):
+        cell_locations = {}
+        for cell_id, locs in locations.items():
+            cell_locations[cell_id] = [(loc * self.pymunk_length_unit).to(self.cell_loc_units[cell_id]) for loc in locs]
+        return cell_locations
+
 
     def next_update(self, timestep, states):
         cells = states['cells']
+
+        # what units are the cells using?
+        # TODO -- make this better....
+        self.cell_loc_units = {}
+        for cell_id, specs in cells.items():
+            self.cell_loc_units[cell_id] = specs['boundary']['location'][0].units
 
         # animate before update
         if self.animate:
             self.animate_frame(cells)
 
-        # update multibody with new calls
-        self.physics.update_bodies(self.to_pymunk_units(cells))
+        # update multibody with new cells
+        # convert and remove units
+        self.physics.update_bodies(self.cells_to_pymunk_units(cells))
 
         # run simulation
         self.physics.run(timestep)
 
         # get new cell positions
+        # add units back on
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
+        # # exchange molecules based on neighbors
+        # # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
+        # # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
+        # exchange = {}
+        # for cell_id, neighbors in cell_neighbors.items():
+        #
+        #     import ipdb; ipdb.set_trace()
 
-        # exchange molecules based on neighbors
-        # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
-        # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
-        exchange = {}
+
+        # TODO -- need to get units back onto locations.
+        cell_positions = self.pymunk_to_cell_units(cell_positions, cells)
 
         update = {
             'cells': {
@@ -200,15 +220,13 @@ class Neighbors(Process):
             distance = (cell_loc[0] - loc[0]) ** 2 + (cell_loc[1] - loc[1]) ** 2
             neighbor_rad = neighbor_radius[neighbor_id]
             inner_distance = distance - cell_radius - neighbor_rad
-            if inner_distance <= self.parameters['neighbor_distance']:
+            if inner_distance <= self.neighbor_distance:
                 neighbors[neighbor_id] = inner_distance
         return neighbors
 
     def get_all_neighbors(self, cells, current_positions):
         '''
         only count neighbor if they are within 'neighbor_distance' from outer boundary of cell
-        TODO -- T-cells polarize to one tumor cell: find the closest
-        TODO tumors can have multiple t-cell neighbors (within 1 um), but t-cells only have one tumor neighbor.
         '''
 
         tcell_positions = {
@@ -224,28 +242,19 @@ class Neighbors(Process):
             for cell_id, specs in cells.items()}
 
         cell_neighbors = {}
+
+        # t-cells polarize to one tumor cell: find the closest
         for cell_id, location in tcell_positions.items():
             radius = cell_radii[cell_id]
             neighbors = self.get_neighbors(location, radius, tumor_positions, cell_radii)
+            cell_neighbors[cell_id] = [min(neighbors, key=neighbors.get)]
 
-            import ipdb; ipdb.set_trace()
-
+        # tumors can have multiple t-cell neighbors
         for cell_id, location in tumor_positions.items():
             radius = cell_radii[cell_id]
             neighbors = self.get_neighbors(location, radius, tcell_positions, cell_radii)
+            cell_neighbors[cell_id] = list(neighbors.keys())
 
-            import ipdb;
-            ipdb.set_trace()
-
-        # for cell_id, position in cell_positions.items():
-        #     other_cell_locations = {
-        #         location: other_id
-        #         for other_id, location in cell_positions.items()
-        #         if other_id is not cell_id}
-        #     dist = lambda x, y: (x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2
-        #     closest = min(list(other_cell_locations.keys()), key=lambda co: dist(co, position))
-        #     neighbor_id = other_cell_locations[closest]
-        #     cell_neighbors[cell_id] = neighbor_id
         return cell_neighbors
 
     ## matplotlib interactive plot
