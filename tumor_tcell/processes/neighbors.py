@@ -73,26 +73,22 @@ class Neighbors(Process):
     defaults = {
         'time_step': 2,
         'cells': {},
-        'jitter_force': 0.0,  # pN
+        'jitter_force': 0.0,
         'bounds': DEFAULT_BOUNDS,
+        'neighbor_distance': 1 * units.um,
         'animate': False,
     }
 
     def __init__(self, parameters=None):
         super(Neighbors, self).__init__(parameters)
 
-        # multibody parameters
-        jitter_force = self.parameters['jitter_force']
-        self.bounds = self.parameters['bounds']
-
         # make the multibody object
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
-            'jitter_force': jitter_force,
-            'bounds': self.bounds,
-            'physics_dt': time_step / 10,
-        }
+            'jitter_force': self.parameters['jitter_force'],
+            'bounds': self.parameters['bounds'],
+            'physics_dt': time_step / 10}
         self.physics = PymunkMultibody(multibody_config)
 
         # interactive plot for visualization
@@ -106,11 +102,12 @@ class Neighbors(Process):
         glob_schema = {
             '*': {
                 'boundary': {
+                    # cell_type must be either 'tumor' or 't_cell'
                     'cell_type': {},
                     'location': {
                         '_emit': True,
                         '_default': [
-                            0.5 * bound for bound in self.bounds],
+                            0.5 * bound for bound in self.parameters['bounds']],
                         '_updater': 'set',
                         '_divider': 'set'},
                     'diameter': {
@@ -154,11 +151,7 @@ class Neighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
-        # TODO -- only count neighbor if they are within 1 um from outer boundary of cell
-        # TODO -- T-cells polarize to one tumor cell: find the closest
-        # TODO -- we need to know which cell is a tumor and which is a t-cell
-        # TODO tumors can have multiple t-cell neighbors (within 1 um), but t-cells only have one tumor neighbor.
-        cell_neighbors = self.get_neighbors(cell_positions)
+        cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
 
         # exchange molecules based on neighbors
@@ -177,17 +170,58 @@ class Neighbors(Process):
         }
         return update
 
-    def get_neighbors(self, cell_positions):
+    def get_neighbors(self, cell_loc, cell_radius, neighbor_loc, neighbor_radius):
+        neighbors = {}
+        for neighbor_id, loc in neighbor_loc.items():
+            distance = (cell_loc[0] - loc[0]) ** 2 + (cell_loc[1] - loc[1]) ** 2
+            neighbor_rad = neighbor_radius[neighbor_id]
+            inner_distance = distance - cell_radius - neighbor_rad
+            if inner_distance <= self.parameters['neighbor_distance']:
+                neighbors[neighbor_id] = inner_distance
+        return neighbors
+
+    def get_all_neighbors(self, cells, current_positions):
+        '''
+        only count neighbor if they are within 'neighbor_distance' from outer boundary of cell
+        TODO -- T-cells polarize to one tumor cell: find the closest
+        TODO tumors can have multiple t-cell neighbors (within 1 um), but t-cells only have one tumor neighbor.
+        '''
+
+        tcell_positions = {
+            cell_id: current_positions[cell_id]
+            for cell_id, specs in cells.items()
+            if specs['boundary']['cell_type'] == 't-cell'}
+        tumor_positions = {
+            cell_id: current_positions[cell_id]
+            for cell_id, specs in cells.items()
+            if specs['boundary']['cell_type'] == 'tumor'}
+        cell_radii = {
+            cell_id: (specs['boundary']['diameter'] / 2)
+            for cell_id, specs in cells.items()}
+
         cell_neighbors = {}
-        for cell_id, position in cell_positions.items():
-            other_cell_locations = {
-                location: other_id
-                for other_id, location in cell_positions.items()
-                if other_id is not cell_id}
-            dist = lambda x, y: (x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2
-            closest = min(list(other_cell_locations.keys()), key=lambda co: dist(co, position))
-            neighbor_id = other_cell_locations[closest]
-            cell_neighbors[cell_id] = neighbor_id
+        for cell_id, location in tcell_positions.items():
+            radius = cell_radii[cell_id]
+            neighbors = self.get_neighbors(location, radius, tumor_positions, cell_radii)
+
+            import ipdb; ipdb.set_trace()
+
+        for cell_id, location in tumor_positions.items():
+            radius = cell_radii[cell_id]
+            neighbors = self.get_neighbors(location, radius, tcell_positions, cell_radii)
+
+            import ipdb;
+            ipdb.set_trace()
+
+        # for cell_id, position in cell_positions.items():
+        #     other_cell_locations = {
+        #         location: other_id
+        #         for other_id, location in cell_positions.items()
+        #         if other_id is not cell_id}
+        #     dist = lambda x, y: (x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2
+        #     closest = min(list(other_cell_locations.keys()), key=lambda co: dist(co, position))
+        #     neighbor_id = other_cell_locations[closest]
+        #     cell_neighbors[cell_id] = neighbor_id
         return cell_neighbors
 
     ## matplotlib interactive plot
@@ -209,8 +243,8 @@ class Neighbors(Process):
             circle = patches.Circle((x, y), radius, linewidth=1, edgecolor='b')
             self.ax.add_patch(circle)
 
-        plt.xlim([0, self.bounds[0]])
-        plt.ylim([0, self.bounds[1]])
+        plt.xlim([0, self.parameters['bounds'][0]])
+        plt.ylim([0, self.parameters['bounds'][1]])
         plt.draw()
         plt.pause(0.01)
 
