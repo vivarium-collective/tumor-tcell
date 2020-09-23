@@ -31,7 +31,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 def simulation_1(out_dir='out'):
 
     # experiment parameters
-    total_time = 100 #0
+    total_time = 100000
     bounds = [100 * units.mm, 100 * units.mm]
     time_step = 60
     tumor_id = 'tumor'

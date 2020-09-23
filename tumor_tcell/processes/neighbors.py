@@ -34,7 +34,7 @@ DEFAULT_BOUNDS = [10 * units.mm, 10 * units.mm]
 PI = math.pi
 
 
-
+# helper functions
 def sphere_volume_from_diameter(diameter):
     radius = diameter / 2
     volume = 4 / 3 * (PI * radius**3)
@@ -51,6 +51,23 @@ def convert_to_unit(value, unit=None):
         return [v.to(unit).magnitude for v in value]
     else:
         return value.to(unit).magnitude
+
+def add_to_dict(dict, added):
+    for k, v in added.items():
+        if k in dict:
+            dict[k] += v
+        else:
+            dict[k] = v
+    return dict
+
+def remove_from_dict(dict, removed):
+    for k, v in removed.items():
+        if k in dict:
+            dict[k] -= v
+        else:
+            dict[k] = -v
+    return dict
+
 
 class Neighbors(Process):
     """ Neighbors process for tracking cell bodies.
@@ -139,8 +156,8 @@ class Neighbors(Process):
                     # 'cytotoxic_packets': {},
                     # 'PDL1': {},
                     # 'MHCI': {}
-                    # TODO -- tumors required cytotoxic_packets and PD1
-                    # TODO -- t cells require PDL1 and MHCI
+                    # TODO -- tumors receive cytotoxic_packets and PD1
+                    # TODO -- t-cells receive PDL1 and MHCI
                 }
             }
         }
@@ -189,32 +206,37 @@ class Neighbors(Process):
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
-        # exchange molecules with neighbors
+        # exchange with neighbors
         # TODO -- need to bring the delivery back down to 0?
         # TODO -- packet needs to be split up amongst t-cells?
         exchange = {cell_id: {} for cell_id in cells.keys()}
+
         for cell_id, neighbors in cell_neighbors.items():
             packet = cells[cell_id]['neighbors']
-
             # t-cell get ligand from tumor neighbors (PDL1, MHCI)
             if cells[cell_id]['boundary']['cell_type'] == 'tumor':
                 for neighbor in neighbors:
-                    exchange[neighbor] = packet
-
+                    exchange[neighbor] = add_to_dict(exchange[neighbor], packet)
             # tumors get cytotoxic packets from their t-cell neighbors
             if cells[cell_id]['boundary']['cell_type'] == 't-cell':
                 for neighbor in neighbors:
-                    exchange[neighbor] = packet
+                    exchange[neighbor] = add_to_dict(exchange[neighbor], packet)
+
+            # remove from cell's exchange
+            exchange[cell_id] = remove_from_dict(exchange[cell_id], packet)
+
+        # print(exchange)
 
         # get units back onto locations
-        # TODO -- clean this up
+        # TODO (Eran) -- clean this up
         cell_positions = self.pymunk_to_cell_units(cell_positions, cells)
 
         update = {
             'cells': {
                 cell_id: {
                     'boundary': {
-                        'location': list(cell_positions[cell_id])
+                        'location': list(cell_positions[cell_id]),
+                        'exchange': exchange[cell_id],
                     }
                 } for cell_id in cells.keys()
             }
