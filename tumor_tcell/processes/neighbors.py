@@ -26,7 +26,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'neighbors'
-DEFAULT_BOUNDS = [10, 10]
+DEFAULT_BOUNDS = [10 * units.mm, 10 * units.mm]
 
 # constants
 PI = math.pi
@@ -42,6 +42,12 @@ def make_random_position(bounds):
     return [
         np.random.uniform(0, bounds[0]),
         np.random.uniform(0, bounds[1])]
+
+def convert_to_micron(value):
+    if isinstance(value, list):
+        return [v.to('um').magnitude for v in value]
+    else:
+        return v.to('um').magnitude
 
 
 class Neighbors(Process):
@@ -75,6 +81,7 @@ class Neighbors(Process):
         'cells': {},
         'jitter_force': 0.0,  # pN
         'bounds': DEFAULT_BOUNDS,
+        'neighbor_distance': 1 * units.um,
         'animate': False,
     }
 
@@ -90,7 +97,7 @@ class Neighbors(Process):
         multibody_config = {
             'cell_shape': 'circle',
             'jitter_force': jitter_force,
-            'bounds': self.bounds,
+            'bounds': convert_to_micron(self.bounds),
             'physics_dt': time_step / 10,
         }
         self.physics = PymunkMultibody(multibody_config)
@@ -106,7 +113,9 @@ class Neighbors(Process):
         glob_schema = {
             '*': {
                 'boundary': {
-                    'cell_type': {},
+                    'cell_type': {
+                        '_default': 'none',
+                    },
                     'location': {
                         '_emit': True,
                         '_default': [
@@ -165,10 +174,9 @@ class Neighbors(Process):
         # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
         # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
         exchange = {}
+
         # import ipdb;
         # ipdb.set_trace()
-
-
 
 
 
@@ -178,7 +186,7 @@ class Neighbors(Process):
                     'boundary': {
                         'location': list(cell_positions[cell_id])
                     },
-                    'neighbors': exchange[cell_id]
+                    'neighbors': exchange.get(cell_id)
                 } for cell_id in cells.keys()
             }
         }
@@ -195,6 +203,12 @@ class Neighbors(Process):
             closest = min(list(other_cell_locations.keys()), key=lambda co: dist(co, position))
             neighbor_id = other_cell_locations[closest]
             cell_neighbors[cell_id] = neighbor_id
+
+
+            # TODO -- use self.parameters['neighbor_distance'], and the cell's own radius
+
+
+
         return cell_neighbors
 
     ## matplotlib interactive plot
