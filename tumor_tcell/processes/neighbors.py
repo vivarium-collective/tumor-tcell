@@ -252,7 +252,12 @@ class InvokeUpdate(object):
         return self.update
 
 
-def simulate_growth_division(config, settings):
+default_gd_config = {'bounds': DEFAULT_BOUNDS}
+default_gd_config.update(cell_body_config({
+    'bounds': DEFAULT_BOUNDS,
+    'cell_ids': ['1', '2']}))
+
+def test_growth_division(config=default_gd_config, settings={}):
     initial_cells_state = config['cells']
 
     # make the process
@@ -275,7 +280,7 @@ def simulate_growth_division(config, settings):
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
     division_volume = settings.get('division_volume', 0.4)
-    total_time = settings.get('total_time', 10)
+    total_time = settings.get('total_time', 120)
     timestep = 1
 
     time = 0
@@ -345,7 +350,7 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
         'bounds': bounds,
         'cell_ids': cell_ids}
     gd_config.update(cell_body_config(body_config))
-    gd_data = simulate_growth_division(gd_config, settings)
+    gd_data = test_growth_division(gd_config, settings)
 
 
 
