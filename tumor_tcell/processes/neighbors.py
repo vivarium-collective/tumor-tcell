@@ -153,9 +153,17 @@ class Neighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
+        # TODO -- only count neighbor if they are within 1 um from outer boundary of cell
+        # TODO -- T-cells polarize to one tumor cell: find the closest
+        # TODO -- we need to know which cell is a tumor and which is a t-cell
+        # TODO tumors can have multiple t-cell neighbors (within 1 um), but t-cells only have one tumor neighbor.
         cell_neighbors = self.get_neighbors(cell_positions)
 
-        # import ipdb; ipdb.set_trace()
+
+        # exchange molecules based on neighbors
+        # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
+        # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
+        exchange = {}
 
         update = {
             'cells': {
@@ -315,6 +323,7 @@ def simulate_growth_division(config, settings):
         # update experiment
         experiment.send_updates(invoked_update)
 
+    experiment.end()
     return experiment.emitter.get_data()
 
 def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors'):
