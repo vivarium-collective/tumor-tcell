@@ -32,7 +32,7 @@ def control(experiments_library):
     Execute experiments from the command line
     """
 
-    out_dir = os.path.join(EXPERIMENT_OUT_DIR, 'chemotaxis')
+    out_dir = EXPERIMENT_OUT_DIR
     make_dir(out_dir)
 
     args = add_arguments(experiments_library)
