@@ -21,7 +21,7 @@ class TCellAgent(Generator):
     def generate_processes(self, config):
 
         # initialize processes
-        t_cell = TCellProcess(config['tumor'])
+        t_cell = TCellProcess(config['tcell'])
 
         # make dictionary of processes
         processes = {
