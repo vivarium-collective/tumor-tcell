@@ -106,6 +106,7 @@ class Neighbors(Process):
         glob_schema = {
             '*': {
                 'boundary': {
+                    'cell_type': {},
                     'location': {
                         '_emit': True,
                         '_default': [
@@ -114,7 +115,7 @@ class Neighbors(Process):
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0, #* units.um,
+                        # '_default': 1.0, #* units.um,
                         '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {

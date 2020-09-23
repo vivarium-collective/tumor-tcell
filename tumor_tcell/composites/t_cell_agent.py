@@ -10,6 +10,7 @@ class TCellAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
+        'tcell': {},
         'divide': True,
         '_schema': {},
     }
@@ -20,7 +21,7 @@ class TCellAgent(Generator):
     def generate_processes(self, config):
 
         # initialize processes
-        t_cell = TCellProcess(config.get('tumor', {}))
+        t_cell = TCellProcess(config['tumor'])
 
         # make dictionary of processes
         processes = {
