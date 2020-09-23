@@ -177,30 +177,37 @@ class Neighbors(Process):
         if self.animate:
             self.animate_frame(cells)
 
-        # update multibody with new cells
-        # convert and remove units
+        # update multibody with new cells, convert and remove units
         self.physics.update_bodies(self.cells_to_pymunk_units(cells))
 
         # run simulation
         self.physics.run(timestep)
 
-        # get new cell positions
-        # add units back on
+        # get new cell positions, add units back on
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
-        # # exchange molecules based on neighbors
-        # # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
-        # # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
-        # exchange = {}
-        # for cell_id, neighbors in cell_neighbors.items():
-        #
-        #     import ipdb; ipdb.set_trace()
+        # exchange molecules with neighbors
+        # TODO -- need to bring the delivery back down to 0?
+        # TODO -- packet needs to be split up amongst t-cells?
+        exchange = {cell_id: {} for cell_id in cells.keys()}
+        for cell_id, neighbors in cell_neighbors.items():
+            packet = cells[cell_id]['neighbors']
 
+            # t-cell get ligand from tumor neighbors (PDL1, MHCI)
+            if cells[cell_id]['boundary']['cell_type'] == 'tumor':
+                for neighbor in neighbors:
+                    exchange[neighbor] = packet
 
-        # TODO -- need to get units back onto locations.
+            # tumors get cytotoxic packets from their t-cell neighbors
+            if cells[cell_id]['boundary']['cell_type'] == 't-cell':
+                for neighbor in neighbors:
+                    exchange[neighbor] = packet
+
+        # get units back onto locations
+        # TODO -- clean this up
         cell_positions = self.pymunk_to_cell_units(cell_positions, cells)
 
         update = {
