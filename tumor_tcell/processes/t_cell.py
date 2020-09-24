@@ -118,6 +118,7 @@ class TCellProcess(Process):
                 'PD1n_divide_count': {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'zero',
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
@@ -140,7 +141,8 @@ class TCellProcess(Process):
                     '_value': 't-cell'
                 },
                 'diameter': {
-                    '_default': self.parameters['diameter']
+                    '_default': self.parameters['diameter'],
+                    '_divider': 'set',
                 },
                 'IFNg': {
                     '_default': 0,
@@ -156,6 +158,7 @@ class TCellProcess(Process):
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate',
+                    '_divider': 'split',
                 },  # release into the tumor cells
                 'MHCI_timer': {
                     '_default': 0,

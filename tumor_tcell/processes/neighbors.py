@@ -143,7 +143,6 @@ class Neighbors(Process):
                     'diameter': {
                         '_emit': True,
                         # '_default': 1.0, #* units.um,
-                        '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
                         '_emit': True,
