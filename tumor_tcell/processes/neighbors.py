@@ -150,13 +150,15 @@ class Neighbors(Process):
                         '_updater': 'set'},
                 },
                 'neighbors': {
-                    '*': {}
+                    'present': {},
+                    'accept': {},
+                    # }
                     # 'PD1': {},
                     # 'cytotoxic_packets': {},
                     # 'PDL1': {},
                     # 'MHCI': {}
-                    # TODO -- tumors receive cytotoxic_packets and PD1
-                    # TODO -- t-cells receive PDL1 and MHCI
+                    # TODO -- tumors receive cytotoxic_packets and PD1 from the t-cell's boundary
+                    # TODO -- t-cells receive PDL1 and MHCI from the tumors' boundary
                 }
             }
         }
@@ -205,24 +207,39 @@ class Neighbors(Process):
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
+
+        import ipdb; ipdb.set_trace()
+
         # exchange with neighbors
         # TODO -- need to bring the delivery back down to 0?
         # TODO -- packet needs to be split up amongst t-cells?
-        exchange = {cell_id: {} for cell_id in cells.keys()}
+
+        # TODO -- exchange updates the neighbor port
+        exchange = {
+            cell_id: {
+                'present': {},
+                'accept': {},
+            } for cell_id in cells.keys()}
 
         for cell_id, neighbors in cell_neighbors.items():
-            packet = cells[cell_id]['neighbors']
-            # t-cell get ligand from tumor neighbors (PDL1, MHCI)
+            # packet = cells[cell_id]['neighbors']
+            # TODO -- packet comes from the boundary, delivered to the neighbor
+            # TODO -- use present/accept approach to exchange molecules
+            present = cells[cell_id]['neighbors']['present']
+            accept = cells[cell_id]['neighbors']['accept']
+
+            # t-cell get ligand from tumor BOUNDARY (PDL1, MHCI)
             if cells[cell_id]['boundary']['cell_type'] == 'tumor':
                 for neighbor in neighbors:
+                    # TODO -- ligands are not moved over
                     exchange[neighbor] = add_to_dict(exchange[neighbor], packet)
-            # tumors get cytotoxic packets from their t-cell neighbors
+
+            # tumors get cytotoxic packets from their t-cell BOUNDARY
             if cells[cell_id]['boundary']['cell_type'] == 't-cell':
                 for neighbor in neighbors:
                     exchange[neighbor] = add_to_dict(exchange[neighbor], packet)
-
-            # remove from cell's exchange
-            exchange[cell_id] = remove_from_dict(exchange[cell_id], packet)
+                # remove from t-cell's BOUNDARY
+                exchange[cell_id] = remove_from_dict(exchange[cell_id], packet)
 
         # print(exchange)
 
@@ -230,13 +247,15 @@ class Neighbors(Process):
         # TODO (Eran) -- clean this up
         cell_positions = self.pymunk_to_cell_units(cell_positions, cells)
 
+
         update = {
             'cells': {
                 cell_id: {
                     'boundary': {
                         'location': list(cell_positions[cell_id]),
-                        'exchange': exchange[cell_id],
-                    }
+                        # 'exchange': exchange[cell_id],
+                    },
+                    'neighbors': exchange[cell_id]
                 } for cell_id in cells.keys()
             }
         }
@@ -245,6 +264,7 @@ class Neighbors(Process):
     def get_neighbors(self, cell_loc, cell_radius, neighbor_loc, neighbor_radius):
         neighbors = {}
         for neighbor_id, loc in neighbor_loc.items():
+            # TODO -- find nearest neighbor without all pairwise comparisons
             distance = (cell_loc[0] - loc[0]) ** 2 + (cell_loc[1] - loc[1]) ** 2
             neighbor_rad = neighbor_radius[neighbor_id]
             inner_distance = distance - cell_radius - neighbor_rad

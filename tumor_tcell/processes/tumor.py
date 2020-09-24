@@ -141,20 +141,34 @@ class TumorProcess(Process):
                 },  # cytokine changes tumor phenotype
             },
             'neighbors': {
-                'PD1': {
-                    '_default': 0,
-                    '_emit': True,
+                'present': {
+                    'PDL1': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'set',
+                    },  # membrane protein, promotes T cell exhuastion and deactivation with PD1
+                    'MHCI': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'set',
+                    },  # membrane protein, promotes Tumor death and T cell activation with TCR
                 },
-                'cytotoxic_packets': {
-                    '_default': 0,
-                    '_emit': True,
-                },
+                'accept': {
+                    'PD1': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                    'cytotoxic_packets': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                }
             }
         }
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
-        cytotoxic_packets = states['neighbors']['cytotoxic_packets']
+        cytotoxic_packets = states['neighbors']['accept']['cytotoxic_packets']
         IFNg = states['boundary']['IFNg']
         IFNg_timer = states['boundary']['IFNg_timer']
 
@@ -241,8 +255,8 @@ class TumorProcess(Process):
             MHCI = self.parameters['PDL1p_MHCI_equilibrium']
 
             if 'boundary' not in update:
-                update['boundary'] = {}
-            update['boundary'].update({
+                update['boundary'] = {'present': {}}
+            update['boundary']['present'].update({
                 'PDL1': PDL1,
                 'MHCI': MHCI})
 
@@ -263,49 +277,49 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 0.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 0.0,
             ('boundary', 'IFNg'): 0.0*units.ng/units.mL,
-            ('neighbors', 'PD1'): 0.0,
+            ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 100.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 100.0,
             ('boundary', 'IFNg'): 1.0*units.ng/units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 200.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 200.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 0.0,
+            ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 300.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 300.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 400.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 400.0,
             ('boundary', 'IFNg'): 4.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 700.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 700.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 1000.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1000.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 1500.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1500.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 1600.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1600.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),
     ]

@@ -149,17 +149,17 @@ class TCellProcess(Process):
                     '_emit': True,
                     '_updater': 'accumulate',
                 },
-                'PD1': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'set',
-                },  # membrane protein, promotes T-cell death
-                'cytotoxic_packets': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'accumulate',
-                    '_divider': 'split',
-                },  # release into the tumor cells
+                # 'PD1': {
+                #     '_default': 0,
+                #     '_emit': True,
+                #     '_updater': 'set',
+                # },  # membrane protein, promotes T-cell death
+                # 'cytotoxic_packets': {
+                #     '_default': 0,
+                #     '_emit': True,
+                #     '_updater': 'accumulate',
+                #     '_divider': 'split',
+                # },  # release into the tumor cells
                 'MHCI_timer': {
                     '_default': 0,
                     '_emit': True,
@@ -167,21 +167,36 @@ class TCellProcess(Process):
                 },  # affects transition rate to PD1+
             },
             'neighbors': {
-                'PDL1': {
-                    '_default': 0,
-                    '_emit': True,
+                'present': {
+                    'PD1': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'set',
+                    },  # membrane protein, promotes T-cell death
+                    'cytotoxic_packets': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'accumulate',
+                        '_divider': 'split',
+                    },  # release into the tumor cells
                 },
-                'MHCI': {
-                    '_default': 0,
-                    '_emit': True,
-                },
+                'accept': {
+                    'PDL1': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                    'MHCI': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                }
             }
         }
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
-        PDL1 = states['neighbors']['PDL1']
-        MHCI = states['neighbors']['MHCI']
+        PDL1 = states['neighbors']['accept']['PDL1']
+        MHCI = states['neighbors']['accept']['MHCI']
         MHCI_timer = states['boundary']['MHCI_timer']
 
         # death
@@ -346,8 +361,8 @@ class TCellProcess(Process):
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
 
                 if 'boundary' not in update:
-                    update['boundary'] = {}
-                update['boundary'].update({
+                    update['boundary'] = {'present': {}}
+                update['boundary']['present'].update({
                     'IFNg': IFNg,
                     'cytotoxic_packets': cytotoxic_packets
                     })
@@ -362,8 +377,8 @@ class TCellProcess(Process):
                 IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
 
                 if 'boundary' not in update:
-                    update['boundary'] = {}
-                update['boundary'].update({
+                    update['boundary'] = {'present': {}}
+                update['boundary']['present'].update({
                     'IFNg': IFNg,
                     'cytotoxic_packets': cytotoxic_packets
                     })
@@ -385,8 +400,8 @@ class TCellProcess(Process):
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
 
                 if 'boundary' not in update:
-                    update['boundary'] = {}
-                update['boundary'].update({
+                    update['boundary'] = {'present': {}}
+                update['boundary']['present'].update({
                     'IFNg': IFNg,
                     'PD1': PD1,
                     'cytotoxic_packets': cytotoxic_packets
@@ -402,8 +417,8 @@ class TCellProcess(Process):
                 IFNg = self.parameters['PD1p_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
 
                 if 'boundary' not in update:
-                    update['boundary'] = {}
-                update['boundary'].update({
+                    update['boundary'] = {'present': {}}
+                update['boundary']['present'].update({
                     'IFNg': IFNg,
                     'PD1': PD1,
                     'cytotoxic_packets': cytotoxic_packets
@@ -426,40 +441,40 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 9 * TIMESTEP, {}),
     ]
