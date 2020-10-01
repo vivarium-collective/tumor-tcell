@@ -117,16 +117,6 @@ class TumorProcess(Process):
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },
-                'PDL1': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'set',
-                },  # membrane protein, promotes T cell exhuastion and deactivation with PD1
-                'MHCI': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'set',
-                },  # membrane protein, promotes Tumor death and T cell activation with TCR
                 'IFNg': {
                     '_default': 0 * units.ng/units.mL,
                     '_emit': True,
@@ -181,9 +171,7 @@ class TumorProcess(Process):
                 '_delete': {
                     'path': self.self_path},
                 'globals': {
-                    'death': 'apoptosis'
-                }
-            }
+                    'death': 'apoptosis'}}
 
         # death by cytotoxic packets from T cells
         # should take about 120 min from start of T cell contact and about 2-3 contacts
@@ -195,12 +183,10 @@ class TumorProcess(Process):
                 '_delete': {
                     'path': self.self_path},
                 'globals': {
-                    'death': 'Tcell_death'}
-            }
+                    'death': 'Tcell_death'}}
 
         # division
         if cell_state == 'PDL1n':
-
             prob_divide = get_probability_timestep(
                 self.parameters['PDL1n_growth'],
                 86400,  # 24 hours (24*60*60 seconds)
@@ -214,11 +200,13 @@ class TumorProcess(Process):
                         'PDL1n_divide_count': PDL1n_divide_count
                     }
                 }
-
         elif cell_state == 'PDL1p':
             pass
 
+
+        ## Build up an update
         update = {}
+
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PDL1n':
@@ -247,14 +235,13 @@ class TumorProcess(Process):
         MHCI = 0
         PDL1 = 0
 
-
         if new_cell_state == 'PDL1p':
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
             MHCI = self.parameters['PDL1p_MHCI_equilibrium']
 
-            if 'boundary' not in update:
-                update['boundary'] = {'present': {}}
-            update['boundary']['present'].update({
+            if 'neighbors' not in update:
+                update['neighbors'] = {'present': {}}
+            update['neighbors']['present'].update({
                 'PDL1': PDL1,
                 'MHCI': MHCI})
 
