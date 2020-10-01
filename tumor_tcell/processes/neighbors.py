@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import random
 import math
+import copy
 
 import numpy as np
 
@@ -41,11 +42,9 @@ def sphere_volume_from_diameter(diameter):
     return volume
 
 def make_random_position(bounds):
-    # return [np.random.uniform(0, bound) for bound in bounds]
-    return [np.random.uniform(0, bound.magnitude) for bound in bounds]
-    # return [
-    #     np.random.uniform(0, bounds[0]),
-    #     np.random.uniform(0, bounds[1])]
+    return [
+        np.random.uniform(0, bound.magnitude) * bound.units
+        for bound in bounds]
 
 def convert_to_unit(value, unit=None):
     if isinstance(value, list):
@@ -185,11 +184,8 @@ class Neighbors(Process):
         # get new cell positions, add units back on
         cell_positions = self.physics.get_body_positions()
 
-
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
-
-
 
 
 
@@ -283,17 +279,22 @@ class Neighbors(Process):
 
         return cell_neighbors
 
+    def remove_length_units(self, value):
+        return value.to(self.parameters['pymunk_length_unit']).magnitude
+
+    def remove_mass_units(self, value):
+        return value.to(self.parameters['pymunk_mass_unit']).magnitude
+
     ## matplotlib interactive plot
     def animate_frame(self, cells):
         plt.cla()
-
-        pymunk_length_unit = self.parameters['pymunk_length_unit']
+        bounds = copy.deepcopy(self.parameters['bounds'])
         for cell_id, data in cells.items():
             # location, orientation, length
             data = data['boundary']
-            x_center = data['location'][0]
-            y_center = data['location'][1]
-            diameter = data['diameter']
+            x_center = self.remove_length_units(data['location'][0])
+            y_center = self.remove_length_units(data['location'][1])
+            diameter = self.remove_length_units(data['diameter'])
 
             # get bottom left position
             radius = (diameter / 2)
@@ -304,8 +305,8 @@ class Neighbors(Process):
             circle = patches.Circle((x, y), radius, linewidth=1, edgecolor='b')
             self.ax.add_patch(circle)
 
-        plt.xlim([0, self.parameters['bounds'][0].to(pymunk_length_unit).magnitude])
-        plt.ylim([0, self.parameters['bounds'][1].to(pymunk_length_unit).magnitude])
+        plt.xlim([0, self.remove_length_units(bounds[0])])
+        plt.ylim([0, self.remove_length_units(bounds[1])])
         plt.draw()
         plt.pause(0.01)
 
@@ -313,7 +314,7 @@ class Neighbors(Process):
 # configs
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1
+    diameter = 1 * units.mm
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -376,7 +377,7 @@ def test_growth_division(config=default_gd_config, settings={}):
     # get simulation settings
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
-    division_volume = settings.get('division_volume', 0.4)
+    division_volume = settings.get('division_volume', 0.4 * units.mm ** 3)
     total_time = settings.get('total_time', 120)
     timestep = 1
 
@@ -437,7 +438,7 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
     settings = {
         'growth_rate': 0.02,
         'growth_rate_noise': 0.02,
-        'division_volume': 2.6,
+        'division_volume': 2.6 * units.mm ** 3,
         'total_time': 120}
     gd_config = {
         'animate': True,
