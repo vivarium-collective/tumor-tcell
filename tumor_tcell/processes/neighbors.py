@@ -27,9 +27,9 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'neighbors'
-DEFAULT_LENGTH_UNIT = units.mm
+DEFAULT_LENGTH_UNIT = units.um
 DEFAULT_MASS_UNIT = units.fg
-DEFAULT_BOUNDS = [10 * DEFAULT_LENGTH_UNIT, 10 * DEFAULT_LENGTH_UNIT]
+DEFAULT_BOUNDS = [20 * DEFAULT_LENGTH_UNIT, 20 * DEFAULT_LENGTH_UNIT]
 
 # constants
 PI = math.pi
@@ -188,7 +188,6 @@ class Neighbors(Process):
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
 
-
         # exchange with neighbors
         # TODO -- need to bring the delivery back down to 0?
         # TODO -- packet needs to be split up amongst t-cells?
@@ -269,13 +268,19 @@ class Neighbors(Process):
         for cell_id, location in tcell_positions.items():
             radius = cell_radii[cell_id]
             neighbors = self.get_neighbors(location, radius, tumor_positions, cell_radii)
-            cell_neighbors[cell_id] = [min(neighbors, key=neighbors.get)]
+            if neighbors:
+                cell_neighbors[cell_id] = [min(neighbors, key=neighbors.get)]
+            else:
+                cell_neighbors[cell_id] = []
 
         # tumors can have multiple t-cell neighbors
         for cell_id, location in tumor_positions.items():
             radius = cell_radii[cell_id]
             neighbors = self.get_neighbors(location, radius, tcell_positions, cell_radii)
-            cell_neighbors[cell_id] = list(neighbors.keys())
+            if neighbors:
+                cell_neighbors[cell_id] = list(neighbors.keys())
+            else:
+                cell_neighbors[cell_id] = []
 
         return cell_neighbors
 
@@ -314,7 +319,7 @@ class Neighbors(Process):
 # configs
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1 * units.mm
+    diameter = 1 * DEFAULT_LENGTH_UNIT
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -377,7 +382,7 @@ def test_growth_division(config=default_gd_config, settings={}):
     # get simulation settings
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
-    division_volume = settings.get('division_volume', 0.4 * units.mm ** 3)
+    division_volume = settings.get('division_volume', 0.4 * DEFAULT_LENGTH_UNIT ** 3)
     total_time = settings.get('total_time', 120)
     timestep = 1
 
@@ -438,7 +443,7 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
     settings = {
         'growth_rate': 0.02,
         'growth_rate_noise': 0.02,
-        'division_volume': 2.6 * units.mm ** 3,
+        'division_volume': 2.6 * DEFAULT_LENGTH_UNIT ** 3,
         'total_time': 120}
     gd_config = {
         'animate': True,
