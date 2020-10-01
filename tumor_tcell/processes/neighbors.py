@@ -120,7 +120,7 @@ class Neighbors(Process):
             'cell_shape': 'circle',
             'pymunk_length_unit': self.pymunk_length_unit,
             'jitter_force': self.parameters['jitter_force'],
-            'bounds': convert_to_unit(self.parameters['bounds'], self.pymunk_length_unit),
+            'bounds': self.parameters['bounds'],
             'physics_dt': time_step / 10}
         self.physics = PymunkMultibody(multibody_config)
 

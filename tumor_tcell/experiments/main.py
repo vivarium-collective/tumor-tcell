@@ -15,12 +15,14 @@ from vivarium.core.composition import (
     agent_environment_experiment,
     make_agent_ids,
 )
-from vivarium.library.units import units
+from vivarium.library.units import units, remove_units
+
+# plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
+from vivarium_cell.plots.multibody_physics import plot_tags, plot_snapshots
 
 # tumor-tcell imports
 from tumor_tcell.experiments.control import control
-# tumor-tcell composites
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
@@ -31,8 +33,8 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 def simulation_1(out_dir='out'):
 
     # experiment parameters
-    total_time = 100
-    bounds = [100 * units.mm, 100 * units.mm]
+    total_time = 1000
+    bounds = [10 * units.mm, 10 * units.mm]
     time_step = 60
     tumor_id = 'tumor'
     tcell_id = 'tcell'
@@ -107,6 +109,25 @@ def simulation_1(out_dir='out'):
     plot_settings = {}
     plot_agents_multigen(tcell_data, plot_settings, out_dir, tcell_id)
     plot_agents_multigen(tumor_data, plot_settings, out_dir, tumor_id)
+
+
+
+    # snapshots plot
+    # extract data
+    multibody_config = remove_units(environment_config['config']['neighbors'])
+    agents = {time: time_data['agents'] for time, time_data in data.items()}
+    # fields = {time: time_data['fields'] for time, time_data in data.items()}
+    plot_data = {
+        'agents': agents,
+        'fields': {},
+        'config': multibody_config}
+
+    plot_config = {
+        'fields': [],
+        'n_snapshots': 8,
+        'agent_shape': 'circle',
+        'out_dir': out_dir}
+    plot_snapshots(plot_data, plot_config)
 
 
 

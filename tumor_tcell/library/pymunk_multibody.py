@@ -84,7 +84,8 @@ class PymunkMultibody(object):
         self.pymunk_mass_unit = config.get('pymunk_mass_unit', units.fg)
         self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
         self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
-        self.bounds = config.get('bounds', self.defaults['bounds'])
+        bounds = config.get('bounds', self.defaults['bounds'])
+        self.bounds = [bound.to(self.pymunk_length_unit).magnitude for bound in bounds]
         barriers = config.get('barriers', self.defaults['barriers'])
 
         # initialize pymunk space
