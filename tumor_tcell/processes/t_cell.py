@@ -10,11 +10,9 @@ import argparse
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
 from vivarium.core.process import Process
-from vivarium.core.composition import (
-    simulate_process_in_experiment,
-    plot_simulation_output,
-    plot_agents_multigen,
-)
+from vivarium.core.composition import simulate_process_in_experiment
+from vivarium.plots.agents_multigen import plot_agents_multigen
+from vivarium.plots.simulation_output import plot_simulation_output
 
 # directories
 from tumor_tcell import PROCESS_OUT_DIR

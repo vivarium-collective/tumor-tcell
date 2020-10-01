@@ -13,10 +13,10 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 # vivarium-core imports
 from vivarium.core.composition import (
     agent_environment_experiment,
-    plot_agents_multigen,
     make_agent_ids,
 )
 from vivarium.library.units import units
+from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # tumor-tcell imports
 from tumor_tcell.experiments.control import control
