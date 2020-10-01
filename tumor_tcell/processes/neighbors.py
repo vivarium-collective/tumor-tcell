@@ -28,7 +28,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 NAME = 'neighbors'
 DEFAULT_LENGTH_UNIT = units.mm
 DEFAULT_MASS_UNIT = units.fg
-DEFAULT_BOUNDS = [10 * units.mm, 10 * units.mm]
+DEFAULT_BOUNDS = [10 * DEFAULT_LENGTH_UNIT, 10 * DEFAULT_LENGTH_UNIT]
 
 # constants
 PI = math.pi
@@ -41,6 +41,7 @@ def sphere_volume_from_diameter(diameter):
     return volume
 
 def make_random_position(bounds):
+    # return [np.random.uniform(0, bound) for bound in bounds]
     return [np.random.uniform(0, bound.magnitude) for bound in bounds]
     # return [
     #     np.random.uniform(0, bounds[0]),
@@ -100,6 +101,8 @@ class Neighbors(Process):
         'cells': {},
         'jitter_force': 0.0,
         'bounds': DEFAULT_BOUNDS,
+        'pymunk_length_unit': DEFAULT_LENGTH_UNIT,
+        'pymunk_mass_unit': DEFAULT_MASS_UNIT,
         'neighbor_distance': 1 * units.um,
         'animate': False,
     }
@@ -107,8 +110,8 @@ class Neighbors(Process):
     def __init__(self, parameters=None):
         super(Neighbors, self).__init__(parameters)
 
-        self.pymunk_length_unit = DEFAULT_LENGTH_UNIT
-        self.pymunk_mass_unit = DEFAULT_MASS_UNIT
+        self.pymunk_length_unit = self.parameters['pymunk_length_unit']
+        self.pymunk_mass_unit = self.parameters['pymunk_mass_unit']
         self.neighbor_distance = self.parameters['neighbor_distance'].to(self.pymunk_length_unit).magnitude
         self.cell_loc_units = {}
 
@@ -116,6 +119,7 @@ class Neighbors(Process):
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
+            'pymunk_length_unit': self.pymunk_length_unit,
             'jitter_force': self.parameters['jitter_force'],
             'bounds': convert_to_unit(self.parameters['bounds'], self.pymunk_length_unit),
             'physics_dt': time_step / 10}
@@ -165,38 +169,15 @@ class Neighbors(Process):
         schema = {'cells': glob_schema}
         return schema
 
-    def cells_to_pymunk_units(self, cells):
-        for cell_id, specs in cells.items():
-            # convert location
-            cells[cell_id]['boundary']['location'] = [loc.to(self.pymunk_length_unit).magnitude for loc in specs['boundary']['location']]
-            # convert diameter
-            cells[cell_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.pymunk_length_unit).magnitude
-            # convert mass
-            cells[cell_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.pymunk_mass_unit).magnitude
-        return cells
-
-    def pymunk_to_cell_units(self, locations, cells):
-        cell_locations = {}
-        for cell_id, locs in locations.items():
-            cell_locations[cell_id] = [(loc * self.pymunk_length_unit).to(self.cell_loc_units[cell_id]) for loc in locs]
-        return cell_locations
-
-
     def next_update(self, timestep, states):
         cells = states['cells']
-
-        # what units are the cells using?
-        # TODO -- make this better....
-        self.cell_loc_units = {}
-        for cell_id, specs in cells.items():
-            self.cell_loc_units[cell_id] = specs['boundary']['location'][0].units
 
         # animate before update
         if self.animate:
             self.animate_frame(cells)
 
         # update multibody with new cells, convert and remove units
-        self.physics.update_bodies(self.cells_to_pymunk_units(cells))
+        self.physics.update_bodies(cells)
 
         # run simulation
         self.physics.run(timestep)
@@ -207,13 +188,9 @@ class Neighbors(Process):
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
-
-        import ipdb; ipdb.set_trace()
-
         # exchange with neighbors
         # TODO -- need to bring the delivery back down to 0?
         # TODO -- packet needs to be split up amongst t-cells?
-
         # TODO -- exchange updates the neighbor port
         exchange = {
             cell_id: {
@@ -243,11 +220,6 @@ class Neighbors(Process):
 
         # print(exchange)
 
-        # get units back onto locations
-        # TODO (Eran) -- clean this up
-        cell_positions = self.pymunk_to_cell_units(cell_positions, cells)
-
-
         update = {
             'cells': {
                 cell_id: {
@@ -255,10 +227,11 @@ class Neighbors(Process):
                         'location': list(cell_positions[cell_id]),
                         # 'exchange': exchange[cell_id],
                     },
-                    'neighbors': exchange[cell_id]
+                    # 'neighbors': exchange[cell_id]
                 } for cell_id in cells.keys()
             }
         }
+
         return update
 
     def get_neighbors(self, cell_loc, cell_radius, neighbor_loc, neighbor_radius):
@@ -308,6 +281,8 @@ class Neighbors(Process):
     ## matplotlib interactive plot
     def animate_frame(self, cells):
         plt.cla()
+
+        pymunk_length_unit = self.parameters['pymunk_length_unit']
         for cell_id, data in cells.items():
             # location, orientation, length
             data = data['boundary']
@@ -324,8 +299,8 @@ class Neighbors(Process):
             circle = patches.Circle((x, y), radius, linewidth=1, edgecolor='b')
             self.ax.add_patch(circle)
 
-        plt.xlim([0, self.parameters['bounds'][0]])
-        plt.ylim([0, self.parameters['bounds'][1]])
+        plt.xlim([0, self.parameters['bounds'][0].to(pymunk_length_unit).magnitude])
+        plt.ylim([0, self.parameters['bounds'][1].to(pymunk_length_unit).magnitude])
         plt.draw()
         plt.pause(0.01)
 
@@ -382,6 +357,8 @@ def test_growth_division(config=default_gd_config, settings={}):
         ('cells',), {
             'boundary': {
                 'mass': {
+                    '_divider': 'split'},
+                'diameter': {
                     '_divider': 'split'},
                 }})
     experiment.state.apply_subschemas()
@@ -451,7 +428,7 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
     n_cells = 2
     cell_ids = [str(cell_id) for cell_id in range(n_cells)]
 
-    bounds = [20, 20]
+    bounds = DEFAULT_BOUNDS
     settings = {
         'growth_rate': 0.02,
         'growth_rate_noise': 0.02,
