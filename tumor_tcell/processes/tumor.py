@@ -46,7 +46,7 @@ class TumorProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 0.02 * units.mm,  # 20 * units.um
+        'diameter': 20 * units.um, #  0.02 * units.mm,
         'initial_PDL1n': 1.0, #all start out this way based on data
 
         # death rates

@@ -34,7 +34,7 @@ def simulation_1(out_dir='out'):
 
     # experiment parameters
     total_time = 1000
-    bounds = [0.2 * units.mm, 0.2 * units.mm]
+    bounds = [200 * units.um, 200 * units.um]
     time_step = 60
     tumor_id = 'tumor'
     tcell_id = 'tcell'
@@ -120,15 +120,11 @@ def simulation_1(out_dir='out'):
         'agents': agents,
         'fields': {},
         'config': multibody_config}
-
     plot_config = {
         'fields': [],
         'n_snapshots': 8,
         'agent_shape': 'circle',
         'out_dir': out_dir}
-
-    import ipdb; ipdb.set_trace()
-
     plot_snapshots(plot_data, plot_config)
 
 

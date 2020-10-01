@@ -44,10 +44,10 @@ class TCellProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 0.01 * units.mm,  # 10 * units.um
+        'diameter': 10 * units.um,  # 0.01 * units.mm,
         'initial_PD1n': 0.8,
         'transition_PD1n_to_PD1p_10days': 0.95,  # nearly 95% by 10 days (Wherry 2007)
-        'cellstate_transition_time': 259200, # extended contact with tumor cells expressing MHCI for more
+        'cellstate_transition_time': 259200,  # extended contact with tumor cells expressing MHCI for more
                # than 3 days (expected to be 100% in tumor/chronic infection after 1 week) (Schietinger 2016)
 
         # death rates (Petrovas 2007)
