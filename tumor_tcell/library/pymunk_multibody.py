@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import random
 import math
-
+import copy
 
 from vivarium.library.units import units
 
@@ -265,31 +265,29 @@ class PymunkMultibody(object):
 
 
     def bodies_to_pymunk_units(self, bodies):
-        for bodies_id, specs in bodies.items():
+        pymunk_bodies = copy.deepcopy(bodies)
+        for bodies_id, specs in pymunk_bodies.items():
             # convert location
-            # bodies[bodies_id]['boundary']['location'] = [loc.to(self.pymunk_length_unit).magnitude for loc in specs['boundary']['location']]
-            # # convert diameter
-            # bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.pymunk_length_unit).magnitude
+            pymunk_bodies[bodies_id]['boundary']['location'] = [loc.to(self.pymunk_length_unit).magnitude for loc in specs['boundary']['location']]
+            # convert diameter
+            pymunk_bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.pymunk_length_unit).magnitude
             # convert mass
-            bodies[bodies_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.pymunk_mass_unit).magnitude
+            pymunk_bodies[bodies_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.pymunk_mass_unit).magnitude
+        return pymunk_bodies
+
+
+    def pymunk_location_to_body_units(self, bodies):
+        for body_id, location in bodies.items():
+            bodies[body_id] = [(loc * self.pymunk_length_unit) for loc in location]
         return bodies
 
 
-    def pymunk_to_body_units(self, bodies):
-        # body_locations = {}
-        for body_id, specs in bodies.items():
-            pass
-        #     body_locations[cell_id] = [(loc * self.pymunk_length_unit) for loc in locs]
-        #     # body_locations[cell_id] = [(loc * self.pymunk_length_unit).to(self.cell_loc_units[cell_id]) for loc in locs]
-        return bodies
-
-
-    def update_bodies(self, bodies):
+    def update_bodies(self, raw_bodies):
         # if an cell has been removed from the cells store,
         # remove it from space and bodies
 
         # convert to pymunk_units
-        bodies = self.bodies_to_pymunk_units(bodies)
+        bodies = self.bodies_to_pymunk_units(raw_bodies)
 
         removed_bodies = [
             body_id for body_id in self.bodies.keys()
@@ -314,7 +312,7 @@ class PymunkMultibody(object):
         bodies = {
             body_id: self.get_body_position(body_id)
             for body_id in self.bodies.keys()}
-        return self.pymunk_to_body_units(bodies)
+        return self.pymunk_location_to_body_units(bodies)
 
 
 

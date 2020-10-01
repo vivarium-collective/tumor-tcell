@@ -112,7 +112,7 @@ class Neighbors(Process):
 
         self.pymunk_length_unit = self.parameters['pymunk_length_unit']
         self.pymunk_mass_unit = self.parameters['pymunk_mass_unit']
-        self.neighbor_distance = self.parameters['neighbor_distance'].to(self.pymunk_length_unit).magnitude
+        self.neighbor_distance = self.parameters['neighbor_distance']
         self.cell_loc_units = {}
 
         # make the multibody object
@@ -185,8 +185,13 @@ class Neighbors(Process):
         # get new cell positions, add units back on
         cell_positions = self.physics.get_body_positions()
 
+
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
+
+
+
+
 
         # exchange with neighbors
         # TODO -- need to bring the delivery back down to 0?
@@ -209,14 +214,14 @@ class Neighbors(Process):
             if cells[cell_id]['boundary']['cell_type'] == 'tumor':
                 for neighbor in neighbors:
                     # TODO -- ligands are not moved over
-                    exchange[neighbor] = add_to_dict(exchange[neighbor], packet)
+                    exchange[neighbor] = add_to_dict(exchange[neighbor], accept)
 
             # tumors get cytotoxic packets from their t-cell BOUNDARY
             if cells[cell_id]['boundary']['cell_type'] == 't-cell':
                 for neighbor in neighbors:
-                    exchange[neighbor] = add_to_dict(exchange[neighbor], packet)
+                    exchange[neighbor] = add_to_dict(exchange[neighbor], accept)
                 # remove from t-cell's BOUNDARY
-                exchange[cell_id] = remove_from_dict(exchange[cell_id], packet)
+                exchange[cell_id] = remove_from_dict(exchange[cell_id], present)
 
         # print(exchange)
 
@@ -238,7 +243,7 @@ class Neighbors(Process):
         neighbors = {}
         for neighbor_id, loc in neighbor_loc.items():
             # TODO -- find nearest neighbor without all pairwise comparisons
-            distance = (cell_loc[0] - loc[0]) ** 2 + (cell_loc[1] - loc[1]) ** 2
+            distance = ((cell_loc[0] - loc[0]) ** 2 + (cell_loc[1] - loc[1]) ** 2) ** 0.5
             neighbor_rad = neighbor_radius[neighbor_id]
             inner_distance = distance - cell_radius - neighbor_rad
             if inner_distance <= self.neighbor_distance:
