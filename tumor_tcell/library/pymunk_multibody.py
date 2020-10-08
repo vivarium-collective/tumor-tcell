@@ -62,7 +62,9 @@ class PymunkMultibody(object):
         'physics_dt': 0.001,
         'force_scaling': 1e2,  # scales from pN
         # configured parameters
-        'jitter_force': 1e-3,  # pN
+        'pymunk_length_unit': units.mm,
+        'pymunk_mass_unit': units.fg,
+        'jitter_force': 1e-3,
         'bounds': [20, 20],
         'barriers': False,
         'initial_cells': {},
@@ -80,8 +82,8 @@ class PymunkMultibody(object):
         self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
-        self.pymunk_length_unit = config.get('pymunk_length_unit', units.mm)
-        self.pymunk_mass_unit = config.get('pymunk_mass_unit', units.fg)
+        self.pymunk_length_unit = config.get('pymunk_length_unit', self.defaults['pymunk_length_unit'])
+        self.pymunk_mass_unit = config.get('pymunk_mass_unit', self.defaults['pymunk_mass_unit'])
         self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
         self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
         bounds = config.get('bounds', self.defaults['bounds'])
@@ -324,8 +326,8 @@ def test_multibody(
         jitter_force=1e1,
         screen=None):
 
-    bounds = [500, 500]
-    center_location = [0.5*loc for loc in bounds]
+    bounds = [500 * units.um, 500 * units.um]
+    center_location = [0.5*loc.magnitude for loc in bounds]
     cells = {
         str(cell_idx): {
             'boundary': {

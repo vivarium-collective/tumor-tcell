@@ -6,12 +6,14 @@ Tumor Agent
 
 import os
 
+# core imports
+from vivarium.core.process import Generator
 from vivarium.core.composition import simulate_compartment_in_experiment
 from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # processes
-from vivarium.core.process import Generator
 from vivarium.processes.meta_division import MetaDivision
+from vivarium.processes.disintegrate import Disintegrate
 from tumor_tcell.processes.tumor import TumorProcess
 
 # directories
@@ -28,7 +30,7 @@ class TumorAgent(Generator):
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
         'tumor': {},
-        'divide': True,
+        'death': {},
         '_schema': {},
     }
 
@@ -36,52 +38,39 @@ class TumorAgent(Generator):
         super(TumorAgent, self).__init__(config)
 
     def generate_processes(self, config):
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
+        meta_division_config = dict(
+            {},
+            daughter_path=daughter_path,
+            agent_id=agent_id,
+            compartment=self)
 
-        # initialize processes
-        tumor = TumorProcess(config['tumor'])
-
-        # make dictionary of processes
-        processes = {
-            'tumor': tumor,
+        return {
+            'tumor': TumorProcess(config['tumor']),
+            'division': MetaDivision(meta_division_config),
+            # 'death': Disintegrate(),
         }
 
-        # if divide set to true, add meta-division processes
-        if config['divide']:
-            daughter_path = config['daughter_path']
-            agent_id = config['agent_id']
-            meta_division_config = dict(
-                {},
-                daughter_path=daughter_path,
-                agent_id=agent_id,
-                compartment=self)
-            meta_division = MetaDivision(meta_division_config)
-            processes['division'] = meta_division
-
-        return processes
-
-
     def generate_topology(self, config):
-
-        # retrieve paths
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
-
-        # make topology by mapping ports
-        topology = {
+        death_trigger_path = boundary_path + ('death',)
+        return {
             'tumor': {
                 'internal': ('internal',),
                 'boundary': boundary_path,
                 'globals': boundary_path,
                 'neighbors': ('neighbors',),
             },
+            'division': {
+                'global': boundary_path,
+                'agents': agents_path,
+            },
+            # 'death': {
+            #     'trigger': death_trigger_path,
+            #     'agents': agents_path}
         }
-        if config['divide']:
-            topology.update({
-                'division': {
-                    'global': boundary_path,
-                    'agents': agents_path,
-                }})
-        return topology
 
 
 # tests
