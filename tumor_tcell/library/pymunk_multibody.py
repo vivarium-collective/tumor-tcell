@@ -2,6 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import random
 import math
+import copy
+
+from vivarium.library.units import units
 
 # pymunk imports
 import pymunkoptions
@@ -59,7 +62,9 @@ class PymunkMultibody(object):
         'physics_dt': 0.001,
         'force_scaling': 1e2,  # scales from pN
         # configured parameters
-        'jitter_force': 1e-3,  # pN
+        'pymunk_length_unit': units.mm,
+        'pymunk_mass_unit': units.fg,
+        'jitter_force': 1e-3,
         'bounds': [20, 20],
         'barriers': False,
         'initial_cells': {},
@@ -77,9 +82,12 @@ class PymunkMultibody(object):
         self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
+        self.pymunk_length_unit = config.get('pymunk_length_unit', self.defaults['pymunk_length_unit'])
+        self.pymunk_mass_unit = config.get('pymunk_mass_unit', self.defaults['pymunk_mass_unit'])
         self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
         self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
-        self.bounds = config.get('bounds', self.defaults['bounds'])
+        bounds = config.get('bounds', self.defaults['bounds'])
+        self.bounds = [bound.to(self.pymunk_length_unit).magnitude for bound in bounds]
         barriers = config.get('barriers', self.defaults['barriers'])
 
         # initialize pymunk space
@@ -258,9 +266,32 @@ class PymunkMultibody(object):
         # update body
         self.bodies[body_id] = (new_body, new_shape)
 
-    def update_bodies(self, bodies):
+
+    def bodies_to_pymunk_units(self, bodies):
+        pymunk_bodies = copy.deepcopy(bodies)
+        for bodies_id, specs in pymunk_bodies.items():
+            # convert location
+            pymunk_bodies[bodies_id]['boundary']['location'] = [loc.to(self.pymunk_length_unit).magnitude for loc in specs['boundary']['location']]
+            # convert diameter
+            pymunk_bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.pymunk_length_unit).magnitude
+            # convert mass
+            pymunk_bodies[bodies_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.pymunk_mass_unit).magnitude
+        return pymunk_bodies
+
+
+    def pymunk_location_to_body_units(self, bodies):
+        for body_id, location in bodies.items():
+            bodies[body_id] = [(loc * self.pymunk_length_unit) for loc in location]
+        return bodies
+
+
+    def update_bodies(self, raw_bodies):
         # if an cell has been removed from the cells store,
         # remove it from space and bodies
+
+        # convert to pymunk_units
+        bodies = self.bodies_to_pymunk_units(raw_bodies)
+
         removed_bodies = [
             body_id for body_id in self.bodies.keys()
             if body_id not in bodies.keys()]
@@ -281,9 +312,10 @@ class PymunkMultibody(object):
         return tuple(pos for pos in body.position)
 
     def get_body_positions(self):
-        return {
+        bodies = {
             body_id: self.get_body_position(body_id)
             for body_id in self.bodies.keys()}
+        return self.pymunk_location_to_body_units(bodies)
 
 
 
@@ -294,8 +326,8 @@ def test_multibody(
         jitter_force=1e1,
         screen=None):
 
-    bounds = [500, 500]
-    center_location = [0.5*loc for loc in bounds]
+    bounds = [500 * units.um, 500 * units.um]
+    center_location = [0.5*loc.magnitude for loc in bounds]
     cells = {
         str(cell_idx): {
             'boundary': {

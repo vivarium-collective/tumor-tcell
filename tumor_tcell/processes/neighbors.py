@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import random
 import math
+import copy
 
 import numpy as np
 
@@ -26,13 +27,15 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'neighbors'
-DEFAULT_BOUNDS = [10, 10]
+DEFAULT_LENGTH_UNIT = units.um
+DEFAULT_MASS_UNIT = units.fg
+DEFAULT_BOUNDS = [20 * DEFAULT_LENGTH_UNIT, 20 * DEFAULT_LENGTH_UNIT]
 
 # constants
 PI = math.pi
 
 
-
+# helper functions
 def sphere_volume_from_diameter(diameter):
     radius = diameter / 2
     volume = 4 / 3 * (PI * radius**3)
@@ -40,8 +43,30 @@ def sphere_volume_from_diameter(diameter):
 
 def make_random_position(bounds):
     return [
-        np.random.uniform(0, bounds[0]),
-        np.random.uniform(0, bounds[1])]
+        np.random.uniform(0, bound.magnitude) * bound.units
+        for bound in bounds]
+
+def convert_to_unit(value, unit=None):
+    if isinstance(value, list):
+        return [v.to(unit).magnitude for v in value]
+    else:
+        return value.to(unit).magnitude
+
+def add_to_dict(dict, added):
+    for k, v in added.items():
+        if k in dict:
+            dict[k] += v
+        else:
+            dict[k] = v
+    return dict
+
+def remove_from_dict(dict, removed):
+    for k, v in removed.items():
+        if k in dict:
+            dict[k] -= v
+        else:
+            dict[k] = -v
+    return dict
 
 
 class Neighbors(Process):
@@ -73,26 +98,30 @@ class Neighbors(Process):
     defaults = {
         'time_step': 2,
         'cells': {},
-        'jitter_force': 0.0,  # pN
+        'jitter_force': 0.0,
         'bounds': DEFAULT_BOUNDS,
+        'pymunk_length_unit': DEFAULT_LENGTH_UNIT,
+        'pymunk_mass_unit': DEFAULT_MASS_UNIT,
+        'neighbor_distance': 1 * units.um,
         'animate': False,
     }
 
     def __init__(self, parameters=None):
         super(Neighbors, self).__init__(parameters)
 
-        # multibody parameters
-        jitter_force = self.parameters['jitter_force']
-        self.bounds = self.parameters['bounds']
+        self.pymunk_length_unit = self.parameters['pymunk_length_unit']
+        self.pymunk_mass_unit = self.parameters['pymunk_mass_unit']
+        self.neighbor_distance = self.parameters['neighbor_distance']
+        self.cell_loc_units = {}
 
         # make the multibody object
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
-            'jitter_force': jitter_force,
-            'bounds': self.bounds,
-            'physics_dt': time_step / 10,
-        }
+            'pymunk_length_unit': self.pymunk_length_unit,
+            'jitter_force': self.parameters['jitter_force'],
+            'bounds': self.parameters['bounds'],
+            'physics_dt': time_step / 10}
         self.physics = PymunkMultibody(multibody_config)
 
         # interactive plot for visualization
@@ -106,17 +135,17 @@ class Neighbors(Process):
         glob_schema = {
             '*': {
                 'boundary': {
+                    # cell_type must be either 'tumor' or 't_cell'
                     'cell_type': {},
                     'location': {
                         '_emit': True,
                         '_default': [
-                            0.5 * bound for bound in self.bounds],
+                            0.5 * bound for bound in self.parameters['bounds']],
                         '_updater': 'set',
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
                         # '_default': 1.0, #* units.um,
-                        '_divider': 'split',
                         '_updater': 'set'},
                     'mass': {
                         '_emit': True,
@@ -124,13 +153,16 @@ class Neighbors(Process):
                         '_updater': 'set'},
                 },
                 'neighbors': {
-                    '*': {}
-                    # 'PD1': {},
-                    # 'cytotoxic_packets': {},
-                    # 'PDL1': {},
-                    # 'MHCI': {}
-                    # TODO -- tumors required cytotoxic_packets and PD1
-                    # TODO -- t cells require PDL1 and MHCI
+                    'present': {
+                        '*': {
+                            '_default': 0.0
+                        }
+                    },
+                    'accept': {
+                        '*': {
+                            '_default': 0.0
+                        }
+                    },
                 }
             }
         }
@@ -144,8 +176,8 @@ class Neighbors(Process):
         if self.animate:
             self.animate_frame(cells)
 
-        # update multibody with new calls
-        self.physics.update_bodies(remove_units(cells))
+        # update physics with new cells
+        self.physics.update_bodies(cells)
 
         # run simulation
         self.physics.run(timestep)
@@ -154,51 +186,100 @@ class Neighbors(Process):
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
-        # TODO -- only count neighbor if they are within 1 um from outer boundary of cell
-        # TODO -- T-cells polarize to one tumor cell: find the closest
-        # TODO -- we need to know which cell is a tumor and which is a t-cell
-        # TODO tumors can have multiple t-cell neighbors (within 1 um), but t-cells only have one tumor neighbor.
-        cell_neighbors = self.get_neighbors(cell_positions)
+        cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
+        # exchange with neighbors
+        exchange = {
+            cell_id: {
+                'accept': {},
+                'present': {},
+            } for cell_id in cells.keys()}
 
-        # exchange molecules based on neighbors
-        # TODO -- tumors get cytotoxic packets from their t-cell neighbors (at rate determined by t-cell)
-        # TODO -- t-cell receive ligand from tumor neighbors (PDL1, MHCI)
-        exchange = {}
+        for cell_id, neighbors in cell_neighbors.items():
+            for neighbor_id in neighbors:
+                # the neighbor's present moves to the cell's accept
+                present = cells[neighbor_id]['neighbors']['present']
+                exchange[cell_id]['accept'] = add_to_dict(exchange[cell_id]['accept'], present)
+                exchange[neighbor_id]['present'] = remove_from_dict(exchange[neighbor_id]['present'], present)
 
         update = {
             'cells': {
                 cell_id: {
                     'boundary': {
-                        'location': list(cell_positions[cell_id])
-                    }
+                        'location': list(cell_positions[cell_id])},
+                    'neighbors': exchange[cell_id]
                 } for cell_id in cells.keys()
             }
         }
+
         return update
 
-    def get_neighbors(self, cell_positions):
+    def get_neighbors(self, cell_loc, cell_radius, neighbor_loc, neighbor_radius):
+        neighbors = {}
+        for neighbor_id, loc in neighbor_loc.items():
+            # TODO -- find nearest neighbor without all pairwise comparisons
+            distance = ((cell_loc[0] - loc[0]) ** 2 + (cell_loc[1] - loc[1]) ** 2) ** 0.5
+            neighbor_rad = neighbor_radius[neighbor_id]
+            inner_distance = distance - cell_radius - neighbor_rad
+            if inner_distance <= self.neighbor_distance:
+                neighbors[neighbor_id] = inner_distance
+        return neighbors
+
+    def get_all_neighbors(self, cells, current_positions):
+        '''
+        only count neighbor if they are within 'neighbor_distance' from outer boundary of cell
+        '''
+
+        tcell_positions = {
+            cell_id: current_positions[cell_id]
+            for cell_id, specs in cells.items()
+            if specs['boundary']['cell_type'] == 't-cell'}
+        tumor_positions = {
+            cell_id: current_positions[cell_id]
+            for cell_id, specs in cells.items()
+            if specs['boundary']['cell_type'] == 'tumor'}
+        cell_radii = {
+            cell_id: (specs['boundary']['diameter'] / 2)
+            for cell_id, specs in cells.items()}
+
         cell_neighbors = {}
-        for cell_id, position in cell_positions.items():
-            other_cell_locations = {
-                location: other_id
-                for other_id, location in cell_positions.items()
-                if other_id is not cell_id}
-            dist = lambda x, y: (x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2
-            closest = min(list(other_cell_locations.keys()), key=lambda co: dist(co, position))
-            neighbor_id = other_cell_locations[closest]
-            cell_neighbors[cell_id] = neighbor_id
+
+        # t-cells polarize to one tumor cell: find the closest
+        for cell_id, location in tcell_positions.items():
+            radius = cell_radii[cell_id]
+            neighbors = self.get_neighbors(location, radius, tumor_positions, cell_radii)
+            if neighbors:
+                cell_neighbors[cell_id] = [min(neighbors, key=neighbors.get)]
+            else:
+                cell_neighbors[cell_id] = []
+
+        # tumors can have multiple t-cell neighbors
+        for cell_id, location in tumor_positions.items():
+            radius = cell_radii[cell_id]
+            neighbors = self.get_neighbors(location, radius, tcell_positions, cell_radii)
+            if neighbors:
+                cell_neighbors[cell_id] = list(neighbors.keys())
+            else:
+                cell_neighbors[cell_id] = []
+
         return cell_neighbors
+
+    def remove_length_units(self, value):
+        return value.to(self.parameters['pymunk_length_unit']).magnitude
+
+    def remove_mass_units(self, value):
+        return value.to(self.parameters['pymunk_mass_unit']).magnitude
 
     ## matplotlib interactive plot
     def animate_frame(self, cells):
         plt.cla()
+        bounds = copy.deepcopy(self.parameters['bounds'])
         for cell_id, data in cells.items():
             # location, orientation, length
             data = data['boundary']
-            x_center = data['location'][0]
-            y_center = data['location'][1]
-            diameter = data['diameter']
+            x_center = self.remove_length_units(data['location'][0])
+            y_center = self.remove_length_units(data['location'][1])
+            diameter = self.remove_length_units(data['diameter'])
 
             # get bottom left position
             radius = (diameter / 2)
@@ -209,8 +290,8 @@ class Neighbors(Process):
             circle = patches.Circle((x, y), radius, linewidth=1, edgecolor='b')
             self.ax.add_patch(circle)
 
-        plt.xlim([0, self.bounds[0]])
-        plt.ylim([0, self.bounds[1]])
+        plt.xlim([0, self.remove_length_units(bounds[0])])
+        plt.ylim([0, self.remove_length_units(bounds[1])])
         plt.draw()
         plt.pause(0.01)
 
@@ -218,7 +299,7 @@ class Neighbors(Process):
 # configs
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1
+    diameter = 1 * DEFAULT_LENGTH_UNIT
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -268,6 +349,8 @@ def test_growth_division(config=default_gd_config, settings={}):
             'boundary': {
                 'mass': {
                     '_divider': 'split'},
+                'diameter': {
+                    '_divider': 'split'},
                 }})
     experiment.state.apply_subschemas()
 
@@ -279,7 +362,7 @@ def test_growth_division(config=default_gd_config, settings={}):
     # get simulation settings
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
-    division_volume = settings.get('division_volume', 0.4)
+    division_volume = settings.get('division_volume', 0.4 * DEFAULT_LENGTH_UNIT ** 3)
     total_time = settings.get('total_time', 120)
     timestep = 1
 
@@ -336,11 +419,11 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
     n_cells = 2
     cell_ids = [str(cell_id) for cell_id in range(n_cells)]
 
-    bounds = [20, 20]
+    bounds = DEFAULT_BOUNDS
     settings = {
         'growth_rate': 0.02,
         'growth_rate_noise': 0.02,
-        'division_volume': 2.6,
+        'division_volume': 2.6 * DEFAULT_LENGTH_UNIT ** 3,
         'total_time': 120}
     gd_config = {
         'animate': True,
