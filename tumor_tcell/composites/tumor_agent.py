@@ -1,11 +1,28 @@
+"""
+===========
+Tumor Agent
+===========
+"""
 
+import os
+
+from vivarium.core.composition import simulate_compartment_in_experiment
+from vivarium.plots.agents_multigen import plot_agents_multigen
+
+# processes
 from vivarium.core.process import Generator
 from vivarium.processes.meta_division import MetaDivision
 from tumor_tcell.processes.tumor import TumorProcess
 
+# directories
+from tumor_tcell import COMPOSITE_OUT_DIR
+
+NAME = 'tumor_agent'
+
 
 class TumorAgent(Generator):
 
+    name = NAME
     defaults = {
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
@@ -65,3 +82,30 @@ class TumorAgent(Generator):
                     'agents': agents_path,
                 }})
         return topology
+
+
+# tests
+def test_tumor_agent(total_time=1000):
+    agent_id = '0'
+    parameters = {'agent_id': agent_id}
+    compartment = TumorAgent(parameters)
+
+    # settings for simulation and plot
+    settings = {
+        'outer_path': ('agents', agent_id),
+        'return_raw_data': True,
+        'timestep': 10,
+        'total_time': total_time}
+    return simulate_compartment_in_experiment(compartment, settings)
+
+def run_compartment(out_dir='out'):
+    data = test_tumor_agent(total_time=4000)
+    plot_settings = {}
+    plot_agents_multigen(data, plot_settings, out_dir)
+
+
+if __name__ == '__main__':
+    out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    run_compartment(out_dir=out_dir)
