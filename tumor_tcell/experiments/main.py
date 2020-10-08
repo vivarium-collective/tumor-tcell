@@ -14,6 +14,8 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 from vivarium.core.composition import (
     agent_environment_experiment,
     make_agent_ids,
+    compose_experiment,
+    GENERATORS_KEY,
     EXPERIMENT_OUT_DIR,
 )
 from vivarium.library.units import units, remove_units
@@ -31,6 +33,41 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 out_dir = EXPERIMENT_OUT_DIR
 TIMESTEP = 60
+
+
+# simultion # 2
+def simulation_1():
+
+    # experiment parameters
+    total_time = 1000
+    bounds = [200 * units.um, 200 * units.um]
+    time_step = 60
+    tumor_id = 'tumor'
+    tcell_id = 'tcell'
+
+
+
+    # declare the hierarchy
+    hierarchy = {
+        GENERATORS_KEY: {
+            'type': Lattice,
+            'config': lattice_config},
+        'agents': {
+            agent_id: {
+                GENERATORS_KEY: {
+                    'type': InclusionBodyGrowth,
+                    'config': inclusion_config}}}}
+
+    # configure experiment
+    experiment = compose_experiment(
+        hierarchy=hierarchy,
+        # initial_state=initial_state
+    )
+
+    # run simulation
+    experiment.update(total_time)
+    data = experiment.emitter.get_data()
+    experiment.end()
 
 
 # simulation #1
