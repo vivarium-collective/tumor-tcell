@@ -218,7 +218,9 @@ class Neighbors(Process):
                 # remove from t-cell's BOUNDARY
                 exchange[cell_id] = remove_from_dict(exchange[cell_id], present)
 
-        # print(exchange)
+        print(exchange)
+
+        import ipdb; ipdb.set_trace()
 
         update = {
             'cells': {

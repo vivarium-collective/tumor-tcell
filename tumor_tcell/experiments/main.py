@@ -14,23 +14,25 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 from vivarium.core.composition import (
     agent_environment_experiment,
     make_agent_ids,
+    EXPERIMENT_OUT_DIR,
 )
 from vivarium.library.units import units, remove_units
+from vivarium.core.control import Control
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium_cell.plots.multibody_physics import plot_tags, plot_snapshots
 
 # tumor-tcell imports
-from tumor_tcell.experiments.control import control
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 
+out_dir=EXPERIMENT_OUT_DIR
 
 # simulation #1
-def simulation_1(out_dir='out'):
+def simulation_1():
 
     # experiment parameters
     total_time = 1000
@@ -42,23 +44,13 @@ def simulation_1(out_dir='out'):
     # get the cell configuration
     cell_config = [
         {
-            'number': 2,
+            'number': 1,
             'name': tumor_id,
             'type': TumorAgent,
             'config': {},
         },
-        # {
-        #     'number': 1,
-        #     'name': 'big_tumor',
-        #     'type': TumorAgent,
-        #     'config': {
-        #         'tumor': {
-        #             'diameter': 50 * units.um,
-        #         }
-        #     },
-        # },
         {
-            'number': 2,
+            'number': 1,
             'name': tcell_id,
             'type': TCellAgent,
             'config': {},
@@ -127,6 +119,9 @@ def simulation_1(out_dir='out'):
         'out_dir': out_dir}
     plot_snapshots(plot_data, plot_config)
 
+    print()
+    print('saved at: {}'.format(out_dir))
+
 
 
 # all of the experiments go here for easy access by control class
@@ -136,4 +131,6 @@ experiments_library = {
 
 
 if __name__ == '__main__':
-    control(experiments_library)
+    Control(
+        experiments=experiments_library
+    )
