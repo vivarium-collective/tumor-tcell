@@ -28,6 +28,7 @@ class TumorMicroEnvironment(Generator):
 
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
+        fields = Fields(config['fields'])
 
         # make dictionary of processes
         return {
