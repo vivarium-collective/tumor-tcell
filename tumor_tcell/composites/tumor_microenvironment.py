@@ -14,7 +14,7 @@ class TumorMicroEnvironment(Generator):
     Models the environment in which tumors grow
     """
     defaults = {
-        'neighbors': {
+        'neighbors_multibody': {
             'bounds': [10, 10]  # the size of the microenvironment
         },
         'fields': {},
@@ -27,16 +27,16 @@ class TumorMicroEnvironment(Generator):
     def generate_processes(self, config):
 
         # initialize processes
-        neighbors = Neighbors(config['neighbors'])
+        neighbors_multibody = Neighbors(config['neighbors_multibody'])
 
         # make dictionary of processes
         return {
-            'neighbors': neighbors
+            'neighbors_multibody': neighbors_multibody
         }
 
     def generate_topology(self, config):
         return {
-            'neighbors': {
+            'neighbors_multibody': {
                 'cells': ('agents',)
                 # use agents store for integration with agent_environment_experiment in composition
                 # TODO (Eran) -- update agent_environment_experiment to allow for any store name

@@ -13,26 +13,69 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 # vivarium-core imports
 from vivarium.core.composition import (
     agent_environment_experiment,
-    plot_agents_multigen,
     make_agent_ids,
+    compose_experiment,
+    GENERATORS_KEY,
+    EXPERIMENT_OUT_DIR,
 )
-from vivarium.library.units import units
+from vivarium.library.units import units, remove_units
+from vivarium.core.control import Control
+
+# plots
+from vivarium.plots.agents_multigen import plot_agents_multigen
+from vivarium_cell.plots.multibody_physics import plot_tags, plot_snapshots
 
 # tumor-tcell imports
-from tumor_tcell.experiments.control import control
-# tumor-tcell composites
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 
+out_dir = EXPERIMENT_OUT_DIR
+TIMESTEP = 60
 
-# simulation #1
-def simulation_1(out_dir='out'):
+
+# simultion # 2
+def simulation_1():
 
     # experiment parameters
-    total_time = 100 #0
-    bounds = [100, 100]  #[100 * units.mm, 100 * units.mm]  # TODO - add units to bounds
+    total_time = 1000
+    bounds = [200 * units.um, 200 * units.um]
+    time_step = 60
+    tumor_id = 'tumor'
+    tcell_id = 'tcell'
+
+
+
+    # declare the hierarchy
+    hierarchy = {
+        GENERATORS_KEY: {
+            'type': Lattice,
+            'config': lattice_config},
+        'agents': {
+            agent_id: {
+                GENERATORS_KEY: {
+                    'type': InclusionBodyGrowth,
+                    'config': inclusion_config}}}}
+
+    # configure experiment
+    experiment = compose_experiment(
+        hierarchy=hierarchy,
+        # initial_state=initial_state
+    )
+
+    # run simulation
+    experiment.update(total_time)
+    data = experiment.emitter.get_data()
+    experiment.end()
+
+
+# simulation #1
+def simulation_1():
+
+    # experiment parameters
+    total_time = 1000
+    bounds = [200 * units.um, 200 * units.um]
     time_step = 60
     tumor_id = 'tumor'
     tcell_id = 'tcell'
@@ -40,26 +83,20 @@ def simulation_1(out_dir='out'):
     # get the cell configuration
     cell_config = [
         {
-            'number': 2,
+            'number': 1,
             'name': tumor_id,
             'type': TumorAgent,
-            'config': {},
+            'config': {
+                'time_step': TIMESTEP,
+            },
         },
-        # {
-        #     'number': 1,
-        #     'name': 'big_tumor',
-        #     'type': TumorAgent,
-        #     'config': {
-        #         'tumor': {
-        #             'diameter': 50 * units.um,
-        #         }
-        #     },
-        # },
         {
-            'number': 2,
+            'number': 1,
             'name': tcell_id,
             'type': TCellAgent,
-            'config': {},
+            'config': {
+                'time_step': TIMESTEP,
+            },
         }
     ]
     make_agent_ids(cell_config)
@@ -68,7 +105,8 @@ def simulation_1(out_dir='out'):
     environment_config = {
         'type': TumorMicroEnvironment,
         'config': {
-            'neighbors': {
+            'neighbors_multibody': {
+                'time_step': TIMESTEP,
                 'bounds': bounds,
             }
         },
@@ -109,6 +147,26 @@ def simulation_1(out_dir='out'):
     plot_agents_multigen(tumor_data, plot_settings, out_dir, tumor_id)
 
 
+    # snapshots plot
+    # extract data
+    multibody_config = remove_units(environment_config['config']['neighbors_multibody'])
+    agents = {time: time_data['agents'] for time, time_data in data.items()}
+    # fields = {time: time_data['fields'] for time, time_data in data.items()}
+    plot_data = {
+        'agents': agents,
+        'fields': {},
+        'config': multibody_config}
+    plot_config = {
+        'fields': [],
+        'n_snapshots': 8,
+        'agent_shape': 'circle',
+        'out_dir': out_dir}
+    plot_snapshots(plot_data, plot_config)
+
+    print()
+    print('saved at: {}'.format(out_dir))
+
+
 
 # all of the experiments go here for easy access by control class
 experiments_library = {
@@ -117,4 +175,6 @@ experiments_library = {
 
 
 if __name__ == '__main__':
-    control(experiments_library)
+    Control(
+        experiments=experiments_library
+    )

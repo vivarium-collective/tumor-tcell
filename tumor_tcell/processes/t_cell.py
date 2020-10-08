@@ -10,18 +10,16 @@ import argparse
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
 from vivarium.core.process import Process
-from vivarium.core.composition import (
-    simulate_process_in_experiment,
-    plot_simulation_output,
-    plot_agents_multigen,
-)
+from vivarium.core.composition import simulate_process_in_experiment
+from vivarium.plots.agents_multigen import plot_agents_multigen
+from vivarium.plots.simulation_output import plot_simulation_output
 
 # directories
 from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'T_cell'
-TIMESTEP = 60 # seconds
+TIMESTEP = 60  # seconds
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -39,17 +37,17 @@ class TCellProcess(Process):
         - PD1p (PD1+)
         - PD1n (PD1-)
 
-    TODOs
-        - make this work!
+    Expected Behavior
+        - approx 3 contacts required for cell death, 1-4 cells killed/day
     """
 
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 10 * units.um,
+        'diameter': 10 * units.um,  # 0.01 * units.mm,
         'initial_PD1n': 0.8,
         'transition_PD1n_to_PD1p_10days': 0.95,  # nearly 95% by 10 days (Wherry 2007)
-        'cellstate_transition_time': 259200, # extended contact with tumor cells expressing MHCI for more
+        'cellstate_transition_time': 259200,  # extended contact with tumor cells expressing MHCI for more
                # than 3 days (expected to be 100% in tumor/chronic infection after 1 week) (Schietinger 2016)
 
         # death rates (Petrovas 2007)
@@ -65,7 +63,7 @@ class TCellProcess(Process):
         'PD1p_IFNg_production': 0.0,  # molecules/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
 
-        'Ligand_threshold': 1e4,  # molecules/neighbor cell
+        'ligand_threshold': 1e4,  # molecules/neighbor cell
 
         # division rate (Petrovas 2007, Vodnala 2019)
         'PD1n_growth_8hr': 0.90,  # 95% division in 28 hours
@@ -118,6 +116,7 @@ class TCellProcess(Process):
                 'PD1n_divide_count': {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'zero',
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
@@ -140,23 +139,14 @@ class TCellProcess(Process):
                     '_value': 't-cell'
                 },
                 'diameter': {
-                    '_default': self.parameters['diameter']
+                    '_default': self.parameters['diameter'],
+                    '_divider': 'set',
                 },
                 'IFNg': {
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate',
                 },
-                'PD1': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'set',
-                },  # membrane protein, promotes T-cell death
-                'cytotoxic_packets': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'accumulate',
-                },  # release into the tumor cells
                 'MHCI_timer': {
                     '_default': 0,
                     '_emit': True,
@@ -164,21 +154,36 @@ class TCellProcess(Process):
                 },  # affects transition rate to PD1+
             },
             'neighbors': {
-                'PDL1': {
-                    '_default': 0,
-                    '_emit': True,
+                'present': {
+                    'PD1': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'set',
+                    },  # membrane protein, promotes T-cell death
+                    'cytotoxic_packets': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'accumulate',
+                        '_divider': 'split',
+                    },  # release into the tumor cells
                 },
-                'MHCI': {
-                    '_default': 0,
-                    '_emit': True,
-                },
+                'accept': {
+                    'PDL1': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                    'MHCI': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                }
             }
         }
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
-        PDL1 = states['neighbors']['PDL1']
-        MHCI = states['neighbors']['MHCI']
+        PDL1 = states['neighbors']['accept']['PDL1']
+        MHCI = states['neighbors']['accept']['MHCI']
         MHCI_timer = states['boundary']['MHCI_timer']
 
         # death
@@ -191,12 +196,9 @@ class TCellProcess(Process):
                 # print('DEATH PD1- cell!')
                 return {
                     '_delete': {
-                        'path': self.self_path
-                    },
+                        'path': self.self_path},
                     'globals': {
-                        'death': 'PD1n_apoptosis',
-                    }
-                }
+                        'death': 'PD1n_apoptosis'}}
 
         elif cell_state == 'PD1p':
             if PDL1 >= self.parameters['PDL1_critical_number']:
@@ -208,12 +210,9 @@ class TCellProcess(Process):
                     # print('DEATH PD1+ cell with PDL1!')
                     return {
                         '_delete': {
-                            'path': self.self_path
-                        },
+                            'path': self.self_path},
                         'globals': {
-                            'death': 'PD1p_PDL1_death',
-                        }
-                    }
+                            'death': 'PD1p_PDL1_death'}}
 
             else:
                 prob_death = get_probability_timestep(
@@ -224,12 +223,9 @@ class TCellProcess(Process):
                     # print('DEATH PD1+ cell without PDL1!')
                     return {
                         '_delete': {
-                            'path': self.self_path
-                        },
+                            'path': self.self_path},
                         'globals': {
-                            'death': 'PD1p_apoptosis',
-                        }
-                    }
+                            'death': 'PD1p_apoptosis'}}
 
         # division
         if cell_state == 'PD1n':
@@ -243,9 +239,7 @@ class TCellProcess(Process):
                 return {
                     'globals': {
                         'divide': True,
-                        'PD1n_divide_count': PD1n_divide_count
-                    }
-                }
+                        'PD1n_divide_count': PD1n_divide_count}}
 
         elif cell_state == 'PD1p':
             prob_divide = get_probability_timestep(
@@ -258,11 +252,15 @@ class TCellProcess(Process):
                 return {
                     'globals': {
                         'divide': True,
-                        'PD1p_divide_count': PD1p_divide_count
-                    }
-                }
+                        'PD1p_divide_count': PD1p_divide_count}}
 
-        update = {}
+
+        ## Build up an update
+        update = {
+            'internal': {},
+            'boundary': {},
+            'neighbors': {'present': {}}}
+        
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PD1n':
@@ -270,53 +268,25 @@ class TCellProcess(Process):
                 #print('PD1n become PD1p!')
                 new_cell_state = 'PD1p'
                 cell_state_count = 1
-                if 'internal' not in update:
-                    update['internal'] = {}
                 update['internal'].update({
                     'cell_state': new_cell_state,
                     'cell_state_count': cell_state_count})
 
             else:
                 cell_state_count = 0
-                if MHCI > self.parameters['Ligand_threshold']:
-                    if 'internal' not in update:
-                        update['internal'] = {}
+                if MHCI > self.parameters['ligand_threshold']:
                     update['internal'].update({
                         'cell_state': new_cell_state,
                         'cell_state_count': cell_state_count})
-
-                    if 'boundary' not in update:
-                        update['boundary'] = {}
                     update['boundary'].update({
                         'MHCI_timer': timestep})
 
         elif cell_state == 'PDL1p':
             cell_state_count = 0
-
-            if 'internal' not in update:
-                update['internal'] = {}
             update['internal'].update({
                 'cell_state': new_cell_state,
                 'cell_state_count': cell_state_count})
 
-        # if cell_state == 'PD1n':
-        #     prob_transition = get_probability_timestep(
-        #         self.parameters['transition_PD1n_to_PD1p_10days'],
-        #         864000,  # 10 days (60*60*24*10 seconds)
-        #         timestep)
-        #     if random.uniform(0, 1) < prob_transition:
-        #         new_cell_state = 'PD1p'
-        #         cell_state_count = 1
-        #         update.update({
-        #             'internal': {
-        #                 'cell_state': new_cell_state}})
-        #     else:
-        #         cell_state_count = 0
-        #
-        # elif cell_state == 'PD1p':
-        #     cell_state_count = 0
-
-        #import ipdb; ipdb.set_trace()
 
         # behavior
         IFNg = 0
@@ -334,38 +304,30 @@ class TCellProcess(Process):
             # TODO - @Eran - how do we make T cells only interact with 1 of neighbors at a time?
             # and how do we reference this cell - see last elif
             # check conditional 4 fold reduction
-            if MHCI >= self.parameters['Ligand_threshold']:
+            if MHCI >= self.parameters['ligand_threshold']:
 
                 # Max production for both happens for PD1- T cells in contact with MHCI+ tumor
                 cytotoxic_packets = self.parameters['PD1n_cytotoxic_packets'] * timestep
+                update['neighbors']['present'].update({
+                    'cytotoxic_packets': cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
-
-                if 'boundary' not in update:
-                    update['boundary'] = {}
                 update['boundary'].update({
-                    'IFNg': IFNg,
-                    'cytotoxic_packets': cytotoxic_packets
-                    })
+                    'IFNg': IFNg})
 
-            elif MHCI < self.parameters['Ligand_threshold']:
+            elif MHCI < self.parameters['ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
                 cytotoxic_packets = self.parameters['PD1n_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
+                update['neighbors']['present'].update({
+                    'cytotoxic_packets': cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
-
-                if 'boundary' not in update:
-                    update['boundary'] = {}
                 update['boundary'].update({
-                    'IFNg': IFNg,
-                    'cytotoxic_packets': cytotoxic_packets
-                    })
-
-            # target behavior 3 contacts required for cell death, 1-4 cells killed/day
+                    'IFNg': IFNg})
 
             # TODO  - elif T cell is not in contact with tumor (no cytotoxic packets)
             #   continue
@@ -373,44 +335,37 @@ class TCellProcess(Process):
         elif new_cell_state == 'PD1p':
             PD1 = self.parameters['PD1p_PD1_equilibrium']
 
-            if MHCI >= self.parameters['Ligand_threshold']:
+            if MHCI >= self.parameters['ligand_threshold']:
 
                 # Max production for both happens for T cells in contact with MHCI+ tumor
                 cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] * timestep
+                update['neighbors']['present'].update({
+                    'PD1': PD1,
+                    'cytotoxic_packets': cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
-
-                if 'boundary' not in update:
-                    update['boundary'] = {}
                 update['boundary'].update({
-                    'IFNg': IFNg,
-                    'PD1': PD1,
-                    'cytotoxic_packets': cytotoxic_packets
-                    })
+                    'IFNg': IFNg})
 
-            elif MHCI < self.parameters['Ligand_threshold']:
+            elif MHCI < self.parameters['ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
                 cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
+                update['neighbors']['present'].update({
+                    'PD1': PD1,
+                    'cytotoxic_packets': cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
-
-                if 'boundary' not in update:
-                    update['boundary'] = {}
                 update['boundary'].update({
-                    'IFNg': IFNg,
-                    'PD1': PD1,
-                    'cytotoxic_packets': cytotoxic_packets
-                    })
+                    'IFNg': IFNg})
 
             # target behavior 3 contacts required for cell death, 1-4 cells killed/day
 
             # TODO  - elif T cell is not in contact with tumor (no cytotoxic packets)
             #   continue
-
         return update
 
 
@@ -423,40 +378,40 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 0.0,
-            ('neighbors', 'MHCI'): 0.0,
+            ('neighbors', 'accept', 'PDL1'): 0.0,
+            ('neighbors', 'accept', 'MHCI'): 0.0,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'PDL1'): 5e5,
-            ('neighbors', 'MHCI'): 5e5,
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
         }),
         (interval * 9 * TIMESTEP, {}),
     ]

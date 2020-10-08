@@ -8,11 +8,9 @@ import argparse
 
 from vivarium.library.units import units
 from vivarium.core.process import Process
-from vivarium.core.composition import (
-    simulate_process_in_experiment,
-    plot_simulation_output,
-    plot_agents_multigen,
-)
+from vivarium.core.composition import simulate_process_in_experiment
+from vivarium.plots.agents_multigen import plot_agents_multigen
+from vivarium.plots.simulation_output import plot_simulation_output
 
 # directories
 from tumor_tcell import PROCESS_OUT_DIR
@@ -48,7 +46,7 @@ class TumorProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 20 * units.um,
+        'diameter': 20 * units.um, #  0.02 * units.mm,
         'initial_PDL1n': 1.0, #all start out this way based on data
 
         # death rates
@@ -98,6 +96,7 @@ class TumorProcess(Process):
                 'PDL1n_divide_count': {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'zero',
                     '_updater': 'accumulate'}
             },
             'internal': {
@@ -118,16 +117,6 @@ class TumorProcess(Process):
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },
-                'PDL1': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'set',
-                },  # membrane protein, promotes T cell exhuastion and deactivation with PD1
-                'MHCI': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'set',
-                },  # membrane protein, promotes Tumor death and T cell activation with TCR
                 'IFNg': {
                     '_default': 0 * units.ng/units.mL,
                     '_emit': True,
@@ -140,20 +129,34 @@ class TumorProcess(Process):
                 },  # cytokine changes tumor phenotype
             },
             'neighbors': {
-                'PD1': {
-                    '_default': 0,
-                    '_emit': True,
+                'present': {
+                    'PDL1': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'set',
+                    },  # membrane protein, promotes T cell exhuastion and deactivation with PD1
+                    'MHCI': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'set',
+                    },  # membrane protein, promotes Tumor death and T cell activation with TCR
                 },
-                'cytotoxic_packets': {
-                    '_default': 0,
-                    '_emit': True,
-                },
+                'accept': {
+                    'PD1': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                    'cytotoxic_packets': {
+                        '_default': 0,
+                        '_emit': True,
+                    },
+                }
             }
         }
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
-        cytotoxic_packets = states['neighbors']['cytotoxic_packets']
+        cytotoxic_packets = states['neighbors']['accept']['cytotoxic_packets']
         IFNg = states['boundary']['IFNg']
         IFNg_timer = states['boundary']['IFNg_timer']
 
@@ -168,9 +171,7 @@ class TumorProcess(Process):
                 '_delete': {
                     'path': self.self_path},
                 'globals': {
-                    'death': 'apoptosis'
-                }
-            }
+                    'death': 'apoptosis'}}
 
         # death by cytotoxic packets from T cells
         # should take about 120 min from start of T cell contact and about 2-3 contacts
@@ -182,12 +183,10 @@ class TumorProcess(Process):
                 '_delete': {
                     'path': self.self_path},
                 'globals': {
-                    'death': 'Tcell_death'}
-            }
+                    'death': 'Tcell_death'}}
 
         # division
         if cell_state == 'PDL1n':
-
             prob_divide = get_probability_timestep(
                 self.parameters['PDL1n_growth'],
                 86400,  # 24 hours (24*60*60 seconds)
@@ -201,11 +200,13 @@ class TumorProcess(Process):
                         'PDL1n_divide_count': PDL1n_divide_count
                     }
                 }
-
         elif cell_state == 'PDL1p':
             pass
 
+
+        ## Build up an update
         update = {}
+
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PDL1n':
@@ -234,14 +235,13 @@ class TumorProcess(Process):
         MHCI = 0
         PDL1 = 0
 
-
         if new_cell_state == 'PDL1p':
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
             MHCI = self.parameters['PDL1p_MHCI_equilibrium']
 
-            if 'boundary' not in update:
-                update['boundary'] = {}
-            update['boundary'].update({
+            if 'neighbors' not in update:
+                update['neighbors'] = {'present': {}}
+            update['neighbors']['present'].update({
                 'PDL1': PDL1,
                 'MHCI': MHCI})
 
@@ -262,49 +262,49 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 0.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 0.0,
             ('boundary', 'IFNg'): 0.0*units.ng/units.mL,
-            ('neighbors', 'PD1'): 0.0,
+            ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 100.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 100.0,
             ('boundary', 'IFNg'): 1.0*units.ng/units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 200.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 200.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 0.0,
+            ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 300.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 300.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 400.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 400.0,
             ('boundary', 'IFNg'): 4.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 700.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 700.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 1000.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1000.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 1500.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1500.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'cytotoxic_packets'): 1600.0,
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1600.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),
     ]

@@ -26,4 +26,5 @@ setup(
     include_package_data=True,
     install_requires=[
         'vivarium-core',
+        'vivarium-cell',
         'pymunk'])
