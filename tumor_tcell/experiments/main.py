@@ -32,10 +32,9 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 
 out_dir = EXPERIMENT_OUT_DIR
-TIMESTEP = 60
 
 
-# simultion # 2
+# simulation # 2
 def simulation_1():
 
     # experiment parameters
@@ -44,8 +43,6 @@ def simulation_1():
     time_step = 60
     tumor_id = 'tumor'
     tcell_id = 'tcell'
-
-
 
     # declare the hierarchy
     hierarchy = {
@@ -71,31 +68,34 @@ def simulation_1():
 
 
 # simulation #1
-def simulation_1():
-
-    # experiment parameters
-    total_time = 1000
+def simulation_1(
+        config={},
+        total_time=1000,
+        time_step=600,
+):
+    n_tcells = 1
+    n_tumors = 1
     bounds = [200 * units.um, 200 * units.um]
-    time_step = 60
+
     tumor_id = 'tumor'
     tcell_id = 'tcell'
 
     # get the cell configuration
     cell_config = [
         {
-            'number': 1,
+            'number': n_tumors,
             'name': tumor_id,
             'type': TumorAgent,
             'config': {
-                'time_step': TIMESTEP,
+                'time_step': time_step,
             },
         },
         {
-            'number': 1,
+            'number': n_tcells,
             'name': tcell_id,
             'type': TCellAgent,
             'config': {
-                'time_step': TIMESTEP,
+                'time_step': time_step,
             },
         }
     ]
@@ -106,7 +106,7 @@ def simulation_1():
         'type': TumorMicroEnvironment,
         'config': {
             'neighbors_multibody': {
-                'time_step': TIMESTEP,
+                'time_step': time_step,
                 'bounds': bounds,
             }
         },
@@ -120,7 +120,7 @@ def simulation_1():
 
     # run the simulation
     experiment.update(total_time)
-    experiment.end()
+    experiment.end()  # required for parallel processing
 
     # retrieve data from the emitter
     data = experiment.emitter.get_data()

@@ -163,6 +163,16 @@ class Neighbors(Process):
                             '_default': 0.0
                         }
                     },
+                    'transfer': {
+                        '*': {
+                            '_default': 0.0
+                        }
+                    },
+                    'receive': {
+                        '*': {
+                            '_default': 0.0
+                        }
+                    },
                 }
             }
         }
@@ -193,12 +203,16 @@ class Neighbors(Process):
             cell_id: {
                 'accept': {},
                 'present': {},
+                'transfer': {},  # TODO -- only cytotoxic packets are transferred
+                'receive': {},  # TODO -- only cytotoxic packets are transferred
             } for cell_id in cells.keys()}
 
         for cell_id, neighbors in cell_neighbors.items():
             for neighbor_id in neighbors:
                 # the neighbor's present moves to the cell's accept
                 present = cells[neighbor_id]['neighbors']['present']
+
+                # TODO -- present/accept are NOT exchanged. transfer/receive ARE
                 exchange[cell_id]['accept'] = add_to_dict(exchange[cell_id]['accept'], present)
                 exchange[neighbor_id]['present'] = remove_from_dict(exchange[neighbor_id]['present'], present)
 
