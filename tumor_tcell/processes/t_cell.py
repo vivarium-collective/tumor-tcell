@@ -19,7 +19,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'T_cell'
-TIMESTEP = 60 # seconds
+TIMESTEP = 60  # seconds
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -366,7 +366,6 @@ class TCellProcess(Process):
 
             # TODO  - elif T cell is not in contact with tumor (no cytotoxic packets)
             #   continue
-
         return update
 
 

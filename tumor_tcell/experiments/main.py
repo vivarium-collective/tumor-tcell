@@ -29,7 +29,9 @@ from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 
-out_dir=EXPERIMENT_OUT_DIR
+out_dir = EXPERIMENT_OUT_DIR
+TIMESTEP = 60
+
 
 # simulation #1
 def simulation_1():
@@ -47,13 +49,17 @@ def simulation_1():
             'number': 1,
             'name': tumor_id,
             'type': TumorAgent,
-            'config': {},
+            'config': {
+                'time_step': TIMESTEP,
+            },
         },
         {
             'number': 1,
             'name': tcell_id,
             'type': TCellAgent,
-            'config': {},
+            'config': {
+                'time_step': TIMESTEP,
+            },
         }
     ]
     make_agent_ids(cell_config)
@@ -62,7 +68,8 @@ def simulation_1():
     environment_config = {
         'type': TumorMicroEnvironment,
         'config': {
-            'neighbors': {
+            'neighbors_multibody': {
+                'time_step': TIMESTEP,
                 'bounds': bounds,
             }
         },
@@ -105,7 +112,7 @@ def simulation_1():
 
     # snapshots plot
     # extract data
-    multibody_config = remove_units(environment_config['config']['neighbors'])
+    multibody_config = remove_units(environment_config['config']['neighbors_multibody'])
     agents = {time: time_data['agents'] for time, time_data in data.items()}
     # fields = {time: time_data['fields'] for time, time_data in data.items()}
     plot_data = {

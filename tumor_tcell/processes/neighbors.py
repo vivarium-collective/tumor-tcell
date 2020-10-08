@@ -153,15 +153,16 @@ class Neighbors(Process):
                         '_updater': 'set'},
                 },
                 'neighbors': {
-                    'present': {},
-                    'accept': {},
-                    # }
-                    # 'PD1': {},
-                    # 'cytotoxic_packets': {},
-                    # 'PDL1': {},
-                    # 'MHCI': {}
-                    # TODO -- tumors receive cytotoxic_packets and PD1 from the t-cell's boundary
-                    # TODO -- t-cells receive PDL1 and MHCI from the tumors' boundary
+                    'present': {
+                        '*': {
+                            '_default': 0.0
+                        }
+                    },
+                    'accept': {
+                        '*': {
+                            '_default': 0.0
+                        }
+                    },
                 }
             }
         }
@@ -175,61 +176,38 @@ class Neighbors(Process):
         if self.animate:
             self.animate_frame(cells)
 
-        # update multibody with new cells, convert and remove units
+        # update physics with new cells
         self.physics.update_bodies(cells)
 
         # run simulation
         self.physics.run(timestep)
 
-        # get new cell positions, add units back on
+        # get new cell positions
         cell_positions = self.physics.get_body_positions()
 
         # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
 
-
         # exchange with neighbors
-        # TODO -- need to bring the delivery back down to 0?
-        # TODO -- packet needs to be split up amongst t-cells?
-        # TODO -- exchange updates the neighbor port
         exchange = {
             cell_id: {
-                'present': {},
                 'accept': {},
+                'present': {},
             } for cell_id in cells.keys()}
 
         for cell_id, neighbors in cell_neighbors.items():
-            # packet = cells[cell_id]['neighbors']
-            # TODO -- packet comes from the boundary, delivered to the neighbor
-            # TODO -- use present/accept approach to exchange molecules
-            present = cells[cell_id]['neighbors']['present']
-            accept = cells[cell_id]['neighbors']['accept']
-
-            # t-cell get ligand from tumor BOUNDARY (PDL1, MHCI)
-            if cells[cell_id]['boundary']['cell_type'] == 'tumor':
-                for neighbor in neighbors:
-                    # TODO -- ligands are not moved over
-                    exchange[neighbor] = add_to_dict(exchange[neighbor], accept)
-
-            # tumors get cytotoxic packets from their t-cell BOUNDARY
-            if cells[cell_id]['boundary']['cell_type'] == 't-cell':
-                for neighbor in neighbors:
-                    exchange[neighbor] = add_to_dict(exchange[neighbor], accept)
-                # remove from t-cell's BOUNDARY
-                exchange[cell_id] = remove_from_dict(exchange[cell_id], present)
-
-        print(exchange)
-
-        import ipdb; ipdb.set_trace()
+            for neighbor_id in neighbors:
+                # the neighbor's present moves to the cell's accept
+                present = cells[neighbor_id]['neighbors']['present']
+                exchange[cell_id]['accept'] = add_to_dict(exchange[cell_id]['accept'], present)
+                exchange[neighbor_id]['present'] = remove_from_dict(exchange[neighbor_id]['present'], present)
 
         update = {
             'cells': {
                 cell_id: {
                     'boundary': {
-                        'location': list(cell_positions[cell_id]),
-                        # 'exchange': exchange[cell_id],
-                    },
-                    # 'neighbors': exchange[cell_id]
+                        'location': list(cell_positions[cell_id])},
+                    'neighbors': exchange[cell_id]
                 } for cell_id in cells.keys()
             }
         }
