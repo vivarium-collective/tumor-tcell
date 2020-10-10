@@ -4,20 +4,38 @@ Tumor microenvironment
 ======================
 """
 
+import os
+
 from vivarium.core.process import Generator
+from vivarium.core.composition import (
+    compartment_in_experiment,
+    COMPARTMENT_OUT_DIR,
+)
+from vivarium.library.dict_utils import deep_merge
+from vivarium.library.units import units
+
+# processes
 from tumor_tcell.processes.neighbors import Neighbors
 from vivarium_cell.processes.diffusion_field import DiffusionField
 
+# plots
+from vivarium_cell.plots.multibody_physics import plot_snapshots
+
+NAME = 'tumor_microenvironment'
+
+
 
 class TumorMicroEnvironment(Generator):
-    """ Tumor microenvironment compartment
-    Models the environment in which tumors grow
+    """ Tumor micro-environment
+
+    Models a spatial environment in which t-cells and tumors interact
     """
+    name = NAME
     defaults = {
         'neighbors_multibody': {
-            'bounds': [10, 10]  # the size of the microenvironment
+            'bounds': [10 * units.um, 10 * units.um]
         },
-        'fields': {},
+        'diffusion_field': {},
         '_schema': {},
     }
 
@@ -28,24 +46,175 @@ class TumorMicroEnvironment(Generator):
 
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
-        diffusion_fields = DiffusionField(config['fields'])
+        diffusion_field = DiffusionField(config['diffusion_field'])
 
         # make dictionary of processes
         return {
             'neighbors_multibody': neighbors_multibody,
-            'diffusion_fields': diffusion_fields,
+            'diffusion_field': diffusion_field,
         }
 
     def generate_topology(self, config):
         return {
             'neighbors_multibody': {
-                'cells': ('agents',)
-                # use agents store for integration with agent_environment_experiment in composition
-                # TODO (Eran) -- update agent_environment_experiment to allow for any store name
+                'cells': ('cells',)
             },
-            'diffusion_fields': {
-                'agents': ('agents',),
+            'diffusion_field': {
+                'agents': ('cells',),
                 'fields': ('fields',),
                 'dimensions': ('dimensions',),
             }
         }
+
+
+def make_neighbors_config(
+        time_step=None,
+        jitter_force=None,
+        bounds=None,
+        n_bins=None,
+        depth=None,
+        concentrations=None,
+        molecules=None,
+        diffusion=None,
+        keep_fields_emit=None,
+        set_config=None,
+        parallel=None,
+):
+    config = {'neighbors_multibody': {}, 'diffusion': {}}
+
+    if time_step:
+        config['neighbors_multibody']['time_step'] = time_step
+        config['diffusion_field']['time_step'] = time_step
+    if bounds:
+        config['neighbors_multibody']['bounds'] = bounds
+        config['diffusion_field']['bounds'] = bounds
+        config['diffusion_field']['n_bins'] = bounds
+    if n_bins:
+        config['diffusion_field']['n_bins'] = n_bins
+    if jitter_force:
+        config['neighbors_multibody']['jitter_force'] = jitter_force
+    if depth:
+        config['diffusion_field']['depth'] = depth
+    if diffusion:
+        config['diffusion_field']['diffusion'] = diffusion
+    if concentrations:
+        config['diffusion_field']['gradient'] = {
+            'type': 'uniform',
+            'molecules': concentrations}
+        molecules = list(concentrations.keys())
+        config['diffusion_field']['molecules'] = molecules
+    elif molecules:
+        # molecules are a list, assume uniform concentrations of 1
+        config['diffusion_field']['molecules'] = molecules
+    if keep_fields_emit:
+        # by default no fields are emitted
+        config['diffusion_field']['_schema'] = {
+            'fields': {
+                field_id: {
+                    '_emit': False}
+                for field_id in molecules
+                if field_id not in keep_fields_emit}}
+    if parallel:
+        config['diffusion_field']['_parallel'] = True
+        config['neighbors_multibody']['_parallel'] = True
+    if set_config:
+        config = deep_merge(config, set_config)
+
+    return config
+
+# def single_agent_config(config):
+#     # cell dimensions
+#     bounds = config.get('bounds', DEFAULT_BOUNDS)
+#     location = config.get('location')
+#     if location:
+#         location = [loc * bounds[n] for n, loc in enumerate(location)]
+#     else:
+#         location = make_random_position(bounds)
+#
+#     return {'boundary': {
+#         'location': location,
+#         'angle': np.random.uniform(0, 2 * PI),
+#         'volume': volume,
+#         'length': length,
+#         'width': width,
+#         'mass': 1339 * units.fg,
+#         'thrust': 0,
+#         'torque': 0}}
+#
+# def agent_body_config(config):
+#     agent_ids = config['agent_ids']
+#     agent_config = {
+#         agent_id: single_agent_config(config)
+#         for agent_id in agent_ids}
+#     return agent_config
+
+def test_microenvironment(
+        config=None,
+        n_agents=1,
+        end_time=10
+):
+    if config is None:
+        config = make_neighbors_config()
+    # configure the compartment
+    compartment = TumorMicroEnvironment(config)
+
+    # set initial agent state
+    if n_agents:
+        agent_ids = [str(agent_id) for agent_id in range(n_agents)]
+        body_config = {'agent_ids': agent_ids}
+        if 'multibody' in config and 'bounds' in config['multibody']:
+            body_config.update({'bounds': config['multibody']['bounds']})
+
+        initial_agents_state = {}  #agent_body_config(body_config)
+        initial_state = {'agents': initial_agents_state}
+
+    # configure experiment
+    experiment_settings = {
+        'compartment': config,
+        'initial_state': initial_state}
+    experiment = compartment_in_experiment(
+        compartment,
+        experiment_settings)
+
+    # run experiment
+    timestep = 1
+    time = 0
+    while time < end_time:
+        experiment.update(timestep)
+        time += timestep
+    data = experiment.emitter.get_data()
+
+    # assert that the agent remains in the simulation until the end
+    assert len(data[end_time]['agents']) == n_agents
+    return data
+
+
+def main():
+    out_dir = os.path.join(COMPARTMENT_OUT_DIR, NAME)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    bounds = [25, 25]
+    config = make_neighbors_config(
+        bounds=bounds,
+    )
+    data = test_microenvironment(
+        config=config,
+        n_agents=1,
+        end_time=40)
+
+    # make snapshot plot
+    agents = {time: time_data['agents'] for time, time_data in data.items()}
+    fields = {time: time_data['fields'] for time, time_data in data.items()}
+    plot_data = {
+        'agents': agents,
+        'fields': fields,
+        'config': {'bounds': bounds}}
+    plot_config = {
+        'out_dir': out_dir,
+        'filename': 'snapshots'}
+    plot_snapshots(plot_data, plot_config)
+
+
+if __name__ == '__main__':
+    main()
