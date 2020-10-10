@@ -36,29 +36,63 @@ out_dir = EXPERIMENT_OUT_DIR
 
 # simulation # 2
 def simulation_1():
-
     # experiment parameters
     total_time = 1000
     bounds = [200 * units.um, 200 * units.um]
     time_step = 60
+
+    # cell config
+    n_tcells = 1
+    n_tumors = 1
     tumor_id = 'tumor'
     tcell_id = 'tcell'
 
+    # initial state
+    initial_state = {}
+
     # declare the hierarchy
     hierarchy = {
+        # generate the tumor micro-environment at the top level
         GENERATORS_KEY: {
-            'type': Lattice,
-            'config': lattice_config},
-        'agents': {
-            agent_id: {
-                GENERATORS_KEY: {
-                    'type': InclusionBodyGrowth,
-                    'config': inclusion_config}}}}
+            'type': TumorMicroEnvironment,
+            'config': {
+                'neighbors_multibody': {
+                    'time_step': time_step,
+                    'bounds': bounds,
+                },
+                'diffusion_field': {}
+            }
+        },
+        # cells are one level down, under the 'cells' key
+        # initial cell types and configurations are put in a list
+        'cells': [
+            {
+                agent_id: {
+                    GENERATORS_KEY: {
+                        'type': TumorAgent,
+                        'config': {
+                            'time_step': time_step,
+                        }
+                    }
+                } for agent_id in [tumor_id + '_' + str(num) for num in range(n_tcells)]
+            },
+            {
+                agent_id: {
+                    GENERATORS_KEY: {
+                        'type': TCellAgent,
+                        'config': {
+                            'time_step': time_step,
+                        }
+                    }
+                } for agent_id in [tcell_id + '_' + str(num) for num in range(n_tumors)]
+            }
+        ]
+    }
 
     # configure experiment
     experiment = compose_experiment(
         hierarchy=hierarchy,
-        # initial_state=initial_state
+        initial_state=initial_state
     )
 
     # run simulation
