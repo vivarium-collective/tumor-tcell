@@ -6,7 +6,7 @@ Tumor microenvironment
 
 from vivarium.core.process import Generator
 from tumor_tcell.processes.neighbors import Neighbors
-from tumor_tcell.processes.fields import Fields
+from vivarium_cell.processes.diffusion_field import DiffusionField
 
 
 class TumorMicroEnvironment(Generator):
@@ -28,11 +28,12 @@ class TumorMicroEnvironment(Generator):
 
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
-        fields = Fields(config['fields'])
+        diffusion_fields = DiffusionField(config['fields'])
 
         # make dictionary of processes
         return {
-            'neighbors_multibody': neighbors_multibody
+            'neighbors_multibody': neighbors_multibody,
+            'diffusion_fields': diffusion_fields,
         }
 
     def generate_topology(self, config):
@@ -41,5 +42,10 @@ class TumorMicroEnvironment(Generator):
                 'cells': ('agents',)
                 # use agents store for integration with agent_environment_experiment in composition
                 # TODO (Eran) -- update agent_environment_experiment to allow for any store name
+            },
+            'diffusion_fields': {
+                'agents': ('agents',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
             }
         }
