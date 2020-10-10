@@ -65,6 +65,7 @@ def simulation_1():
         },
         # cells are one level down, under the 'cells' key
         # initial cell types and configurations are put in a list
+        # TODO -- 'cells' required in TumorMicroEnvironment
         'cells': [
             {
                 agent_id: {
