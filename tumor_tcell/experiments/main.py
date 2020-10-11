@@ -34,7 +34,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 out_dir = EXPERIMENT_OUT_DIR
 
 
-# simulation # 2
+# simulation # 1
 def simulation_1():
     # experiment parameters
     total_time = 1000
@@ -46,11 +46,53 @@ def simulation_1():
     n_tumors = 1
     tumor_id = 'tumor'
     tcell_id = 'tcell'
+    t_cell_ids = [tumor_id + '_' + str(num) for num in range(n_tcells)]
+    tumor_ids = [tcell_id + '_' + str(num) for num in range(n_tumors)]
 
     # initial state
-    initial_state = {}
+    initial_t_cells = {
+        agent_id: {
+            'location': []
+        } for agent_id in t_cell_ids
+    }
+    initial_tumors = {
+        agent_id: {
+            'location': []
+        } for agent_id in tumor_ids
+    }
+    initial_state = {
+        'fields': {},
+        'cells': {
+            **initial_t_cells, **initial_tumors}
+    }
 
-    # declare the hierarchy
+    # t-cell configurations
+    t_cell_hierarchy = {
+        agent_id: {
+            GENERATORS_KEY: {
+                'type': TCellAgent,
+                'config': {
+                    'time_step': time_step,
+                    'agent_id': agent_id,
+                }
+            }
+        } for agent_id in t_cell_ids
+    }
+
+    # tumor configurations
+    tumor_hierarchy = {
+        agent_id: {
+            GENERATORS_KEY: {
+                'type': TumorAgent,
+                'config': {
+                    'time_step': time_step,
+                    'agent_id': agent_id,
+                }
+            }
+        } for agent_id in tumor_ids
+    }
+
+    # declare the hierarchy full
     hierarchy = {
         # generate the tumor micro-environment at the top level
         GENERATORS_KEY: {
@@ -60,34 +102,14 @@ def simulation_1():
                     'time_step': time_step,
                     'bounds': bounds,
                 },
-                'diffusion_field': {}
+                'diffusion_field': {
+                    'time_step': time_step,
+                    'bounds': bounds,
+                }
             }
         },
         # cells are one level down, under the 'cells' key
-        # initial cell types and configurations are put in a list
-        # TODO -- 'cells' required in TumorMicroEnvironment
-        'cells': [
-            {
-                agent_id: {
-                    GENERATORS_KEY: {
-                        'type': TumorAgent,
-                        'config': {
-                            'time_step': time_step,
-                        }
-                    }
-                } for agent_id in [tumor_id + '_' + str(num) for num in range(n_tcells)]
-            },
-            {
-                agent_id: {
-                    GENERATORS_KEY: {
-                        'type': TCellAgent,
-                        'config': {
-                            'time_step': time_step,
-                        }
-                    }
-                } for agent_id in [tcell_id + '_' + str(num) for num in range(n_tumors)]
-            }
-        ]
+        'cells': {**t_cell_hierarchy, **tumor_hierarchy}
     }
 
     # configure experiment
@@ -102,8 +124,8 @@ def simulation_1():
     experiment.end()
 
 
-# simulation #1
-def simulation_1(
+# simulation #2
+def simulation_2(
         config={},
         total_time=1000,
         time_step=600,
@@ -206,6 +228,7 @@ def simulation_1(
 # all of the experiments go here for easy access by control class
 experiments_library = {
     '1': simulation_1,
+    '2': simulation_2,
 }
 
 
