@@ -57,10 +57,10 @@ class TumorMicroEnvironment(Generator):
     def generate_topology(self, config):
         return {
             'neighbors_multibody': {
-                'cells': ('cells',)
+                'cells': ('agents',)
             },
             'diffusion_field': {
-                'agents': ('cells',),
+                'agents': ('agents',),
                 'fields': ('fields',),
                 'dimensions': ('dimensions',),
             }
