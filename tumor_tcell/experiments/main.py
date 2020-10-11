@@ -10,6 +10,8 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 ```
 """
 
+import random
+
 # vivarium-core imports
 from vivarium.core.composition import (
     agent_environment_experiment,
@@ -32,37 +34,48 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 
 out_dir = EXPERIMENT_OUT_DIR
+TUMOR_ID = 'tumor'
+TCELL_ID = 'tcell'
+
+# TODO -- pass this in through config
+BOUNDS = [200 * units.um, 200 * units.um]
 
 
 # simulation # 1
 def simulation_1():
     # experiment parameters
-    total_time = 1000
-    bounds = [200 * units.um, 200 * units.um]
+    total_time = 10000
+    bounds = BOUNDS
     time_step = 60
 
     # cell config
-    n_tcells = 1
-    n_tumors = 1
-    tumor_id = 'tumor'
-    tcell_id = 'tcell'
-    t_cell_ids = [tumor_id + '_' + str(num) for num in range(n_tcells)]
-    tumor_ids = [tcell_id + '_' + str(num) for num in range(n_tumors)]
+    n_tcells = 5
+    n_tumors = 5
+    t_cell_ids = [TUMOR_ID + '_' + str(num) for num in range(n_tcells)]
+    tumor_ids = [TCELL_ID + '_' + str(num) for num in range(n_tumors)]
 
     # initial state
     initial_t_cells = {
         agent_id: {
-            'location': []
+            'boundary': {
+                'location': [
+                    random.uniform(0, bounds[0]),
+                    random.uniform(0, bounds[1])]
+            }
         } for agent_id in t_cell_ids
     }
     initial_tumors = {
         agent_id: {
-            'location': []
+            'boundary': {
+                'location': [
+                    random.uniform(0, bounds[0]),
+                    random.uniform(0, bounds[1])]
+            }
         } for agent_id in tumor_ids
     }
     initial_state = {
         'fields': {},
-        'cells': {
+        'agents': {
             **initial_t_cells, **initial_tumors}
     }
 
@@ -108,8 +121,8 @@ def simulation_1():
                 }
             }
         },
-        # cells are one level down, under the 'cells' key
-        'cells': {**t_cell_hierarchy, **tumor_hierarchy}
+        # cells are one level down, under the 'agents' key
+        'agents': {**t_cell_hierarchy, **tumor_hierarchy}
     }
 
     # configure experiment
@@ -123,64 +136,10 @@ def simulation_1():
     data = experiment.emitter.get_data()
     experiment.end()
 
+    return data
 
-# simulation #2
-def simulation_2(
-        config={},
-        total_time=1000,
-        time_step=600,
-):
-    n_tcells = 1
-    n_tumors = 1
-    bounds = [200 * units.um, 200 * units.um]
 
-    tumor_id = 'tumor'
-    tcell_id = 'tcell'
-
-    # get the cell configuration
-    cell_config = [
-        {
-            'number': n_tumors,
-            'name': tumor_id,
-            'type': TumorAgent,
-            'config': {
-                'time_step': time_step,
-            },
-        },
-        {
-            'number': n_tcells,
-            'name': tcell_id,
-            'type': TCellAgent,
-            'config': {
-                'time_step': time_step,
-            },
-        }
-    ]
-    make_agent_ids(cell_config)
-
-    # configure the environment
-    environment_config = {
-        'type': TumorMicroEnvironment,
-        'config': {
-            'neighbors_multibody': {
-                'time_step': time_step,
-                'bounds': bounds,
-            }
-        },
-    }
-
-    # make the experiment using helper function agent_environment_experiment
-    experiment = agent_environment_experiment(
-        agents_config=cell_config,
-        environment_config=environment_config
-    )
-
-    # run the simulation
-    experiment.update(total_time)
-    experiment.end()  # required for parallel processing
-
-    # retrieve data from the emitter
-    data = experiment.emitter.get_data()
+def plots_suite(data, out_dir=EXPERIMENT_OUT_DIR):
 
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
@@ -191,28 +150,27 @@ def simulation_2(
             'agents': {
                 agent_id: agent_data
                 for agent_id, agent_data in all_agents_data.items()
-                if tcell_id in agent_id}}
+                if TCELL_ID in agent_id}}
         tumor_data[time] = {
             'agents': {
                 agent_id: agent_data
                 for agent_id, agent_data in all_agents_data.items()
-                if tumor_id in agent_id}}
+                if TUMOR_ID in agent_id}}
 
     # make multigen plot for tcells and tumors
     plot_settings = {}
-    plot_agents_multigen(tcell_data, plot_settings, out_dir, tcell_id)
-    plot_agents_multigen(tumor_data, plot_settings, out_dir, tumor_id)
-
+    plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
+    plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
 
     # snapshots plot
     # extract data
-    multibody_config = remove_units(environment_config['config']['neighbors_multibody'])
+    env_config = {'bounds': remove_units(BOUNDS)}
     agents = {time: time_data['agents'] for time, time_data in data.items()}
     # fields = {time: time_data['fields'] for time, time_data in data.items()}
     plot_data = {
         'agents': agents,
         'fields': {},
-        'config': multibody_config}
+        'config': env_config}
     plot_config = {
         'fields': [],
         'n_snapshots': 8,
@@ -220,19 +178,26 @@ def simulation_2(
         'out_dir': out_dir}
     plot_snapshots(plot_data, plot_config)
 
-    print()
-    print('saved at: {}'.format(out_dir))
-
 
 
 # all of the experiments go here for easy access by control class
 experiments_library = {
     '1': simulation_1,
-    '2': simulation_2,
 }
-
+plots_library = {
+    '1': plots_suite,
+}
+workflow_library = {
+    '1': {
+        'name': 'tumor_tcell_experiment',
+        'experiment': '1',
+        'plots': ['1'],
+    }
+}
 
 if __name__ == '__main__':
     Control(
-        experiments=experiments_library
+        experiments=experiments_library,
+        plots=plots_library,
+        workflows=workflow_library,
     )
