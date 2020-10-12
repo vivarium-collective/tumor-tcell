@@ -5,6 +5,7 @@ Tumor microenvironment
 """
 
 import os
+import random
 
 from vivarium.core.process import Generator
 from vivarium.core.composition import (
@@ -12,17 +13,18 @@ from vivarium.core.composition import (
     COMPARTMENT_OUT_DIR,
 )
 from vivarium.library.dict_utils import deep_merge
-from vivarium.library.units import units
+from vivarium.library.units import units, remove_units
 
 # processes
 from tumor_tcell.processes.neighbors import Neighbors
-from vivarium_cell.processes.diffusion_field import DiffusionField
+from tumor_tcell.processes.fields import Fields
+# from vivarium_cell.processes.diffusion_field import DiffusionField
 
 # plots
 from vivarium_cell.plots.multibody_physics import plot_snapshots
 
 NAME = 'tumor_microenvironment'
-
+DEFAULT_BOUNDS = [50 * units.um, 50 * units.um]
 
 
 class TumorMicroEnvironment(Generator):
@@ -33,7 +35,7 @@ class TumorMicroEnvironment(Generator):
     name = NAME
     defaults = {
         'neighbors_multibody': {
-            'bounds': [10 * units.um, 10 * units.um]
+            'bounds': DEFAULT_BOUNDS
         },
         'diffusion_field': {},
         '_schema': {},
@@ -46,12 +48,12 @@ class TumorMicroEnvironment(Generator):
 
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
-        diffusion_field = DiffusionField(config['diffusion_field'])
+        # diffusion_field = Fields(config['diffusion_field'])
 
         # make dictionary of processes
         return {
             'neighbors_multibody': neighbors_multibody,
-            'diffusion_field': diffusion_field,
+            # 'diffusion_field': diffusion_field,
         }
 
     def generate_topology(self, config):
@@ -59,11 +61,11 @@ class TumorMicroEnvironment(Generator):
             'neighbors_multibody': {
                 'cells': ('agents',)
             },
-            'diffusion_field': {
-                'agents': ('agents',),
-                'fields': ('fields',),
-                'dimensions': ('dimensions',),
-            }
+            # 'diffusion_field': {
+            #     'agents': ('agents',),
+            #     'fields': ('fields',),
+            #     'dimensions': ('dimensions',),
+            # }
         }
 
 
@@ -80,15 +82,15 @@ def make_neighbors_config(
         set_config=None,
         parallel=None,
 ):
-    config = {'neighbors_multibody': {}, 'diffusion': {}}
+    config = {'neighbors_multibody': {}, 'diffusion_field': {}}
 
     if time_step:
         config['neighbors_multibody']['time_step'] = time_step
         config['diffusion_field']['time_step'] = time_step
     if bounds:
         config['neighbors_multibody']['bounds'] = bounds
-        config['diffusion_field']['bounds'] = bounds
-        config['diffusion_field']['n_bins'] = bounds
+        config['diffusion_field']['bounds'] = remove_units(bounds)
+        config['diffusion_field']['n_bins'] = remove_units(bounds)
     if n_bins:
         config['diffusion_field']['n_bins'] = n_bins
     if jitter_force:
@@ -122,31 +124,26 @@ def make_neighbors_config(
 
     return config
 
-# def single_agent_config(config):
-#     # cell dimensions
-#     bounds = config.get('bounds', DEFAULT_BOUNDS)
-#     location = config.get('location')
-#     if location:
-#         location = [loc * bounds[n] for n, loc in enumerate(location)]
-#     else:
-#         location = make_random_position(bounds)
-#
-#     return {'boundary': {
-#         'location': location,
-#         'angle': np.random.uniform(0, 2 * PI),
-#         'volume': volume,
-#         'length': length,
-#         'width': width,
-#         'mass': 1339 * units.fg,
-#         'thrust': 0,
-#         'torque': 0}}
-#
-# def agent_body_config(config):
-#     agent_ids = config['agent_ids']
-#     agent_config = {
-#         agent_id: single_agent_config(config)
-#         for agent_id in agent_ids}
-#     return agent_config
+def single_agent_config(config):
+    bounds = config.get('bounds', DEFAULT_BOUNDS)
+    location = config.get('location')
+    if location:
+        location = [loc * bounds[n] for n, loc in enumerate(location)]
+    else:
+        location = [random.uniform(0, b) for b in bounds]
+
+    return {'boundary': {
+        'location': location,
+        'diameter': 1 * units.um,
+        'mass': 1339 * units.fg,
+    }}
+
+def agent_body_config(config):
+    agent_ids = config['agent_ids']
+    agent_config = {
+        agent_id: single_agent_config(config)
+        for agent_id in agent_ids}
+    return agent_config
 
 def test_microenvironment(
         config=None,
@@ -162,10 +159,9 @@ def test_microenvironment(
     if n_agents:
         agent_ids = [str(agent_id) for agent_id in range(n_agents)]
         body_config = {'agent_ids': agent_ids}
-        if 'multibody' in config and 'bounds' in config['multibody']:
-            body_config.update({'bounds': config['multibody']['bounds']})
-
-        initial_agents_state = {}  #agent_body_config(body_config)
+        if 'neighbors_multibody' in config and 'bounds' in config['neighbors_multibody']:
+            body_config.update({'bounds': config['neighbors_multibody']['bounds']})
+        initial_agents_state = agent_body_config(body_config)
         initial_state = {'agents': initial_agents_state}
 
     # configure experiment
@@ -177,11 +173,7 @@ def test_microenvironment(
         experiment_settings)
 
     # run experiment
-    timestep = 1
-    time = 0
-    while time < end_time:
-        experiment.update(timestep)
-        time += timestep
+    experiment.update(end_time)
     data = experiment.emitter.get_data()
 
     # assert that the agent remains in the simulation until the end
@@ -194,10 +186,8 @@ def main():
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    bounds = [25, 25]
-    config = make_neighbors_config(
-        bounds=bounds,
-    )
+    bounds = [25 * units.um, 25 * units.um]
+    config = make_neighbors_config(bounds=bounds)
     data = test_microenvironment(
         config=config,
         n_agents=1,
@@ -205,13 +195,14 @@ def main():
 
     # make snapshot plot
     agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
+    # fields = {time: time_data['fields'] for time, time_data in data.items()}
     plot_data = {
         'agents': agents,
-        'fields': fields,
-        'config': {'bounds': bounds}}
+        # 'fields': fields,
+        'config': {'bounds': remove_units(bounds)}}
     plot_config = {
         'out_dir': out_dir,
+        'agent_shape': 'circle',
         'filename': 'snapshots'}
     plot_snapshots(plot_data, plot_config)
 
