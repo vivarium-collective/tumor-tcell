@@ -98,7 +98,7 @@ class Neighbors(Process):
     defaults = {
         'time_step': 2,
         'cells': {},
-        'jitter_force': 0.0,
+        'jitter_force': 1e-3,
         'bounds': DEFAULT_BOUNDS,
         'pymunk_length_unit': DEFAULT_LENGTH_UNIT,
         'pymunk_mass_unit': DEFAULT_MASS_UNIT,

@@ -38,6 +38,10 @@ class TCellAgent(Generator):
     def __init__(self, config):
         super(TCellAgent, self).__init__(config)
 
+    def initial_state(self, config=None):
+        process = TCellProcess()
+        return process.initial_state(config)
+
     def generate_processes(self, config):
 
         daughter_path = config['daughter_path']
@@ -83,6 +87,7 @@ def test_tcell_agent(total_time=1000):
 
     # settings for simulation and plot
     settings = {
+        'initial_state': compartment.initial_state(),
         'outer_path': ('agents', agent_id),
         'return_raw_data': True,
         'timestep': 10,

@@ -95,12 +95,24 @@ class TCellProcess(Process):
 
     def __init__(self, parameters=None):
         super(TCellProcess, self).__init__(parameters)
-
-        if random.uniform(0, 1) < self.parameters['initial_PD1n']:
-            self.initial_state = 'PD1n'
-        else:
-            self.initial_state = 'PD1p'
         self.self_path = self.parameters['self_path']
+
+    def initial_state(self, config=None):
+        if random.uniform(0, 1) < self.parameters['initial_PD1n']:
+            initial_state = 'PD1n'
+        else:
+            initial_state = 'PD1p'
+
+        return {
+            'internal': {
+                'cell_state': {
+                    '_default': initial_state,
+                },
+            },
+            'boundary': {
+                'diameter': self.parameters['diameter']
+            },
+        }
 
     def ports_schema(self):
         return {
@@ -125,7 +137,7 @@ class TCellProcess(Process):
             },
             'internal': {
                 'cell_state': {
-                    '_default': self.initial_state,
+                    '_default': 'PD1n',
                     '_emit': True,
                     '_updater': 'set'
                 },
@@ -431,6 +443,9 @@ def test_single_t_cell(
     else:
         settings = {'total_time': total_time}
 
+    # get initial state
+    settings['initial_state'] = t_cell_process.initial_state()
+
     # run experiment
     timeseries = simulate_process_in_experiment(t_cell_process, settings)
 
@@ -459,6 +474,10 @@ def test_batch_t_cell(
             sim_settings = {
                 'total_time': total_time,
                 'return_raw_data': True}
+
+        # get initial state
+        sim_settings['initial_state'] = t_cell_process.initial_state()
+
         # run experiment
         raw_data = simulate_process_in_experiment(t_cell_process, sim_settings)
         for time, time_data in raw_data.items():

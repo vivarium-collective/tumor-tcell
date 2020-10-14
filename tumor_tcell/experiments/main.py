@@ -54,13 +54,18 @@ def simulation_1():
     t_cell_ids = [TUMOR_ID + '_' + str(num) for num in range(n_tcells)]
     tumor_ids = [TCELL_ID + '_' + str(num) for num in range(n_tumors)]
 
+    # tumor_generator = TumorAgent({})
+    # tcell_generator = TCellAgent({})
+    # TODO -- use initial state from agents?
+
     # initial state
     initial_t_cells = {
         agent_id: {
             'boundary': {
                 'location': [
                     random.uniform(0, bounds[0]),
-                    random.uniform(0, bounds[1])]
+                    random.uniform(0, bounds[1])],
+                'diameter': 10 * units.um,
             }
         } for agent_id in t_cell_ids
     }
@@ -69,7 +74,8 @@ def simulation_1():
             'boundary': {
                 'location': [
                     random.uniform(0, bounds[0]),
-                    random.uniform(0, bounds[1])]
+                    random.uniform(0, bounds[1])],
+                'diameter': 20 * units.um,
             }
         } for agent_id in tumor_ids
     }
