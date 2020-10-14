@@ -37,6 +37,10 @@ class TumorAgent(Generator):
     def __init__(self, config):
         super(TumorAgent, self).__init__(config)
 
+    def initial_state(self, config=None):
+        process = TumorProcess()
+        return process.initial_state(config)
+
     def generate_processes(self, config):
         daughter_path = config['daughter_path']
         agent_id = config['agent_id']
@@ -81,6 +85,7 @@ def test_tumor_agent(total_time=1000):
 
     # settings for simulation and plot
     settings = {
+        'initial_state': compartment.initial_state(),
         'outer_path': ('agents', agent_id),
         'return_raw_data': True,
         'timestep': 10,
