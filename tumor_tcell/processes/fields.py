@@ -6,10 +6,15 @@ Diffusion Field
 
 import numpy as np
 from scipy import constants
+from scipy.ndimage import convolve
 
 from vivarium.core.process import Process
 from vivarium.library.units import units
-
+from vivarium_cell.library.lattice_utils import (
+    count_to_concentration,
+    get_bin_site,
+    get_bin_volume,
+)
 
 
 NAME = 'fields'
@@ -40,40 +45,68 @@ class Fields(Process):
     def __init__(self, parameters=None):
         super(Fields, self).__init__(parameters)
 
+        # initial state
+        self.molecule_ids = self.parameters['molecules']
+
+        # parameters
+        self.n_bins = self.parameters['n_bins']
+        self.bounds = self.parameters['bounds']
+        depth = self.parameters['depth']
+
+        # diffusion
+        diffusion = self.parameters['diffusion']
+        bins_x = self.n_bins[0]
+        bins_y = self.n_bins[1]
+        length_x = self.bounds[0]
+        length_y = self.bounds[1]
+        dx = length_x / bins_x
+        dy = length_y / bins_y
+        dx2 = dx * dy
+        self.diffusion = diffusion / dx2
+        self.diffusion_dt = 0.01
+        # self.diffusion_dt = 0.5 * dx ** 2 * dy ** 2 / (2 * self.diffusion * (dx ** 2 + dy ** 2))
+
+        # volume, to convert between counts and concentration
+        self.bin_volume = get_bin_volume(self.n_bins, self.bounds, depth)
+
+    def initial_state(self, config=None):
+        gradient = config.get('gradient', 'ones')
+        if gradient == 'random':
+            return {
+                'fields': {
+                    field: self.random_field()
+                    for field in self.parameters['molecules']}}
+        else:
+            return {
+                'fields': {
+                    field: self.ones_field()
+                    for field in self.parameters['molecules']}}
+
     def ports_schema(self):
         local_concentration_schema = {
             molecule: {
                 '_default': 0.0,
                 '_updater': 'set'}
-            for molecule in self.molecule_ids}
+            for molecule in self.parameters['molecules']}
 
-        schema = {'cells': {}}
-        for agent_id, states in self.initial_agents.items():
-            location = states['boundary'].get('location', [])
-            schema['cells'][agent_id] = {
-                'boundary': {
-                    'location': {
-                        '_value': location},
-                }
-            }
-        glob_schema = {
+        schema = {}
+        schema['cells'] = {
             '*': {
                 'boundary': {
                     'location': {
-                        '_default': [0.5 * bound for bound in self.bounds],
+                        '_default': [0.5 * bound for bound in self.parameters['bounds']],
                         '_updater': 'set'},
                     'external': local_concentration_schema}}}
-        schema['cells'].update(glob_schema)
 
         # fields
         fields_schema = {
             'fields': {
                 field: {
-                    '_value': self.initial_state.get(field, self.ones_field()),
+                    # '_value': self.initial_state.get(field, self.ones_field()),
                     '_updater': 'accumulate',
                     '_emit': True,
                 }
-                for field in self.molecule_ids
+                for field in self.parameters['molecules']
             },
         }
         schema.update(fields_schema)
@@ -128,7 +161,10 @@ class Fields(Process):
         ).to(units.mmol / units.L).magnitude
 
     def get_bin_site(self, location):
-        return get_bin_site(location, self.n_bins, self.bounds)
+        return get_bin_site(
+            [l.magnitude for l in location],
+            self.parameters['n_bins'],
+            self.parameters['bounds'])
 
     def get_single_local_environments(self, specs, fields):
         bin_site = self.get_bin_site(specs['location'])
@@ -147,7 +183,15 @@ class Fields(Process):
         return local_environments
 
     def ones_field(self):
-        return np.ones((self.n_bins[0], self.n_bins[1]), dtype=np.float64)
+        return np.ones((
+            self.parameters['n_bins'][0],
+            self.parameters['n_bins'][1]),
+            dtype=np.float64)
+
+    def random_field(self):
+        return np.random.rand(
+            self.parameters['n_bins'][0],
+            self.parameters['n_bins'][1])
 
     # diffusion functions
     def diffusion_delta(self, field, timestep):
