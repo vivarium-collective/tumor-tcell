@@ -10,7 +10,7 @@ import random
 from vivarium.core.process import Generator
 from vivarium.core.composition import (
     compartment_in_experiment,
-    COMPARTMENT_OUT_DIR,
+    COMPOSITE_OUT_DIR,
 )
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units, remove_units
@@ -44,16 +44,20 @@ class TumorMicroEnvironment(Generator):
     def __init__(self, config=None):
         super(TumorMicroEnvironment, self).__init__(config)
 
+    def initial_state(self, config=None):
+        diffusion_field = Fields(self.config['diffusion_field'])
+        return diffusion_field.initial_state(config)
+
     def generate_processes(self, config):
 
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
-        # diffusion_field = Fields(config['diffusion_field'])
+        diffusion_field = Fields(config['diffusion_field'])
 
         # make dictionary of processes
         return {
             'neighbors_multibody': neighbors_multibody,
-            # 'diffusion_field': diffusion_field,
+            'diffusion_field': diffusion_field,
         }
 
     def generate_topology(self, config):
@@ -61,11 +65,11 @@ class TumorMicroEnvironment(Generator):
             'neighbors_multibody': {
                 'cells': ('agents',)
             },
-            # 'diffusion_field': {
-            #     'agents': ('agents',),
-            #     'fields': ('fields',),
-            #     'dimensions': ('dimensions',),
-            # }
+            'diffusion_field': {
+                'cells': ('agents',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+            }
         }
 
 
@@ -156,13 +160,14 @@ def test_microenvironment(
     compartment = TumorMicroEnvironment(config)
 
     # set initial agent state
+    initial_state = compartment.initial_state({'gradient': 'random'})
     if n_agents:
         agent_ids = [str(agent_id) for agent_id in range(n_agents)]
         body_config = {'agent_ids': agent_ids}
         if 'neighbors_multibody' in config and 'bounds' in config['neighbors_multibody']:
             body_config.update({'bounds': config['neighbors_multibody']['bounds']})
         initial_agents_state = agent_body_config(body_config)
-        initial_state = {'agents': initial_agents_state}
+        initial_state.update({'agents': initial_agents_state})
 
     # configure experiment
     experiment_settings = {
@@ -182,7 +187,7 @@ def test_microenvironment(
 
 
 def main():
-    out_dir = os.path.join(COMPARTMENT_OUT_DIR, NAME)
+    out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -195,10 +200,10 @@ def main():
 
     # make snapshot plot
     agents = {time: time_data['agents'] for time, time_data in data.items()}
-    # fields = {time: time_data['fields'] for time, time_data in data.items()}
+    fields = {time: time_data['fields'] for time, time_data in data.items()}
     plot_data = {
         'agents': agents,
-        # 'fields': fields,
+        'fields': fields,
         'config': {'bounds': remove_units(bounds)}}
     plot_config = {
         'out_dir': out_dir,
