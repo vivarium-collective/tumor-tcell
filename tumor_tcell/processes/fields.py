@@ -23,6 +23,7 @@ NAME = 'fields'
 LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 AVOGADRO = constants.N_A
 
+LENGTH_UNIT = units.um
 
 
 class Fields(Process):
@@ -33,7 +34,7 @@ class Fields(Process):
     name = NAME
     defaults = {
         'time_step': 1,
-        'molecules': ['glc'],
+        'molecules': ['molecule'],
         'initial_state': {},
         'n_bins': [10, 10],
         'bounds': [10, 10],
@@ -50,8 +51,8 @@ class Fields(Process):
 
         # parameters
         self.n_bins = self.parameters['n_bins']
-        self.bounds = self.parameters['bounds']
-        depth = self.parameters['depth']
+        self.bounds = [b.to(LENGTH_UNIT).magnitude for b in self.parameters['bounds']]
+        self.depth = self.parameters['depth']
 
         # diffusion
         diffusion = self.parameters['diffusion']
@@ -67,7 +68,7 @@ class Fields(Process):
         # self.diffusion_dt = 0.5 * dx ** 2 * dy ** 2 / (2 * self.diffusion * (dx ** 2 + dy ** 2))
 
         # volume, to convert between counts and concentration
-        self.bin_volume = get_bin_volume(self.n_bins, self.bounds, depth)
+        self.bin_volume = get_bin_volume(self.n_bins, self.bounds, self.depth)
 
     def initial_state(self, config=None):
         gradient = config.get('gradient', 'ones')
@@ -94,15 +95,17 @@ class Fields(Process):
             '*': {
                 'boundary': {
                     'location': {
-                        '_default': [0.5 * bound for bound in self.parameters['bounds']],
+                        '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set'},
-                    'external': local_concentration_schema}}}
+                    'external': local_concentration_schema
+                }}}
 
         # fields
         fields_schema = {
             'fields': {
                 field: {
                     # '_value': self.initial_state.get(field, self.ones_field()),
+                    '_default': self.ones_field(),
                     '_updater': 'accumulate',
                     '_emit': True,
                 }
@@ -115,17 +118,17 @@ class Fields(Process):
         dimensions_schema = {
             'dimensions': {
                 'bounds': {
-                    '_value': self.parameters['bounds'],
+                    '_value': self.bounds,
                     '_updater': 'set',
                     '_emit': True,
                 },
                 'n_bins': {
-                    '_value': self.parameters['n_bins'],
+                    '_value': self.n_bins,
                     '_updater': 'set',
                     '_emit': True,
                 },
                 'depth': {
-                    '_value': self.parameters['depth'],
+                    '_value': self.depth,
                     '_updater': 'set',
                     '_emit': True,
                 }
@@ -162,9 +165,9 @@ class Fields(Process):
 
     def get_bin_site(self, location):
         return get_bin_site(
-            [l.magnitude for l in location],
-            self.parameters['n_bins'],
-            self.parameters['bounds'])
+            [l.to(LENGTH_UNIT).magnitude for l in location],
+            self.n_bins,
+            self.bounds)
 
     def get_single_local_environments(self, specs, fields):
         bin_site = self.get_bin_site(specs['location'])
@@ -208,7 +211,6 @@ class Fields(Process):
     def diffuse(self, fields, timestep):
         delta_fields = {}
         for mol_id, field in fields.items():
-
             # run diffusion if molecule field is not uniform
             if len(set(field.flatten())) != 1:
                 delta = self.diffusion_delta(field, timestep)

@@ -93,7 +93,7 @@ def make_neighbors_config(
         config['diffusion_field']['time_step'] = time_step
     if bounds:
         config['neighbors_multibody']['bounds'] = bounds
-        config['diffusion_field']['bounds'] = remove_units(bounds)
+        config['diffusion_field']['bounds'] = bounds
         config['diffusion_field']['n_bins'] = remove_units(bounds)
     if n_bins:
         config['diffusion_field']['n_bins'] = n_bins

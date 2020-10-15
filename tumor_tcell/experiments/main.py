@@ -54,37 +54,7 @@ def simulation_1():
     t_cell_ids = [TUMOR_ID + '_' + str(num) for num in range(n_tcells)]
     tumor_ids = [TCELL_ID + '_' + str(num) for num in range(n_tumors)]
 
-    # tumor_generator = TumorAgent({})
-    # tcell_generator = TCellAgent({})
-    # TODO -- use initial state from agents?
-
-    # initial state
-    initial_t_cells = {
-        agent_id: {
-            'boundary': {
-                'location': [
-                    random.uniform(0, bounds[0]),
-                    random.uniform(0, bounds[1])],
-                'diameter': 10 * units.um,
-            }
-        } for agent_id in t_cell_ids
-    }
-    initial_tumors = {
-        agent_id: {
-            'boundary': {
-                'location': [
-                    random.uniform(0, bounds[0]),
-                    random.uniform(0, bounds[1])],
-                'diameter': 20 * units.um,
-            }
-        } for agent_id in tumor_ids
-    }
-    initial_state = {
-        'fields': {},
-        'agents': {
-            **initial_t_cells, **initial_tumors}
-    }
-
+    ## configure the compartments
     # t-cell configurations
     t_cell_hierarchy = {
         agent_id: {
@@ -123,12 +93,47 @@ def simulation_1():
                 },
                 'diffusion_field': {
                     'time_step': time_step,
+                    'molecules': ['IFNg'],
                     'bounds': bounds,
                 }
             }
         },
         # cells are one level down, under the 'agents' key
         'agents': {**t_cell_hierarchy, **tumor_hierarchy}
+    }
+
+    # make instances for their initial state
+    environment = TumorMicroEnvironment(hierarchy[GENERATORS_KEY]['config'])
+    initial_env = environment.initial_state({'gradient': 'random'})
+    # tumor_generator = TumorAgent({})
+    # tcell_generator = TCellAgent({})
+    # TODO -- use initial state from agents?
+
+    # initialize state
+    initial_t_cells = {
+        agent_id: {
+            'boundary': {
+                'location': [
+                    random.uniform(0, bounds[0]),
+                    random.uniform(0, bounds[1])],
+                'diameter': 10 * units.um,
+            }
+        } for agent_id in t_cell_ids
+    }
+    initial_tumors = {
+        agent_id: {
+            'boundary': {
+                'location': [
+                    random.uniform(0, bounds[0]),
+                    random.uniform(0, bounds[1])],
+                'diameter': 20 * units.um,
+            }
+        } for agent_id in tumor_ids
+    }
+    initial_state = {
+        **initial_env,
+        'agents': {
+            **initial_t_cells, **initial_tumors}
     }
 
     # configure experiment
@@ -172,10 +177,10 @@ def plots_suite(data, out_dir=EXPERIMENT_OUT_DIR):
     # extract data
     env_config = {'bounds': remove_units(BOUNDS)}
     agents = {time: time_data['agents'] for time, time_data in data.items()}
-    # fields = {time: time_data['fields'] for time, time_data in data.items()}
+    fields = {time: time_data['fields'] for time, time_data in data.items()}
     plot_data = {
         'agents': agents,
-        'fields': {},
+        'fields': fields,
         'config': env_config}
     plot_config = {
         'fields': [],
