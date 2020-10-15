@@ -37,7 +37,7 @@ class Fields(Process):
         'molecules': ['molecule'],
         'initial_state': {},
         'n_bins': [10, 10],
-        'bounds': [10, 10],
+        'bounds': [10 * units.um, 10 * units.um],
         'depth': 3000.0,  # um
         'diffusion': 5e-1,
         'gradient': {},
