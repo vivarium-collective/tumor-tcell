@@ -113,7 +113,7 @@ class TumorProcess(Process):
             },
             'internal': {
                 'cell_state': {
-                    '_default': 'PDL1n',
+                    '_default': 'PDL1n' if random.uniform(0, 1) < self.parameters['initial_PDL1n'] else 'PDL1p',
                     '_emit': True,
                     '_updater': 'set'
                 },

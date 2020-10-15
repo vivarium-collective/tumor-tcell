@@ -137,7 +137,7 @@ class TCellProcess(Process):
             },
             'internal': {
                 'cell_state': {
-                    '_default': 'PD1n',
+                    '_default': 'PD1n' if random.uniform(0, 1) < self.parameters['initial_PD1n'] else 'PD1p',
                     '_emit': True,
                     '_updater': 'set'
                 },
