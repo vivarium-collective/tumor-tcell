@@ -90,6 +90,7 @@ def simulation_1():
                 'neighbors_multibody': {
                     'time_step': time_step,
                     'bounds': bounds,
+                    'jitter_force': 1e-4,
                 },
                 'diffusion_field': {
                     'time_step': time_step,
