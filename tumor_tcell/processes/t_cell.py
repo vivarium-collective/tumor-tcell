@@ -154,11 +154,12 @@ class TCellProcess(Process):
                     '_default': self.parameters['diameter'],
                     '_divider': 'set',
                 },
-                'IFNg': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'accumulate',
-                },
+                'external': {
+                    'IFNg': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'accumulate',
+                    }},
                 'MHCI_timer': {
                     '_default': 0,
                     '_emit': True,
@@ -326,7 +327,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             elif MHCI < self.parameters['ligand_threshold']:
 
@@ -339,7 +340,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             # TODO  - elif T cell is not in contact with tumor (no cytotoxic packets)
             #   continue
@@ -358,7 +359,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             elif MHCI < self.parameters['ligand_threshold']:
 
@@ -372,7 +373,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             # target behavior 3 contacts required for cell death, 1-4 cells killed/day
 
@@ -432,6 +433,7 @@ def get_timeline(
 
 def test_single_t_cell(
     total_time=43200,
+    time_step=TIMESTEP,
     timeline=None,
     out_dir='out'):
 
@@ -439,9 +441,12 @@ def test_single_t_cell(
     if timeline is not None:
         settings = {
             'timeline': {
-                'timeline': timeline}}
+                'timeline': timeline,
+                'time_step': time_step}}
     else:
-        settings = {'total_time': total_time}
+        settings = {
+            'total_time': total_time,
+            'time_step': time_step}
 
     # get initial state
     settings['initial_state'] = t_cell_process.initial_state()
@@ -458,6 +463,7 @@ def test_single_t_cell(
 
 def test_batch_t_cell(
     total_time=43200,
+    time_step=TIMESTEP,
     batch_size=2,
     timeline=None,
     out_dir='out'):
@@ -468,11 +474,13 @@ def test_batch_t_cell(
         if timeline is not None:
             sim_settings = {
                 'timeline': {
-                    'timeline': timeline},
+                    'timeline': timeline,
+                    'time_step': time_step},
                 'return_raw_data': True}
         else:
             sim_settings = {
                 'total_time': total_time,
+                'time_step': time_step,
                 'return_raw_data': True}
 
         # get initial state
