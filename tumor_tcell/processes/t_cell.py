@@ -20,6 +20,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'T_cell'
 TIMESTEP = 60  # seconds
+CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -57,10 +58,10 @@ class TCellProcess(Process):
         'death_PD1p_next_to_PDL1p_14hr': 0.95,  # 0.95 / 14 hrs
 
         # production rates
-        'PD1n_IFNg_production': 1.62e4/3600,  # molecules/cell/second (Bouchnita 2017)
+        'PD1n_IFNg_production': 1.62e4/3600 * CONCENTRATION_UNIT,  # molecules/cell/second (Bouchnita 2017)
         # TODO @Eran - the other IFNg is in ng/mL how does this production get converted?
 
-        'PD1p_IFNg_production': 0.0,  # molecules/cell/second
+        'PD1p_IFNg_production': 0.0 * CONCENTRATION_UNIT,  # molecules/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell
@@ -156,7 +157,7 @@ class TCellProcess(Process):
                 },
                 'external': {
                     'IFNg': {
-                        '_default': 0,
+                        '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
                         '_updater': 'accumulate',
                     }},
@@ -302,10 +303,6 @@ class TCellProcess(Process):
 
 
         # behavior
-        IFNg = 0
-        PD1 = 0
-        cytotoxic_packets = 0
-
         # TODO migration
         #  #also dependent on MHCI+/PDL1+
         #  #50% bound vs. 30% bound in flow cytometry experiment on low vs. high
@@ -365,13 +362,15 @@ class TCellProcess(Process):
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
-                cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
+                cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / \
+                                    self.parameters['MHCIn_reduction_production'] * timestep
                 update['neighbors']['present'].update({
                     'PD1': PD1,
                     'cytotoxic_packets': cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
-                IFNg = self.parameters['PD1p_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
+                IFNg = self.parameters['PD1p_IFNg_production'] / \
+                       self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
                     'external': {'IFNg': IFNg}})
 
