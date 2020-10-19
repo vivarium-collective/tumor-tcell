@@ -18,6 +18,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'Tumor'
 TIMESTEP = 60
+CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -58,7 +59,7 @@ class TumorProcess(Process):
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # cell_state transition
-        'IFNg_threshold': 1 * units.ng / units.mL,
+        'IFNg_threshold': 1 * CONCENTRATION_UNIT,
         'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
         
         # migration
@@ -131,7 +132,7 @@ class TumorProcess(Process):
                 },
                 'external': {
                     'IFNg': {
-                        '_default': 0 * units.ng/units.mL,
+                        '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
                     }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
                 'IFNg_timer': {
@@ -275,47 +276,47 @@ def get_timeline(
     timeline = [
         (interval * 0 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 0.0,
-            ('boundary', 'external', 'IFNg'): 0.0*units.ng/units.mL,
+            ('boundary', 'external', 'IFNg'): 0.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 100.0,
-            ('boundary', 'external', 'IFNg'): 1.0*units.ng/units.mL,
+            ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 200.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * units.ng / units.mL,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 300.0,
-            ('boundary', 'external', 'IFNg'): 3.0 * units.ng / units.mL,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 400.0,
-            ('boundary', 'external', 'IFNg'): 4.0 * units.ng / units.mL,
+            ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 700.0,
-            ('boundary', 'external', 'IFNg'): 3.0 * units.ng / units.mL,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 1000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * units.ng / units.mL,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 1500.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * units.ng / units.mL,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
             ('neighbors', 'accept', 'cytotoxic_packets'): 1600.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * units.ng / units.mL,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),
