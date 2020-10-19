@@ -32,30 +32,48 @@ from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
+# global parameters
+BOUNDS = [200 * units.um, 200 * units.um]
 
-out_dir = EXPERIMENT_OUT_DIR
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
+N_TUMORS = 4
+N_TCELLS = 4
+DEFAULT_TUMORS = {
+    '{}_{}'.format(TUMOR_ID, n): {
+        # 'location': [x, y],
+        'type': 'tumor',
+        'cell_state': 'PDL1n',
+        'diameter': 20,
+    } for n in range(N_TUMORS)
+}
+DEFAULT_TCELLS = {
+    '{}_{}'.format(TCELL_ID, n): {
+        # 'location': [x, y],
+        'type': 'tcell',
+        'cell_state': 'PD1n',
+        'diameter': 10,
+    } for n in range(N_TCELLS)
+}
 
-# TODO -- pass this in through config
-BOUNDS = [200 * units.um, 200 * units.um]
+def random_location(bounds):
+    return [
+        random.uniform(0, bounds[0]),
+        random.uniform(0, bounds[1])]
 
 
 # simulation # 1
-def simulation_1():
-    # experiment parameters
-    total_time = 10000
-    bounds = BOUNDS
-    time_step = 60
+def simulation_1(
+    bounds=BOUNDS,
+    field_molecules=['IFNg'],
+    tumors=DEFAULT_TUMORS,
+    tcells=DEFAULT_TCELLS,
+    total_time=10000,
+    time_step=60
+):
 
-    # cell config
-    n_tcells = 5
-    n_tumors = 5
-    t_cell_ids = [TUMOR_ID + '_' + str(num) for num in range(n_tcells)]
-    tumor_ids = [TCELL_ID + '_' + str(num) for num in range(n_tumors)]
-
-    ## configure the compartments
-    # t-cell configurations
+    ## configure the cells
+    # t-cell configuration
     t_cell_hierarchy = {
         agent_id: {
             GENERATORS_KEY: {
@@ -65,10 +83,10 @@ def simulation_1():
                     'agent_id': agent_id,
                 }
             }
-        } for agent_id in t_cell_ids
+        } for agent_id in tcells.keys()
     }
 
-    # tumor configurations
+    # tumor configuration
     tumor_hierarchy = {
         agent_id: {
             GENERATORS_KEY: {
@@ -78,10 +96,10 @@ def simulation_1():
                     'agent_id': agent_id,
                 }
             }
-        } for agent_id in tumor_ids
+        } for agent_id in tumors.keys()
     }
 
-    # declare the hierarchy full
+    # declare the full hierarchy with the environments
     hierarchy = {
         # generate the tumor micro-environment at the top level
         GENERATORS_KEY: {
@@ -94,7 +112,7 @@ def simulation_1():
                 },
                 'diffusion_field': {
                     'time_step': time_step,
-                    'molecules': ['IFNg'],
+                    'molecules': field_molecules,
                     'bounds': bounds,
                 }
             }
@@ -103,33 +121,26 @@ def simulation_1():
         'agents': {**t_cell_hierarchy, **tumor_hierarchy}
     }
 
-    # make instances for their initial state
+    # make environment instance to get an initial state
     environment = TumorMicroEnvironment(hierarchy[GENERATORS_KEY]['config'])
     initial_env = environment.initial_state({'gradient': 'random'})
-    # tumor_generator = TumorAgent({})
-    # tcell_generator = TCellAgent({})
-    # TODO -- use initial state from agents?
 
     # initialize state
     initial_t_cells = {
         agent_id: {
             'boundary': {
-                'location': [
-                    random.uniform(0, bounds[0]),
-                    random.uniform(0, bounds[1])],
-                'diameter': 10 * units.um,
+                'location': state.get('location', random_location(bounds)),
+                'diameter': state.get('diameter', 10) * units.um,
             }
-        } for agent_id in t_cell_ids
+        } for agent_id, state in tcells.items()
     }
     initial_tumors = {
         agent_id: {
             'boundary': {
-                'location': [
-                    random.uniform(0, bounds[0]),
-                    random.uniform(0, bounds[1])],
-                'diameter': 20 * units.um,
+                'location': state.get('location', random_location(bounds)),
+                'diameter': state.get('diameter', 20) * units.um,
             }
-        } for agent_id in tumor_ids
+        } for agent_id, state in tumors.items()
     }
     initial_state = {
         **initial_env,
@@ -137,11 +148,10 @@ def simulation_1():
             **initial_t_cells, **initial_tumors}
     }
 
-    # configure experiment
+    # configure the simulation experiment
     experiment = compose_experiment(
         hierarchy=hierarchy,
-        initial_state=initial_state
-    )
+        initial_state=initial_state)
 
     # run simulation
     experiment.update(total_time)
