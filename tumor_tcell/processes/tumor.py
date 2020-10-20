@@ -39,6 +39,11 @@ class TumorProcess(Process):
 
     Target behavior:
 
+        # death by cytotoxic packets from T cells
+        # should take about 120 min from start of T cell contact and about 2-3 contacts
+        # need to multiply total number by 10 because multiplied T cell number by this amount
+        # number needed for death refs: (Verret, 1987), (Betts, 2004), (Zhang, 2006)
+
     TODOs
 
     """
@@ -133,7 +138,6 @@ class TumorProcess(Process):
                     '_default': 0 * units.ng/units.mL,
                     '_emit': True,
                 },  # cytokine changes tumor phenotype to MHCI+ and PDL1+
-                #TODO @Eran - do we need to emit IFNg here since it is not produced by tumors?
                 'IFNg_timer': {
                     '_default': 0,
                     '_emit': True,
@@ -151,24 +155,26 @@ class TumorProcess(Process):
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'set',
-                    },  # membrane protein, promotes Tumor death and T cell activation with TCR
+                    }  # membrane protein, promotes Tumor death and T cell activation with TCR
                 },
                 'accept': {
                     'PD1': {
                         '_default': 0,
                         '_emit': True,
-                    },
+                    }
+                },
+                'receive': {
                     'cytotoxic_packets': {
                         '_default': 0,
                         '_emit': True,
-                    },
+                    } #from T cells
                 }
             }
         }
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
-        cytotoxic_packets = states['neighbors']['accept']['cytotoxic_packets']
+        cytotoxic_packets = states['neighbors']['receive']['cytotoxic_packets']
         IFNg = states['boundary']['IFNg']
         IFNg_timer = states['boundary']['IFNg_timer']
 
@@ -185,10 +191,7 @@ class TumorProcess(Process):
                 'globals': {
                     'death': 'apoptosis'}}
 
-        # death by cytotoxic packets from T cells
-        # should take about 120 min from start of T cell contact and about 2-3 contacts
-        # need to multiply total number by 10 because multiplied T cell number by this amount
-        # number needed for death refs: (Verret, 1987), (Betts, 2004), (Zhang, 2006)
+
         if cytotoxic_packets >= self.parameters['cytotoxic_packet_threshold']:
             #print('Tcell_death!')
             return {
@@ -217,7 +220,9 @@ class TumorProcess(Process):
 
 
         ## Build up an update
-        update = {}
+        update = {'internal': {},
+                  'boundary': {},
+                  'neighbors': {'present': {}, 'accept': {}, 'receive': {}}}
 
         # state transition
         new_cell_state = cell_state
@@ -251,8 +256,6 @@ class TumorProcess(Process):
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
             MHCI = self.parameters['PDL1p_MHCI_equilibrium']
 
-            if 'neighbors' not in update:
-                update['neighbors'] = {'present': {}}
             update['neighbors']['present'].update({
                 'PDL1': PDL1,
                 'MHCI': MHCI})
@@ -274,47 +277,47 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 0.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 0.0,
             ('boundary', 'IFNg'): 0.0*units.ng/units.mL,
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 100.0,
-            ('boundary', 'IFNg'): 1.0*units.ng/units.mL,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 100.0,
+            ('boundary', 'IFNg'): 2.0*units.ng/units.mL,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 200.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 200.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 300.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 300.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 400.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 400.0,
             ('boundary', 'IFNg'): 4.0 * units.ng / units.mL,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 700.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 700.0,
             ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 1000.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 1500.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 1500.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 1600.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 1600.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
