@@ -203,18 +203,21 @@ class Neighbors(Process):
             cell_id: {
                 'accept': {},
                 'present': {},
-                'transfer': {},  # TODO -- only cytotoxic packets are transferred
-                'receive': {},  # TODO -- only cytotoxic packets are transferred
+                'transfer': {},
+                'receive': {},
             } for cell_id in cells.keys()}
 
         for cell_id, neighbors in cell_neighbors.items():
             for neighbor_id in neighbors:
-                # the neighbor's present moves to the cell's accept
-                present = cells[neighbor_id]['neighbors']['present']
+                # the neighbor's transfer moves to the cell's accept and then is removed
+                transfer = cells[neighbor_id]['neighbors']['transfer']
+                exchange[cell_id]['receive'] = add_to_dict(exchange[cell_id]['receive'], transfer)
+                exchange[neighbor_id]['transfer'] = remove_from_dict(exchange[neighbor_id]['transfer'], transfer)
 
-                # TODO -- present/accept are NOT exchanged. transfer/receive ARE
+                #present and accept are not removed but updated for each other
+                present = cells[neighbor_id]['neighbors']['present']
                 exchange[cell_id]['accept'] = add_to_dict(exchange[cell_id]['accept'], present)
-                exchange[neighbor_id]['present'] = remove_from_dict(exchange[neighbor_id]['present'], present)
+
 
         update = {
             'cells': {

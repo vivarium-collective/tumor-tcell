@@ -78,7 +78,7 @@ class TCellProcess(Process):
         'PD1p_migration_MHCIp_tumor_dwell_time': 10.0,  # minutes (Thibaut 2020)
 
         # killing  ()
-        # TODO - @Eran - This value needs to be multiplied by 100 to deal with timestep usually 0.4 packet/min
+        # This value needs to be multiplied by 100 to deal with timestep usually 0.4 packet/min
         # linear production over 4 hr up to a total of 102+-20 granules # (Betts, 2004), (Zhang, 2006)
         'PD1n_cytotoxic_packets': 40,  # number of packets/min to each contacted tumor cell
 
@@ -171,13 +171,7 @@ class TCellProcess(Process):
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'set',
-                    },  # membrane protein, promotes T-cell death
-                    'cytotoxic_packets': {
-                        '_default': 0,
-                        '_emit': True,
-                        '_updater': 'accumulate',
-                        '_divider': 'split',
-                    },  # release into the tumor cells
+                    }  # membrane protein, promotes T-cell death
                 },
                 'accept': {
                     'PDL1': {
@@ -187,7 +181,15 @@ class TCellProcess(Process):
                     'MHCI': {
                         '_default': 0,
                         '_emit': True,
-                    },
+                    }
+                },
+                'transfer': {
+                    'cytotoxic_packets': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'accumulate',
+                        '_divider': 'split',
+                    }  # release into the tumor cells
                 }
             }
         }
@@ -271,7 +273,7 @@ class TCellProcess(Process):
         update = {
             'internal': {},
             'boundary': {},
-            'neighbors': {'present': {}}}
+            'neighbors': {'present': {}, 'accept': {}, 'transfer': {}}}
         
         # state transition
         new_cell_state = cell_state
@@ -320,7 +322,7 @@ class TCellProcess(Process):
 
                 # Max production for both happens for PD1- T cells in contact with MHCI+ tumor
                 cytotoxic_packets = self.parameters['PD1n_cytotoxic_packets'] * timestep
-                update['neighbors']['present'].update({
+                update['neighbors']['transfer'].update({
                     'cytotoxic_packets': cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
@@ -333,7 +335,7 @@ class TCellProcess(Process):
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
                 cytotoxic_packets = self.parameters['PD1n_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
-                update['neighbors']['present'].update({
+                update['neighbors']['transfer'].update({
                     'cytotoxic_packets': cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
@@ -351,9 +353,10 @@ class TCellProcess(Process):
 
                 # Max production for both happens for T cells in contact with MHCI+ tumor
                 cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] * timestep
-                update['neighbors']['present'].update({
-                    'PD1': PD1,
+                update['neighbors']['transfer'].update({
                     'cytotoxic_packets': cytotoxic_packets})
+                update['neighbors']['present'].update({
+                    'PD1': PD1})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
@@ -365,9 +368,10 @@ class TCellProcess(Process):
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
                 cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
-                update['neighbors']['present'].update({
-                    'PD1': PD1,
+                update['neighbors']['transfer'].update({
                     'cytotoxic_packets': cytotoxic_packets})
+                update['neighbors']['present'].update({
+                    'PD1': PD1})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
@@ -383,7 +387,7 @@ class TCellProcess(Process):
 
 
 def get_timeline(
-        total_time=1296000,
+        total_time=129600,
         number_steps=10):
 
     interval = total_time / (number_steps * TIMESTEP)

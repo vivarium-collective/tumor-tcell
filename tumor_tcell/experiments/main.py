@@ -38,19 +38,19 @@ TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
 
 # TODO -- pass this in through config
-BOUNDS = [200 * units.um, 200 * units.um]
+BOUNDS = [100 * units.um, 100 * units.um]
 
 
 # simulation # 1
 def simulation_1():
     # experiment parameters
-    total_time = 10000
+    total_time = 100000
     bounds = BOUNDS
     time_step = 60
 
     # cell config
-    n_tcells = 5
-    n_tumors = 5
+    n_tcells = 8
+    n_tumors = 8
     t_cell_ids = [TUMOR_ID + '_' + str(num) for num in range(n_tcells)]
     tumor_ids = [TCELL_ID + '_' + str(num) for num in range(n_tumors)]
 
