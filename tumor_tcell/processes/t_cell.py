@@ -20,6 +20,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'T_cell'
 TIMESTEP = 60  # seconds
+CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -57,10 +58,10 @@ class TCellProcess(Process):
         'death_PD1p_next_to_PDL1p_14hr': 0.95,  # 0.95 / 14 hrs
 
         # production rates
-        'PD1n_IFNg_production': 1.62e4/3600,  # molecules/cell/second (Bouchnita 2017)
+        'PD1n_IFNg_production': 1.62e4/3600 * CONCENTRATION_UNIT,  # molecules/cell/second (Bouchnita 2017)
         # TODO @Eran - the other IFNg is in ng/mL how does this production get converted?
 
-        'PD1p_IFNg_production': 0.0,  # molecules/cell/second
+        'PD1p_IFNg_production': 0.0 * CONCENTRATION_UNIT,  # molecules/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell
@@ -154,11 +155,12 @@ class TCellProcess(Process):
                     '_default': self.parameters['diameter'],
                     '_divider': 'set',
                 },
-                'IFNg': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'accumulate',
-                },
+                'external': {
+                    'IFNg': {
+                        '_default': 0.0 * CONCENTRATION_UNIT,
+                        '_emit': True,
+                        '_updater': 'accumulate',
+                    }},
                 'MHCI_timer': {
                     '_default': 0,
                     '_emit': True,
@@ -303,10 +305,6 @@ class TCellProcess(Process):
 
 
         # behavior
-        IFNg = 0
-        PD1 = 0
-        cytotoxic_packets = 0
-
         # TODO migration
         #  #also dependent on MHCI+/PDL1+
         #  #50% bound vs. 30% bound in flow cytometry experiment on low vs. high
@@ -328,7 +326,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             elif MHCI < self.parameters['ligand_threshold']:
 
@@ -341,7 +339,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             # TODO  - elif T cell is not in contact with tumor (no cytotoxic packets)
             #   continue
@@ -361,22 +359,30 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             elif MHCI < self.parameters['ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
+<<<<<<< HEAD
                 cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
                 update['neighbors']['transfer'].update({
+=======
+                cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / \
+                                    self.parameters['MHCIn_reduction_production'] * timestep
+                update['neighbors']['present'].update({
+                    'PD1': PD1,
+>>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
                     'cytotoxic_packets': cytotoxic_packets})
                 update['neighbors']['present'].update({
                     'PD1': PD1})
 
                 # produce IFNg  # rates are determined above
-                IFNg = self.parameters['PD1p_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
+                IFNg = self.parameters['PD1p_IFNg_production'] / \
+                       self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
-                    'IFNg': IFNg})
+                    'external': {'IFNg': IFNg}})
 
             # target behavior 3 contacts required for cell death, 1-4 cells killed/day
 
@@ -436,6 +442,7 @@ def get_timeline(
 
 def test_single_t_cell(
     total_time=43200,
+    time_step=TIMESTEP,
     timeline=None,
     out_dir='out'):
 
@@ -443,9 +450,12 @@ def test_single_t_cell(
     if timeline is not None:
         settings = {
             'timeline': {
-                'timeline': timeline}}
+                'timeline': timeline,
+                'time_step': time_step}}
     else:
-        settings = {'total_time': total_time}
+        settings = {
+            'total_time': total_time,
+            'time_step': time_step}
 
     # get initial state
     settings['initial_state'] = t_cell_process.initial_state()
@@ -462,6 +472,7 @@ def test_single_t_cell(
 
 def test_batch_t_cell(
     total_time=43200,
+    time_step=TIMESTEP,
     batch_size=2,
     timeline=None,
     out_dir='out'):
@@ -472,11 +483,13 @@ def test_batch_t_cell(
         if timeline is not None:
             sim_settings = {
                 'timeline': {
-                    'timeline': timeline},
+                    'timeline': timeline,
+                    'time_step': time_step},
                 'return_raw_data': True}
         else:
             sim_settings = {
                 'total_time': total_time,
+                'time_step': time_step,
                 'return_raw_data': True}
 
         # get initial state

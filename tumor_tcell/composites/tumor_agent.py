@@ -44,16 +44,22 @@ class TumorAgent(Generator):
     def generate_processes(self, config):
         daughter_path = config['daughter_path']
         agent_id = config['agent_id']
+
+        # division config
         meta_division_config = dict(
             {},
             daughter_path=daughter_path,
             agent_id=agent_id,
             compartment=self)
 
+        # death config
+        death_config = {
+            'agent_id': agent_id}
+
         return {
             'tumor': TumorProcess(config['tumor']),
             'division': MetaDivision(meta_division_config),
-            # 'death': Disintegrate(),
+            'death': Disintegrate(death_config),
         }
 
     def generate_topology(self, config):
@@ -71,9 +77,9 @@ class TumorAgent(Generator):
                 'global': boundary_path,
                 'agents': agents_path,
             },
-            # 'death': {
-            #     'trigger': death_trigger_path,
-            #     'agents': agents_path}
+            'death': {
+                'trigger': death_trigger_path,
+                'agents': agents_path}
         }
 
 
@@ -93,7 +99,7 @@ def test_tumor_agent(total_time=1000):
     return simulate_compartment_in_experiment(compartment, settings)
 
 def run_compartment(out_dir='out'):
-    data = test_tumor_agent(total_time=4000)
+    data = test_tumor_agent(total_time=10000)
     plot_settings = {}
     plot_agents_multigen(data, plot_settings, out_dir)
 
