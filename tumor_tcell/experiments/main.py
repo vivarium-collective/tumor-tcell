@@ -33,12 +33,12 @@ from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 # global parameters
-BOUNDS = [200 * units.um, 200 * units.um]
+BOUNDS = [100 * units.um, 100 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-N_TUMORS = 4
-N_TCELLS = 4
+N_TUMORS = 5
+N_TCELLS = 5
 DEFAULT_TUMORS = {
     '{}_{}'.format(TUMOR_ID, n): {
         # 'location': [x, y],
@@ -63,7 +63,7 @@ def random_location(bounds):
 
 
 # simulation # 1
-def simulation_1(
+def tumor_tcell_abm(
     bounds=BOUNDS,
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
@@ -204,7 +204,7 @@ def plots_suite(data, out_dir=EXPERIMENT_OUT_DIR):
 
 # all of the experiments go here for easy access by control class
 experiments_library = {
-    '1': simulation_1,
+    '1': tumor_tcell_abm,
 }
 plots_library = {
     '1': plots_suite,

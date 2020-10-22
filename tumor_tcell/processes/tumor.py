@@ -162,12 +162,14 @@ class TumorProcess(Process):
                     'PD1': {
                         '_default': 0,
                         '_emit': True,
+                        '_updater': 'set',
                     }
                 },
                 'receive': {
                     'cytotoxic_packets': {
                         '_default': 0,
                         '_emit': True,
+                        '_updater': 'accumulate',
                     } #from T cells
                 }
             }
