@@ -24,6 +24,7 @@ LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 AVOGADRO = constants.N_A
 
 LENGTH_UNIT = units.um
+CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
 
 
 class Fields(Process):
@@ -86,8 +87,8 @@ class Fields(Process):
     def ports_schema(self):
         local_concentration_schema = {
             molecule: {
-                '_default': 0.0,
-                '_updater': 'set'}
+                '_default': 0.0 * CONCENTRATION_UNIT,
+                '_updater': 'set'}  # TODO (Eran) -- this updater needs to be modifiable by cells
             for molecule in self.parameters['molecules']}
 
         schema = {}
@@ -173,7 +174,7 @@ class Fields(Process):
         bin_site = self.get_bin_site(specs['location'])
         local_environment = {}
         for mol_id, field in fields.items():
-            local_environment[mol_id] = field[bin_site]
+            local_environment[mol_id] = field[bin_site] * CONCENTRATION_UNIT
         return local_environment
 
     def get_local_environments(self, cells, fields):

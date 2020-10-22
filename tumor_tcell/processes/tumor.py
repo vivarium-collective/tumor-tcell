@@ -18,6 +18,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'Tumor'
 TIMESTEP = 60
+CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -63,7 +64,7 @@ class TumorProcess(Process):
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # cell_state transition
-        'IFNg_threshold': 1 * units.ng / units.mL,
+        'IFNg_threshold': 1 * CONCENTRATION_UNIT,
         'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
         
         # migration
@@ -134,10 +135,18 @@ class TumorProcess(Process):
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },
+<<<<<<< HEAD
                 'IFNg': {
                     '_default': 0 * units.ng/units.mL,
                     '_emit': True,
                 },  # cytokine changes tumor phenotype to MHCI+ and PDL1+
+=======
+                'external': {
+                    'IFNg': {
+                        '_default': 0.0 * CONCENTRATION_UNIT,
+                        '_emit': True,
+                    }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
+>>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
                 'IFNg_timer': {
                     '_default': 0,
                     '_emit': True,
@@ -174,8 +183,13 @@ class TumorProcess(Process):
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
+<<<<<<< HEAD
         cytotoxic_packets = states['neighbors']['receive']['cytotoxic_packets']
         IFNg = states['boundary']['IFNg']
+=======
+        cytotoxic_packets = states['neighbors']['accept']['cytotoxic_packets']
+        IFNg = states['boundary']['external']['IFNg']
+>>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
         IFNg_timer = states['boundary']['IFNg_timer']
 
         # death by apoptosis
@@ -277,6 +291,7 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
+<<<<<<< HEAD
             ('neighbors', 'receive', 'cytotoxic_packets'): 0.0,
             ('boundary', 'IFNg'): 0.0*units.ng/units.mL,
             ('neighbors', 'accept', 'PD1'): 0.0,
@@ -319,6 +334,50 @@ def get_timeline(
         (interval * 8 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 1600.0,
             ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
+=======
+            ('neighbors', 'accept', 'cytotoxic_packets'): 0.0,
+            ('boundary', 'external', 'IFNg'): 0.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 0.0,
+        }),
+        (interval * 1 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 100.0,
+            ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 5e4,
+        }),
+        (interval * 2 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 200.0,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 0.0,
+        }),
+        (interval * 3 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 300.0,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 5e4,
+        }),
+        (interval * 4 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 400.0,
+            ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 5e4,
+        }),
+        (interval * 5 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 700.0,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 5e4,
+        }),
+        (interval * 6 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1000.0,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 5e4,
+        }),
+        (interval * 7 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1500.0,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('neighbors', 'accept', 'PD1'): 5e4,
+        }),
+        (interval * 8 * TIMESTEP, {
+            ('neighbors', 'accept', 'cytotoxic_packets'): 1600.0,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+>>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),
@@ -328,6 +387,7 @@ def get_timeline(
 
 def test_single_Tumor(
         total_time=43200,
+        time_step=TIMESTEP,
         timeline=None,
         out_dir='out'):
 
@@ -336,9 +396,12 @@ def test_single_Tumor(
     if timeline is not None:
         settings = {
             'timeline': {
-                'timeline': timeline}}
+                'timeline': timeline,
+                'time_step': time_step}}
     else:
-        settings = {'total_time': total_time}
+        settings = {
+            'total_time': total_time,
+            'time_step': time_step}
 
     # get initial state
     settings['initial_state'] = Tumor_process.initial_state()
@@ -352,6 +415,7 @@ def test_single_Tumor(
 
 def test_batch_tumor(
     total_time=43200,
+    time_step=TIMESTEP,
     batch_size=2,
     timeline=None,
     out_dir='out'):
@@ -362,11 +426,13 @@ def test_batch_tumor(
         if timeline is not None:
             sim_settings = {
                 'timeline': {
-                    'timeline': timeline},
+                    'timeline': timeline,
+                    'time_step': time_step},
                 'return_raw_data': True}
         else:
             sim_settings = {
                 'total_time': total_time,
+                'time_step': time_step,
                 'return_raw_data': True}
 
         # get initial state
