@@ -87,8 +87,7 @@ class Fields(Process):
     def ports_schema(self):
         local_concentration_schema = {
             molecule: {
-                '_default': 0.0 * CONCENTRATION_UNIT,
-                '_updater': 'set'}  # TODO (Eran) -- this updater needs to be modifiable by cells
+                '_default': 0.0 * CONCENTRATION_UNIT}
             for molecule in self.parameters['molecules']}
 
         schema = {}
@@ -151,7 +150,7 @@ class Fields(Process):
         # TODO -- IFNg gets secreted from t-cells in the environment based on tumor neighbors (in fields process)
 
         # get each agent's local environment
-        local_environments = self.get_local_environments(cells, fields)
+        local_environments = self.set_local_environments(cells, fields)
 
         update = {'fields': delta_fields}
         if local_environments:
@@ -177,13 +176,18 @@ class Fields(Process):
             local_environment[mol_id] = field[bin_site] * CONCENTRATION_UNIT
         return local_environment
 
-    def get_local_environments(self, cells, fields):
+    def set_local_environments(self, cells, fields):
         local_environments = {}
         if cells:
             for agent_id, specs in cells.items():
-                local_environments[agent_id] = {'boundary': {}}
-                local_environments[agent_id]['boundary']['external'] = \
-                    self.get_single_local_environments(specs['boundary'], fields)
+                local_environments[agent_id] = {'boundary': {'external': {}}}
+                cell_environment = self.get_single_local_environments(specs['boundary'], fields)
+                local_environments[agent_id]['boundary']['external'] = {
+                    mol_id: {
+                        '_value': value,
+                        '_updater': 'set'  # this overrides the default updater
+                    } for mol_id, value in cell_environment.items()
+                }
         return local_environments
 
     def ones_field(self):
