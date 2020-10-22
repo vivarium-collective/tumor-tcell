@@ -91,9 +91,7 @@ class TumorProcess(Process):
 
         return {
             'internal': {
-                'cell_state': {
-                    '_default': initial_state,
-                },
+                'cell_state': initial_state,
             },
             'boundary': {
                 'diameter': self.parameters['diameter']
@@ -101,6 +99,7 @@ class TumorProcess(Process):
         }
 
     def ports_schema(self):
+        initial_cell_state = 'PDL1n' if random.uniform(0, 1) < self.parameters['initial_PDL1n'] else 'PDL1p'
         return {
             'globals': {
                 'death': {
@@ -119,7 +118,7 @@ class TumorProcess(Process):
             },
             'internal': {
                 'cell_state': {
-                    '_default': 'PDL1n' if random.uniform(0, 1) < self.parameters['initial_PDL1n'] else 'PDL1p',
+                    '_default': initial_cell_state,
                     '_emit': True,
                     '_updater': 'set'
                 },
