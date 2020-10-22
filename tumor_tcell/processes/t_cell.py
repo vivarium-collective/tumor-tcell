@@ -177,10 +177,12 @@ class TCellProcess(Process):
                 'accept': {
                     'PDL1': {
                         '_default': 0,
+                        '_updater': 'set',
                         '_emit': True,
                     },
                     'MHCI': {
                         '_default': 0,
+                        '_updater': 'set',
                         '_emit': True,
                     }
                 },
