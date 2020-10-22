@@ -106,9 +106,7 @@ class TCellProcess(Process):
 
         return {
             'internal': {
-                'cell_state': {
-                    '_default': initial_state,
-                },
+                'cell_state': initial_state,
             },
             'boundary': {
                 'diameter': self.parameters['diameter']
@@ -116,6 +114,7 @@ class TCellProcess(Process):
         }
 
     def ports_schema(self):
+        initial_cell_state = 'PD1n' if random.uniform(0, 1) < self.parameters['initial_PD1n'] else 'PD1p'
         return {
             'globals': {
                 'death': {
@@ -138,7 +137,7 @@ class TCellProcess(Process):
             },
             'internal': {
                 'cell_state': {
-                    '_default': 'PD1n' if random.uniform(0, 1) < self.parameters['initial_PD1n'] else 'PD1p',
+                    '_default': initial_cell_state,
                     '_emit': True,
                     '_updater': 'set'
                 },
@@ -297,7 +296,7 @@ class TCellProcess(Process):
                     update['boundary'].update({
                         'MHCI_timer': timestep})
 
-        elif cell_state == 'PDL1p':
+        elif cell_state == 'PD1p':
             cell_state_count = 0
             update['internal'].update({
                 'cell_state': new_cell_state,
