@@ -135,18 +135,11 @@ class TumorProcess(Process):
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },
-<<<<<<< HEAD
-                'IFNg': {
-                    '_default': 0 * units.ng/units.mL,
-                    '_emit': True,
-                },  # cytokine changes tumor phenotype to MHCI+ and PDL1+
-=======
                 'external': {
                     'IFNg': {
                         '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
                     }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
->>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
                 'IFNg_timer': {
                     '_default': 0,
                     '_emit': True,
@@ -183,13 +176,8 @@ class TumorProcess(Process):
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
-<<<<<<< HEAD
         cytotoxic_packets = states['neighbors']['receive']['cytotoxic_packets']
-        IFNg = states['boundary']['IFNg']
-=======
-        cytotoxic_packets = states['neighbors']['accept']['cytotoxic_packets']
         IFNg = states['boundary']['external']['IFNg']
->>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
         IFNg_timer = states['boundary']['IFNg_timer']
 
         # death by apoptosis
@@ -291,93 +279,48 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
-<<<<<<< HEAD
             ('neighbors', 'receive', 'cytotoxic_packets'): 0.0,
-            ('boundary', 'IFNg'): 0.0*units.ng/units.mL,
-            ('neighbors', 'accept', 'PD1'): 0.0,
-        }),
-        (interval * 1 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 100.0,
-            ('boundary', 'IFNg'): 2.0*units.ng/units.mL,
-            ('neighbors', 'accept', 'PD1'): 5e4,
-        }),
-        (interval * 2 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 200.0,
-            ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'accept', 'PD1'): 0.0,
-        }),
-        (interval * 3 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 300.0,
-            ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
-            ('neighbors', 'accept', 'PD1'): 5e4,
-        }),
-        (interval * 4 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 400.0,
-            ('boundary', 'IFNg'): 4.0 * units.ng / units.mL,
-            ('neighbors', 'accept', 'PD1'): 5e4,
-        }),
-        (interval * 5 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 700.0,
-            ('boundary', 'IFNg'): 3.0 * units.ng / units.mL,
-            ('neighbors', 'accept', 'PD1'): 5e4,
-        }),
-        (interval * 6 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
-            ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'accept', 'PD1'): 5e4,
-        }),
-        (interval * 7 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 1500.0,
-            ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-            ('neighbors', 'accept', 'PD1'): 5e4,
-        }),
-        (interval * 8 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 1600.0,
-            ('boundary', 'IFNg'): 2.0 * units.ng / units.mL,
-=======
-            ('neighbors', 'accept', 'cytotoxic_packets'): 0.0,
             ('boundary', 'external', 'IFNg'): 0.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 100.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 100.0,
             ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 200.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 200.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 300.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 300.0,
             ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 400.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 400.0,
             ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 700.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 700.0,
             ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 1000.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 1500.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 1500.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'accept', 'cytotoxic_packets'): 1600.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 1600.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
->>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),

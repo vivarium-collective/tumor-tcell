@@ -365,15 +365,9 @@ class TCellProcess(Process):
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
-<<<<<<< HEAD
-                cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / self.parameters['MHCIn_reduction_production'] * timestep
-                update['neighbors']['transfer'].update({
-=======
                 cytotoxic_packets = self.parameters['PD1p_cytotoxic_packets'] / \
                                     self.parameters['MHCIn_reduction_production'] * timestep
-                update['neighbors']['present'].update({
-                    'PD1': PD1,
->>>>>>> f3091b4e1462e4703659fba3e339c4779ecfac27
+                update['neighbors']['transfer'].update({
                     'cytotoxic_packets': cytotoxic_packets})
                 update['neighbors']['present'].update({
                     'PD1': PD1})
