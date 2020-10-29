@@ -81,7 +81,7 @@ class TCellProcess(Process):
         # killing
             # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
         # linear production over 4-6 hr up to a total of 102+-20 granules # (Betts, 2004), (Zhang, 2006)
-        'cytotoxic_packet_production': 40/TIMESTEP,  # number of packets/min produced in T cells
+        'cytotoxic_packet_production': 40/60,  # number of packets/min produced in T cells ##converted to packets/seconds
         'PD1n_cytotoxic_packets_max':10000, #max number able to produce
 
         # 1:10 fold reduction of PD1+ T cell cytotoxic production (Zelinskyy, 2005)
@@ -331,14 +331,9 @@ class TCellProcess(Process):
                 # Max production for both happens for PD1- T cells in contact with MHCI+ tumor
                 #Can max the amount of cytotoxic packets released
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1n_cytotoxic_packets_max']:
-                    cytotoxic_packets = self.parameters['cytotoxic_packet_production'] * timestep
+                    new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] * timestep
                     update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
-
-                else:
-                    cytotoxic_packets = 0
-                    update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
+                        'total_cytotoxic_packets': new_cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
@@ -351,14 +346,10 @@ class TCellProcess(Process):
                 # (Bohm, 1998), (Merritt, 2003)
 
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1n_cytotoxic_packets_max']:
-                    cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / self.parameters[
+                    new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / self.parameters[
                         'MHCIn_reduction_production'] * timestep
                     update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
-                else:
-                    cytotoxic_packets = 0
-                    update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
+                        'total_cytotoxic_packets': new_cytotoxic_packets})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
@@ -366,11 +357,6 @@ class TCellProcess(Process):
                     'external': {'IFNg': IFNg}})
 
             elif MHCI == 0:
-
-                # no stimulation without MHCI present
-                cytotoxic_packets = 0
-                update['internal'].update({
-                    'total_cytotoxic_packets': cytotoxic_packets})
 
                 IFNg = 0
                 update['boundary'].update({
@@ -383,13 +369,9 @@ class TCellProcess(Process):
 
                 # Max production for both happens for T cells in contact with MHCI+ tumor
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1p_cytotoxic_packets_max']:
-                    cytotoxic_packets = self.parameters['cytotoxic_packet_production'] * timestep
+                    new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] * timestep
                     update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
-                else:
-                    cytotoxic_packets = 0
-                    update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
+                        'total_cytotoxic_packets': new_cytotoxic_packets})
 
                 update['neighbors']['present'].update({
                     'PD1': PD1})
@@ -404,14 +386,10 @@ class TCellProcess(Process):
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1p_cytotoxic_packets_max']:
-                    cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / \
+                    new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / \
                                         self.parameters['MHCIn_reduction_production'] * timestep
                     update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
-                else:
-                    cytotoxic_packets = 0
-                    update['internal'].update({
-                        'total_cytotoxic_packets': cytotoxic_packets})
+                        'total_cytotoxic_packets': new_cytotoxic_packets})
 
                 update['neighbors']['present'].update({
                     'PD1': PD1})
@@ -423,12 +401,6 @@ class TCellProcess(Process):
                     'external': {'IFNg': IFNg}})
 
             elif MHCI == 0:
-
-                #no stimulation without MHCI present
-                cytotoxic_packets = 0
-                update['internal'].update({
-                    'total_cytotoxic_packets': cytotoxic_packets})
-
                 IFNg = 0
                 update['boundary'].update({
                     'external': {'IFNg': IFNg}})
@@ -436,25 +408,10 @@ class TCellProcess(Process):
         #keep cytotoxic transfer to max limit between tumor and T cells and remove from T cell total when transfer
         #max rate is 400 packets/minute
 
-        if states['neighbors']['transfer']['cytotoxic_packets'] < self.parameters['cytotoxic_transfer_rate']:
-            if states['internal']['total_cytotoxic_packets'] < self.parameters['cytotoxic_transfer_rate']:
-                cytotoxic_transfer = states['internal']['total_cytotoxic_packets']
-                #cytotoxic_packets = states['internal']['total_cytotoxic_packets'] - states['internal']['total_cytotoxic_packets']
-                cytotoxic_packets = -states['internal']['total_cytotoxic_packets']
-                update['internal'].update({
-                    'cytotoxic_packets': cytotoxic_packets})
-
-            else:
-                cytotoxic_transfer = self.parameters['cytotoxic_transfer_rate']
-                #cytotoxic_packets = states['internal']['total_cytotoxic_packets'] - self.parameters['cytotoxic_transfer_rate']
-                cytotoxic_packets = -self.parameters['cytotoxic_transfer_rate']
-                update['internal'].update({
-                    'cytotoxic_packets': cytotoxic_packets})
-
-        else:
-            cytotoxic_transfer = 0
-
-
+        max_cytotoxic_transfer = self.parameters['cytotoxic_transfer_rate'] - states['neighbors']['transfer']['cytotoxic_packets']
+        cytotoxic_transfer = min(max_cytotoxic_transfer,states['internal']['total_cytotoxic_packets'])
+        update['internal'].update({
+            'cytotoxic_packets': -cytotoxic_transfer})
         update['neighbors']['transfer'].update({
             'cytotoxic_packets': cytotoxic_transfer})
 
