@@ -43,7 +43,7 @@ DEFAULT_TUMORS = {
     '{}_{}'.format(TUMOR_ID, n): {
         # 'location': [x, y],
         'type': 'tumor',
-        'cell_state': 'PDL1n',
+        'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
         'diameter': 20,
     } for n in range(N_TUMORS)
 }
@@ -68,7 +68,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=5000,
+    total_time=10000,
     time_step=60
 ):
 
@@ -136,6 +136,9 @@ def tumor_tcell_abm(
     }
     initial_tumors = {
         agent_id: {
+            'internal': {
+                'cell_state': state.get('cell_state', None)
+            },
             'boundary': {
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 20) * units.um,
