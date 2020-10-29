@@ -8,12 +8,13 @@ with open("README.md", 'r') as readme:
 
 setup(
     name='tumor-tcell',
-    version='0.0.2',
+    version='0.0.3',
     packages=[
         'tumor_tcell',
         'tumor_tcell.composites',
         'tumor_tcell.processes',
         'tumor_tcell.experiments',
+        'tumor_tcell.library',
     ],
     author='John Hickey, Eran Agmon',
     author_email='jwhickey@stanford.edu, eagmon@stanford.edu',
