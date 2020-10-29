@@ -42,6 +42,13 @@ class Fields(Process):
         'depth': 3000.0,  # um
         'diffusion': 5e-1,
         'gradient': {},
+
+        #TODO - Add the diffusion and degradation of IFNg
+        'IFNg_diffusion_coeff': 1.25 * 10^-3, #cm^2/day #(Liao, 2014)
+        'IFNg_degradation_coeff': 2.16,  # 1/day #(Liao, 2014)
+        #If we want to add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
+
+
     }
 
     def __init__(self, parameters=None):
