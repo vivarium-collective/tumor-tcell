@@ -44,7 +44,7 @@ class Fields(Process):
         'gradient': {},
 
         #TODO - Add the diffusion and degradation of IFNg
-        'IFNg_diffusion_coeff': 1.25 * 10^-3, #cm^2/day #(Liao, 2014)
+        'IFNg_diffusion_coeff': 1.25 * 10**-3, #cm^2/day #(Liao, 2014)
         'IFNg_degradation_coeff': 2.16,  # 1/day #(Liao, 2014)
         #If we want to add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
 
