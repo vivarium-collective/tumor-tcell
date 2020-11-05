@@ -167,12 +167,12 @@ class Neighbors(Process):
                     },
                     'transfer': {
                         '*': {
-                            '_default': 0.0
+                            '_default': 0.0,
                         }
                     },
                     'receive': {
                         '*': {
-                            '_default': 0.0
+                            '_default': 0.0,
                         }
                     },
                 }
@@ -212,14 +212,13 @@ class Neighbors(Process):
         for cell_id, neighbors in cell_neighbors.items():
             for neighbor_id in neighbors:
                 # the neighbor's transfer moves to the cell's receive and then is removed
-                transfer = cells[neighbor_id]['neighbors']['transfer']
-                exchange[cell_id]['receive'] = add_to_dict(exchange[cell_id]['receive'], transfer)
-                exchange[neighbor_id]['transfer'] = remove_from_dict(exchange[neighbor_id]['transfer'], transfer)
+                transfer = cells[cell_id]['neighbors']['transfer']
+                exchange[neighbor_id]['receive'] = add_to_dict(exchange[neighbor_id]['receive'], transfer)
+                exchange[cell_id]['transfer'] = remove_from_dict(exchange[cell_id]['transfer'], transfer)
 
                 #present and accept are not removed but updated for each other
                 present = cells[neighbor_id]['neighbors']['present']
                 exchange[cell_id]['accept'] = add_to_dict(exchange[cell_id]['accept'], present)
-
 
         update = {
             'cells': {

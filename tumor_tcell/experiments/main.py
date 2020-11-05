@@ -72,7 +72,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=1000,
+    total_time=5000,
     time_step=60
 ):
 
@@ -136,12 +136,12 @@ def tumor_tcell_abm(
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 10) * units.um,
             },
-            # 'neighbors': {
-            #     'present': {
-            #         'PD1': state.get('PD1', None),
-            #         'TCR': state.get('TCR', None)
-            #     }
-            # },
+            'neighbors': {
+                'present': {
+                    # 'PD1': state.get('PD1', None),
+                    'TCR': state.get('TCR', 50000)
+                }
+            },
         } for agent_id, state in tcells.items()
     }
     initial_tumors = {
@@ -199,9 +199,14 @@ def plots_suite(data, out_dir=EXPERIMENT_OUT_DIR):
                 if TUMOR_ID in agent_id}}
 
     # make multigen plot for tcells and tumors
-    plot_settings = {}
-    plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
-    plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
+    plot_settings = {
+        'skip_paths': [
+            ('boundary', 'diameter'),
+            ('boundary', 'location'),
+        ]
+    }
+    fig1 = plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
+    fig2 = plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
 
     # snapshots plot
     # extract data
@@ -217,7 +222,7 @@ def plots_suite(data, out_dir=EXPERIMENT_OUT_DIR):
         'n_snapshots': 8,
         'agent_shape': 'circle',
         'out_dir': out_dir}
-    plot_snapshots(plot_data, plot_config)
+    fig3 = plot_snapshots(plot_data, plot_config)
 
 
 
