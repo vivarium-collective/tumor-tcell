@@ -31,7 +31,13 @@ class TumorAgent(Generator):
         'daughter_path': tuple(),
         'tumor': {},
         'death': {},
-        '_schema': {},
+        '_schema': {
+            'death': {
+                'trigger': {
+                    '_emit': False
+                }
+            }
+        },
     }
 
     def __init__(self, config):

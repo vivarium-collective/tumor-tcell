@@ -124,6 +124,11 @@ class TCellProcess(Process):
             'boundary': {
                 'diameter': self.parameters['diameter']
             },
+            'neighbors': {
+                'present': {
+                    'TCR': 50000,
+                }
+            }
         }
 
     def ports_schema(self):
@@ -198,7 +203,7 @@ class TCellProcess(Process):
                         '_updater': 'set',
                     }, # membrane protein, promotes T-cell death
                     'TCR': {
-                        '_default': 50000,
+                        '_default': 0,
                         '_emit': True,
                         '_updater': 'set',
                     } # level of TCR that interacts with MHCI on tumor

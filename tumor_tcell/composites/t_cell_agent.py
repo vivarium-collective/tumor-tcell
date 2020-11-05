@@ -32,7 +32,13 @@ class TCellAgent(Generator):
         'daughter_path': tuple(),
         'tcell': {},
         'death': {},
-        '_schema': {},
+        '_schema': {
+            'death': {
+                'trigger': {
+                    '_emit': False
+                }
+            },
+        },
     }
 
     def __init__(self, config):
