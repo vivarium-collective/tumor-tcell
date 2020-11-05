@@ -67,7 +67,7 @@ class TCellProcess(Process):
         'ligand_threshold': 1e4,  # molecules/neighbor cell
 
         # division rate (Petrovas 2007, Vodnala 2019)
-        'PD1n_growth_8hr': 0.90,  # 95% division in 28 hours
+        'PD1n_growth_8hr': 0.80,  # 90% division in 28 hours
         'PD1p_growth_8hr': 0.20,  # 20% division in 28 hours
 
         # migration
@@ -123,31 +123,31 @@ class TCellProcess(Process):
             'globals': {
                 'death': {
                     '_default': False,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'set'},
                 'divide': {
                     '_default': False,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'set'},
                 'PD1n_divide_count': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': True,
                     '_divider': 'zero',
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'accumulate'}
             },
             'internal': {
                 'cell_state': {
                     '_default': initial_cell_state,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'set'
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'accumulate'
                 },
                 'total_cytotoxic_packets': {
