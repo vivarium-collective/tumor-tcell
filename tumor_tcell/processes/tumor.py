@@ -163,6 +163,11 @@ class TumorProcess(Process):
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'set',
+                    },
+                    'TCR': {
+                        '_default': 0,
+                        '_emit': True,
+                        '_updater': 'set',
                     }
                 },
                 'receive': {

@@ -51,6 +51,15 @@ class TCellProcess(Process):
         'cellstate_transition_time': 259200,  # extended contact with tumor cells expressing MHCI for more
                # than 3 days (expected to be 100% in tumor/chronic infection after 1 week) (Schietinger 2016)
 
+        #Time before TCR downregulation
+        'activation_time': 21600,  # activation enables 6 hours of activation and production of cytokines
+        # before enters refractory state due to downregulation of TCR (Salerno, 2017), (Gallegos, 2016)
+        'activation_refractory_time': 86400,  # refractory period of 18 hours (plus original 6 h activation time)
+        # after activation period with limited ability to produce cytokines and cytotoxic packets and to
+        # interact with MHCI (Salerno, 2017), (Gallegos, 2016)
+        'TCR_downregulated': 0, #reduce TCR to 0 if activated more than 6 hours for another 18 hours
+        'TCR_upregulated': 50000,  # reduce TCR to 0 if activated more than 6 hours for another 18 hours
+
         # death rates (Petrovas 2007)
         'PDL1_critical_number': 1e4,  # threshold number of PDL1 molecules/cell to trigger death
         'death_PD1p_14hr': 0.7,  # 0.7 / 14 hrs
@@ -154,7 +163,12 @@ class TCellProcess(Process):
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate'
-                }
+                },
+                'TCR_timer': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'accumulate',
+                },  # affects TCR expression
             },
             'boundary': {
                 'cell_type': {
@@ -182,7 +196,12 @@ class TCellProcess(Process):
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'set',
-                    }  # membrane protein, promotes T-cell death
+                    }, # membrane protein, promotes T-cell death
+                    'TCR': {
+                        '_default': 50000,
+                        '_emit': True,
+                        '_updater': 'set',
+                    } # level of TCR that interacts with MHCI on tumor
                 },
                 'accept': {
                     'PDL1': {
@@ -212,6 +231,8 @@ class TCellProcess(Process):
         PDL1 = states['neighbors']['accept']['PDL1']
         MHCI = states['neighbors']['accept']['MHCI']
         MHCI_timer = states['boundary']['MHCI_timer']
+        TCR_timer = states['internal']['TCR_timer']
+        TCR = states['neighbors']['present']['TCR']
 
         # death
         if cell_state == 'PD1n':
@@ -287,7 +308,29 @@ class TCellProcess(Process):
             'internal': {},
             'boundary': {},
             'neighbors': {'present': {}, 'accept': {}, 'transfer': {}}}
-        
+
+        #TCR downregulation after 6 hours of activation
+        if TCR_timer > self.parameters['activation_time']:
+            TCR = self.parameters['TCR_downregulated']
+            update['neighbors']['present'].update({
+                'TCR': TCR})
+
+        #update the TCR_timer for each timestep in contact with MHCI or during refractory period regardless
+        if MHCI > self.parameters['ligand_threshold']:
+            update['internal'].update({
+                'TCR_timer': timestep})
+        elif TCR_timer > self.parameters['activation_time']:
+            update['internal'].update({
+                'TCR_timer': timestep})
+
+        #After the refractory period is over then
+        if TCR_timer > self.parameters['activation_refractory_time']:
+            TCR = self.parameters['TCR_upregulated']
+            update['internal'].update({
+                'TCR_timer': -self.parameters['activation_refractory_time']})
+            update['neighbors']['present'].update({
+                'TCR': TCR})
+
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PD1n':
@@ -326,7 +369,7 @@ class TCellProcess(Process):
 
             # and how do we reference this cell - see last elif
             # check conditional 4 fold reduction
-            if MHCI >= self.parameters['ligand_threshold']:
+            if MHCI >= self.parameters['ligand_threshold'] and TCR >= self.parameters['ligand_threshold']:
 
                 # Max production for both happens for PD1- T cells in contact with MHCI+ tumor
                 #Can max the amount of cytotoxic packets released
@@ -340,7 +383,7 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'external': {'IFNg': IFNg}})
 
-            elif MHCI > 0:
+            elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
@@ -365,7 +408,7 @@ class TCellProcess(Process):
         elif new_cell_state == 'PD1p':
             PD1 = self.parameters['PD1p_PD1_equilibrium']
 
-            if MHCI >= self.parameters['ligand_threshold']:
+            if MHCI >= self.parameters['ligand_threshold'] and TCR >= self.parameters['ligand_threshold']:
 
                 # Max production for both happens for T cells in contact with MHCI+ tumor
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1p_cytotoxic_packets_max']:
@@ -381,7 +424,7 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'external': {'IFNg': IFNg}})
 
-            elif MHCI > 0:
+            elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
                 # (Bohm, 1998), (Merritt, 2003)
@@ -420,7 +463,7 @@ class TCellProcess(Process):
 
 
 def get_timeline(
-        total_time=120000,
+        total_time=200000,
         number_steps=10):
 
     interval = total_time / (number_steps * TIMESTEP)
