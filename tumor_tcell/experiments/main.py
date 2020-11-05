@@ -44,6 +44,8 @@ DEFAULT_TUMORS = {
         # 'location': [x, y],
         'type': 'tumor',
         'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
+        # 'PDL1': 50000,
+        # 'MHCI': 50000,
         'diameter': 20,
     } for n in range(N_TUMORS)
 }
@@ -52,6 +54,7 @@ DEFAULT_TCELLS = {
         # 'location': [x, y],
         'type': 'tcell',
         'cell_state': 'PD1n',
+        # 'PD1': 50000,
         'diameter': 10,
     } for n in range(N_TCELLS)
 }
@@ -131,7 +134,12 @@ def tumor_tcell_abm(
             'boundary': {
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 10) * units.um,
-            }
+            },
+            # 'neighbors': {
+            #     'present': {
+            #         'PD1': state.get('PD1', None)
+            #     }
+            # },
         } for agent_id, state in tcells.items()
     }
     initial_tumors = {
@@ -142,7 +150,13 @@ def tumor_tcell_abm(
             'boundary': {
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 20) * units.um,
-            }
+            },
+            # 'neighbors': {
+            #     'present': {
+            #         'PDL1': state.get('PD1', None),
+            #         'MHCI': state.get('PD1', None)
+            #     }
+            # },
         } for agent_id, state in tumors.items()
     }
     initial_state = {

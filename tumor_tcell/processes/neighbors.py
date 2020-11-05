@@ -148,7 +148,7 @@ class Neighbors(Process):
                         '_default': 1.0 * units.um,
                         '_updater': 'set'},
                     'mass': {
-                        '_emit': True,
+                        #'_emit': True,
                         '_default': 1 * units.fg,
                         '_updater': 'set'},
                 },

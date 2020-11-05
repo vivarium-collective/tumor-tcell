@@ -57,7 +57,7 @@ class TumorProcess(Process):
 
         # death rates
         'death_apoptosis': 0.95,  # negligible compared to growth/killing 0.95 by 5 day (Gong, 2017)
-        'cytotoxic_packet_threshold': 128 * 10,  # need at least 128 packets for death (multiply by 10 for T cells)
+        'cytotoxic_packet_threshold': 128 * 100,  # need at least 128 packets for death (multiply by 10 for T cells)
 
         # division rate
         'PDL1n_growth': 0.95,  # probability of division 24 hr (Eden, 2011)
@@ -104,27 +104,27 @@ class TumorProcess(Process):
             'globals': {
                 'death': {
                     '_default': False,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'set'},
                 'divide': {
                     '_default': False,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'set'},
                 'PDL1n_divide_count': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': True,
                     '_divider': 'zero',
                     '_updater': 'accumulate'}
             },
             'internal': {
                 'cell_state': {
                     '_default': initial_cell_state,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'set'
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'accumulate'}
             },
             'boundary': {
@@ -285,42 +285,42 @@ def get_timeline(
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 100.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
             ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 200.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 2000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 300.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 3000.0,
             ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 400.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 4000.0,
             ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 700.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 7000.0,
             ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 10000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 1500.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 15000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
-            ('neighbors', 'receive', 'cytotoxic_packets'): 1600.0,
+            ('neighbors', 'receive', 'cytotoxic_packets'): 16000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
