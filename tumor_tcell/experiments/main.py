@@ -55,6 +55,7 @@ DEFAULT_TCELLS = {
         'type': 'tcell',
         'cell_state': 'PD1n',
         # 'PD1': 50000,
+        # 'TCR':50000,
         'diameter': 10,
     } for n in range(N_TCELLS)
 }
@@ -71,7 +72,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=10000,
+    total_time=1000,
     time_step=60
 ):
 
@@ -137,7 +138,8 @@ def tumor_tcell_abm(
             },
             # 'neighbors': {
             #     'present': {
-            #         'PD1': state.get('PD1', None)
+            #         'PD1': state.get('PD1', None),
+            #         'TCR': state.get('TCR', None)
             #     }
             # },
         } for agent_id, state in tcells.items()
