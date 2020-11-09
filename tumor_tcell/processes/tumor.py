@@ -104,27 +104,27 @@ class TumorProcess(Process):
             'globals': {
                 'death': {
                     '_default': False,
-                    #'_emit': True,
+                    '_emit': True,
                     '_updater': 'set'},
                 'divide': {
                     '_default': False,
-                    #'_emit': True,
+                    '_emit': True,
                     '_updater': 'set'},
                 'PDL1n_divide_count': {
                     '_default': 0,
-                    #'_emit': True,
+                    '_emit': True,
                     '_divider': 'zero',
                     '_updater': 'accumulate'}
             },
             'internal': {
                 'cell_state': {
                     '_default': initial_cell_state,
-                    #'_emit': True,
+                    '_emit': True,
                     '_updater': 'set'
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    #'_emit': True,
+                    '_emit': True,
                     '_updater': 'accumulate'}
             },
             'boundary': {

@@ -72,7 +72,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=5000,
+    total_time=1000,
     time_step=60
 ):
 

@@ -29,15 +29,35 @@ class TumorAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
-        'tumor': {},
+        'tumor': {
+            'globals': {
+                'death': {
+                    '_emit': False,
+                },
+                'divide': {
+                    '_emit': False,
+                },
+                'PDL1n_divide_count': {
+                    '_emit': False,
+                }
+            },
+            'internal': {
+                'cell_state': {
+                    '_emit': False,
+                },
+                'cell_state_count': {
+                    '_emit': False,
+                }
+            },
+        },
         'death': {},
         '_schema': {
             'death': {
                 'trigger': {
                     '_emit': False
                 }
-            }
-        },
+            },
+        },       
     }
 
     def __init__(self, config):
