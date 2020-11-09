@@ -30,7 +30,30 @@ class TCellAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
-        'tcell': {},
+        'tcell': {
+            'globals': {
+                'death': {
+                    '_emit': False,
+                },
+                'divide': {
+                    '_emit': False,
+                },
+                'PD1n_divide_count': {
+                    '_emit': False,
+                },
+                'PD1p_divide_count': {
+                    '_emit': False,
+                },
+            },
+            'internal': {
+                'cell_state': {
+                    '_emit': False,
+                },
+                'cell_state_count': {
+                    '_emit': False,
+                }
+            },
+        },
         'death': {},
         '_schema': {
             'death': {
