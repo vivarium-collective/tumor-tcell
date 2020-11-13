@@ -72,7 +72,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=1000,
+    total_time=2000,
     time_step=60
 ):
 
@@ -180,7 +180,7 @@ def tumor_tcell_abm(
     return data
 
 
-def plots_suite(data, out_dir=EXPERIMENT_OUT_DIR):
+def plots_suite(data, out_dir=None):
 
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
@@ -225,6 +225,7 @@ def plots_suite(data, out_dir=EXPERIMENT_OUT_DIR):
     fig3 = plot_snapshots(plot_data, plot_config)
 
 
+    return fig1, fig2, fig3
 
 # all of the experiments go here for easy access by control class
 experiments_library = {

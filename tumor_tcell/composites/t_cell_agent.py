@@ -22,6 +22,11 @@ from tumor_tcell import COMPOSITE_OUT_DIR
 
 NAME = 'tcell_agent'
 
+def daughter_ab(mother_id):
+    return [
+        str(mother_id) + "A",
+        str(mother_id) + "B"
+    ]
 
 class TCellAgent(Generator):
 
@@ -30,36 +35,37 @@ class TCellAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
-        'tcell': {
-            'globals': {
-                'death': {
-                    '_emit': False,
-                },
-                'divide': {
-                    '_emit': False,
-                },
-                'PD1n_divide_count': {
-                    '_emit': False,
-                },
-                'PD1p_divide_count': {
-                    '_emit': False,
-                },
-            },
-            'internal': {
-                'cell_state': {
-                    '_emit': False,
-                },
-                'cell_state_count': {
-                    '_emit': False,
-                }
-            },
-        },
+        'tcell': {},
         'death': {},
         '_schema': {
             'death': {
                 'trigger': {
                     '_emit': False
                 }
+            },
+            't_cell': {
+                'globals': {
+                    'death': {
+                        '_emit': False,
+                    },
+                    'divide': {
+                        '_emit': False,
+                    },
+                    'PD1n_divide_count': {
+                        '_emit': False,
+                    },
+                    'PD1p_divide_count': {
+                        '_emit': False,
+                    },
+                },
+                'internal': {
+                    'cell_state': {
+                        '_emit': False,
+                    },
+                    'cell_state_count': {
+                        '_emit': False,
+                    }
+                },
             },
         },
     }
@@ -78,6 +84,7 @@ class TCellAgent(Generator):
         # division config
         meta_division_config = dict(
             {},
+            daughter_ids_function = daughter_ab,
             daughter_path=daughter_path,
             agent_id=agent_id,
             compartment=self)
