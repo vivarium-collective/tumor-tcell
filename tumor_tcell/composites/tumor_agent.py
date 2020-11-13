@@ -21,6 +21,12 @@ from tumor_tcell import COMPOSITE_OUT_DIR
 
 NAME = 'tumor_agent'
 
+def daughter_ab(mother_id):
+    return [
+        str(mother_id) + "A",
+        str(mother_id) + "B"
+    ]
+
 
 class TumorAgent(Generator):
 
@@ -29,33 +35,34 @@ class TumorAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
-        'tumor': {
-            'globals': {
-                'death': {
-                    '_emit': False,
-                },
-                'divide': {
-                    '_emit': False,
-                },
-                'PDL1n_divide_count': {
-                    '_emit': False,
-                }
-            },
-            'internal': {
-                'cell_state': {
-                    '_emit': False,
-                },
-                'cell_state_count': {
-                    '_emit': False,
-                }
-            },
-        },
+        'tumor': {},
         'death': {},
         '_schema': {
             'death': {
                 'trigger': {
                     '_emit': False
                 }
+            },
+            'tumor': {
+                'globals': {
+                    'death': {
+                        '_emit': False,
+                    },
+                    'divide': {
+                        '_emit': False,
+                    },
+                    'PDL1n_divide_count': {
+                        '_emit': False,
+                    }
+                },
+                'internal': {
+                    'cell_state': {
+                        '_emit': False,
+                    },
+                    'cell_state_count': {
+                        '_emit': False,
+                    }
+                },
             },
         },       
     }
@@ -74,6 +81,7 @@ class TumorAgent(Generator):
         # division config
         meta_division_config = dict(
             {},
+            daughter_ids_function=daughter_ab,
             daughter_path=daughter_path,
             agent_id=agent_id,
             compartment=self)
