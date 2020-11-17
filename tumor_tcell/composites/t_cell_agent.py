@@ -15,6 +15,7 @@ from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.disintegrate import Disintegrate
 from tumor_tcell.processes.t_cell import TCellProcess
+from tumor_tcell.processes.local_field import LocalField
 
 # directories
 from tumor_tcell import COMPOSITE_OUT_DIR
@@ -35,6 +36,8 @@ class TCellAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
+        'field_path': ('..', '..', 'fields',),
+        'dimensions_path': ('..', '..', 'dimensions',),
         'tcell': {},
         'death': {},
         '_schema': {
@@ -94,18 +97,40 @@ class TCellAgent(Generator):
             't_cell': TCellProcess(config['tcell']),
             'division': MetaDivision(meta_division_config),
             'death': Disintegrate(death_config),
+            'local_field': LocalField(),
         }
 
     def generate_topology(self, config):
+        agent_id = config['agent_id']
+
+        # get paths
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
+        field_path = config['field_path']
+        dimensions_path = config['dimensions_path']
         death_trigger_path = boundary_path + ('death',)
+        exchanges_path = boundary_path + ('external',)
+        location_path = boundary_path + ('location', )
+
+        # # TODO -- connect this up with the field
+        # boundary_exchange = {
+        #     'external': field_path,
+        #     'cell_type': boundary_path + ('cell_type',),
+        #     'diameter': boundary_path + ('diameter',),
+        #     'MHCI_timer': boundary_path + ('MHCI_timer',)}
+
         return {
             't_cell': {
                 'internal': ('internal',),
                 'boundary': boundary_path,
                 'globals': boundary_path,
                 'neighbors': ('neighbors',),
+            },
+            'local_field': {
+                'exchanges': exchanges_path,
+                'location': location_path,
+                'fields': field_path,
+                'dimensions': dimensions_path,
             },
             'division': {
                 'global': boundary_path,
