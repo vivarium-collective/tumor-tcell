@@ -41,21 +41,21 @@ N_TUMORS = 14
 N_TCELLS = 9
 DEFAULT_TUMORS = {
     '{}_{}'.format(TUMOR_ID, n): {
-        # 'location': [x, y],
+        #'location': [x, y],
         'type': 'tumor',
         'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
-        # 'PDL1': 50000,
-        # 'MHCI': 50000,
+        #'PDL1': 50000,
+        #'MHCI': 50000,
         'diameter': 20,
     } for n in range(N_TUMORS)
 }
 DEFAULT_TCELLS = {
     '{}_{}'.format(TCELL_ID, n): {
-        # 'location': [x, y],
+        #'location': [x, y],
         'type': 'tcell',
         'cell_state': 'PD1n',
-        # 'PD1': 50000,
-        # 'TCR':50000,
+        #'PD1': 0,
+        #'TCR':50000,
         'diameter': 10,
     } for n in range(N_TCELLS)
 }
@@ -136,9 +136,12 @@ def tumor_tcell_abm(
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 10) * units.um,
             },
+            'internal': {
+                'cell_state': state.get('cell_state', None)
+            },
             'neighbors': {
                 'present': {
-                    # 'PD1': state.get('PD1', None),
+                    'PD1': state.get('PD1', None),
                     'TCR': state.get('TCR', 50000)
                 }
             },
@@ -153,12 +156,12 @@ def tumor_tcell_abm(
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 20) * units.um,
             },
-            # 'neighbors': {
-            #     'present': {
-            #         'PDL1': state.get('PD1', None),
-            #         'MHCI': state.get('PD1', None)
-            #     }
-            # },
+            'neighbors': {
+                'present': {
+                    'PDL1': state.get('PDL1', None),
+                    'MHCI': state.get('MHCI', None)
+                }
+            },
         } for agent_id, state in tumors.items()
     }
     initial_state = {
