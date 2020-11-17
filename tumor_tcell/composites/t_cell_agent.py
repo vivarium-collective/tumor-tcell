@@ -59,9 +59,6 @@ class TCellAgent(Generator):
                     },
                 },
                 'internal': {
-                    'cell_state': {
-                        '_emit': False,
-                    },
                     'cell_state_count': {
                         '_emit': False,
                     }
