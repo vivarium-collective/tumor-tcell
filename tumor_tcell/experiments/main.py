@@ -127,7 +127,7 @@ def tumor_tcell_abm(
 
     # make environment instance to get an initial state
     environment = TumorMicroEnvironment(hierarchy[GENERATORS_KEY]['config'])
-    initial_env = environment.initial_state({'gradient': 'random'})
+    initial_env = environment.initial_state()
 
     # initialize state
     initial_t_cells = {
