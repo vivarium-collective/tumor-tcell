@@ -98,8 +98,6 @@ def test_local_fields():
 
     output = local_fields_process.next_update(0, initial_state)
 
-    import ipdb; ipdb.set_trace()
-
 
 if __name__ == '__main__':
     test_local_fields()
