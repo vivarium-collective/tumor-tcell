@@ -101,23 +101,11 @@ class TCellAgent(Generator):
         }
 
     def generate_topology(self, config):
-        agent_id = config['agent_id']
-
-        # get paths
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
         field_path = config['field_path']
         dimensions_path = config['dimensions_path']
         death_trigger_path = boundary_path + ('death',)
-        exchanges_path = boundary_path + ('external',)
-        location_path = boundary_path + ('location', )
-
-        # # TODO -- connect this up with the field
-        # boundary_exchange = {
-        #     'external': field_path,
-        #     'cell_type': boundary_path + ('cell_type',),
-        #     'diameter': boundary_path + ('diameter',),
-        #     'MHCI_timer': boundary_path + ('MHCI_timer',)}
 
         return {
             't_cell': {
@@ -127,8 +115,8 @@ class TCellAgent(Generator):
                 'neighbors': ('neighbors',),
             },
             'local_field': {
-                'exchanges': exchanges_path,
-                'location': location_path,
+                'exchanges': boundary_path + ('external',),
+                'location': boundary_path + ('location', ),
                 'fields': field_path,
                 'dimensions': dimensions_path,
             },
