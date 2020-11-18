@@ -79,6 +79,8 @@ class Fields(Process):
         self.bin_volume = get_bin_volume(self.n_bins, self.bounds, self.depth)
 
     def initial_state(self, config=None):
+        if config is None:
+            config = {}
         gradient = config.get('gradient', 'ones')
         if gradient == 'random':
             return {
