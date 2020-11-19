@@ -33,14 +33,15 @@ from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 # global parameters
-BOUNDS = [100 * units.um, 100 * units.um]
+
 NBINS = [10, 10]
 DEPTH = 10  # um
+BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-N_TUMORS = 14
-N_TCELLS = 9
+N_TUMORS = 25
+N_TCELLS = 3
 DEFAULT_TUMORS = {
     '{}_{}'.format(TUMOR_ID, n): {
         #'location': [x, y],
@@ -76,7 +77,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=2000,
+    total_time=200000,
     time_step=60
 ):
 
