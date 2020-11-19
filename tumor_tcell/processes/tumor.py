@@ -64,7 +64,7 @@ class TumorProcess(Process):
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # cell_state transition
-        'IFNg_threshold': 1 * CONCENTRATION_UNIT,
+        'IFNg_threshold': 6E-8,  # mmol/L, converted from 1 ng/mL TODO -- get concentrations! CONCENTRATION_UNIT
         'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
         
         # migration

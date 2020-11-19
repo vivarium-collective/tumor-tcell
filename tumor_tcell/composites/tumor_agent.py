@@ -15,6 +15,7 @@ from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.disintegrate import Disintegrate
 from tumor_tcell.processes.tumor import TumorProcess
+from tumor_tcell.processes.local_field import LocalField
 
 # directories
 from tumor_tcell import COMPOSITE_OUT_DIR
@@ -35,6 +36,8 @@ class TumorAgent(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
+        'field_path': ('..', '..', 'fields',),
+        'dimensions_path': ('..', '..', 'dimensions',),
         'tumor': {},
         'death': {},
         '_schema': {
@@ -89,6 +92,7 @@ class TumorAgent(Generator):
 
         return {
             'tumor': TumorProcess(config['tumor']),
+            'local_field': LocalField(),
             'division': MetaDivision(meta_division_config),
             'death': Disintegrate(death_config),
         }
@@ -96,13 +100,22 @@ class TumorAgent(Generator):
     def generate_topology(self, config):
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
+        field_path = config['field_path']
+        dimensions_path = config['dimensions_path']
         death_trigger_path = boundary_path + ('death',)
+
         return {
             'tumor': {
                 'internal': ('internal',),
                 'boundary': boundary_path,
                 'globals': boundary_path,
                 'neighbors': ('neighbors',),
+            },
+            'local_field': {
+                'exchanges': boundary_path + ('exchange',),
+                'location': boundary_path + ('location',),
+                'fields': field_path,
+                'dimensions': dimensions_path,
             },
             'division': {
                 'global': boundary_path,

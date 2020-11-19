@@ -81,11 +81,15 @@ class Fields(Process):
     def initial_state(self, config=None):
         if config is None:
             config = {}
-        gradient = config.get('gradient', 'ones')
-        if gradient == 'random':
+        if 'random' in config:
             return {
                 'fields': {
                     field: self.random_field()
+                    for field in self.parameters['molecules']}}
+        elif 'uniform' in config:
+            return {
+                'fields': {
+                    field: config['uniform']*self.ones_field()
                     for field in self.parameters['molecules']}}
         else:
             return {

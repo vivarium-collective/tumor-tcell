@@ -34,6 +34,8 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 # global parameters
 BOUNDS = [100 * units.um, 100 * units.um]
+NBINS = [10, 10]
+DEPTH = 10  # um
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
@@ -69,6 +71,8 @@ def random_location(bounds):
 # simulation # 1
 def tumor_tcell_abm(
     bounds=BOUNDS,
+    n_bins=NBINS,
+    depth=DEPTH,
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
@@ -118,6 +122,8 @@ def tumor_tcell_abm(
                     'time_step': time_step,
                     'molecules': field_molecules,
                     'bounds': bounds,
+                    'n_bins': n_bins,
+                    'depth': depth,
                 }
             }
         },
@@ -127,7 +133,7 @@ def tumor_tcell_abm(
 
     # make environment instance to get an initial state
     environment = TumorMicroEnvironment(hierarchy[GENERATORS_KEY]['config'])
-    initial_env = environment.initial_state()
+    initial_env = environment.initial_state({'uniform': 0.0})
 
     # initialize state
     initial_t_cells = {
