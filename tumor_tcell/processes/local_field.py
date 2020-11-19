@@ -63,6 +63,7 @@ class LocalField(Deriver):
 
         # apply exchanges
         delta_fields = {}
+        reset_exchanges = {}
         for mol_id, value in exchanges.items():
             delta_fields[mol_id] = np.zeros(
                 (n_bins[0], n_bins[1]), dtype=np.float64)
@@ -70,8 +71,12 @@ class LocalField(Deriver):
             concentration = count_to_concentration(exchange, bin_volume)
             delta_fields[mol_id][bin_site[0], bin_site[1]] += concentration.to(
                 units.mmol / units.L).magnitude
+            reset_exchanges[mol_id] = {
+                '_value': 0,
+                '_updater': 'set'}
 
         return {
+            'exchanges': reset_exchanges,
             'fields': delta_fields}
 
 

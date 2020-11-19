@@ -157,10 +157,7 @@ class Fields(Process):
         # diffuse field
         delta_fields = self.diffuse(fields, timestep)
 
-        # get neighbors
-        # secrete
-        # t-cells secrete a count of IFNg, needs to convert to concentration for tumors
-        # TODO -- IFNg gets secreted from t-cells in the environment based on tumor neighbors (in fields process)
+        # TODO -- add degradation
 
         # get each agent's local environment
         local_environments = self.set_local_environments(cells, fields)
@@ -237,3 +234,7 @@ class Fields(Process):
             delta_fields[mol_id] = delta
 
         return delta_fields
+
+    def degrade(self, fields, timestep):
+        import ipdb; ipdb.set_trace()
+        return {}
