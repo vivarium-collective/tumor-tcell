@@ -67,10 +67,10 @@ class TCellProcess(Process):
         'death_PD1p_next_to_PDL1p_14hr': 0.95,  # 0.95 / 14 hrs
 
         # production rates
-        'PD1n_IFNg_production': 1.62e4/3600 * CONCENTRATION_UNIT,  # molecules/cell/second (Bouchnita 2017)
+        'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
         # TODO @Eran - the other IFNg is in ng/mL how does this production get converted?
 
-        'PD1p_IFNg_production': 0.0 * CONCENTRATION_UNIT,  # molecules/cell/second
+        'PD1p_IFNg_production': 0.0,  # molecule counts/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell
@@ -183,11 +183,16 @@ class TCellProcess(Process):
                     '_default': self.parameters['diameter'],
                     '_divider': 'set',
                 },
+                'exchange': {
+                    'IFNg': {
+                        '_default': 0,  # counts
+                        '_emit': True,
+                        '_updater': 'accumulate',
+                    }},
                 'external': {
                     'IFNg': {
                         '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
-                        '_updater': 'accumulate',
                     }},
                 'MHCI_timer': {
                     '_default': 0,
@@ -386,7 +391,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
                 update['boundary'].update({
-                    'external': {'IFNg': IFNg}})
+                    'exchange': {'IFNg': int(IFNg)}})
 
             elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
@@ -402,13 +407,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
-                    'external': {'IFNg': IFNg}})
-
-            elif MHCI == 0:
-
-                IFNg = 0
-                update['boundary'].update({
-                    'external': {'IFNg': IFNg}})
+                    'exchange': {'IFNg': int(IFNg)}})
 
         elif new_cell_state == 'PD1p':
             PD1 = self.parameters['PD1p_PD1_equilibrium']
@@ -427,7 +426,7 @@ class TCellProcess(Process):
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
                 update['boundary'].update({
-                    'external': {'IFNg': IFNg}})
+                    'exchange': {'IFNg': int(IFNg)}})
 
             elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
@@ -446,12 +445,7 @@ class TCellProcess(Process):
                 IFNg = self.parameters['PD1p_IFNg_production'] / \
                        self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
-                    'external': {'IFNg': IFNg}})
-
-            elif MHCI == 0:
-                IFNg = 0
-                update['boundary'].update({
-                    'external': {'IFNg': IFNg}})
+                    'exchange': {'IFNg': int(IFNg)}})
 
         #keep cytotoxic transfer to max limit between tumor and T cells and remove from T cell total when transfer
         #max rate is 400 packets/minute

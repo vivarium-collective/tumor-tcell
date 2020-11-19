@@ -95,9 +95,9 @@ class TCellAgent(Generator):
 
         return {
             't_cell': TCellProcess(config['tcell']),
+            'local_field': LocalField(),
             'division': MetaDivision(meta_division_config),
             'death': Disintegrate(death_config),
-            'local_field': LocalField(),
         }
 
     def generate_topology(self, config):
@@ -115,8 +115,8 @@ class TCellAgent(Generator):
                 'neighbors': ('neighbors',),
             },
             'local_field': {
-                'exchanges': boundary_path + ('external',),
-                'location': boundary_path + ('location', ),
+                'exchanges': boundary_path + ('exchange',),
+                'location': boundary_path + ('location',),
                 'fields': field_path,
                 'dimensions': dimensions_path,
             },
