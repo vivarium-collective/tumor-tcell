@@ -5,6 +5,7 @@ Diffusion Field
 '''
 
 import os
+import copy
 
 import numpy as np
 from scipy import constants
@@ -14,7 +15,6 @@ from vivarium.core.process import Process
 from vivarium.core.composition import simulate_process
 from vivarium.library.units import units, remove_units
 from vivarium_cell.library.lattice_utils import (
-    count_to_concentration,
     get_bin_site,
     get_bin_volume,
 )
@@ -56,7 +56,7 @@ class Fields(Process):
             'IFNg': 1.25e-3,  # cm^2/day #(Liao, 2014)
         },
         'degradation': {
-            'IFNg': 2.16,  # 1/day #(Liao, 2014)
+            'IFNg': 2.16 / (24*60*60),  # 1/day converted to 1/sec #(Liao, 2014)
         },
         #If we want to add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
     }
@@ -82,7 +82,7 @@ class Fields(Process):
         dx = length_x / bins_x
         dy = length_y / bins_y
         dx2 = dx * dy
-        self.diffusion = diffusion_rate / dx2
+        self.diffusion_rate = diffusion_rate / dx2
 
         # get diffusion timestep
         diffusion_dt = 0.5 * dx ** 2 * dy ** 2 / (2 * diffusion_rate * (dx ** 2 + dy ** 2))
@@ -169,13 +169,18 @@ class Fields(Process):
         fields = states['fields']
         cells = states['cells']
 
-        # diffuse field
-        delta_fields = self.diffuse(fields, timestep)
+        # degrade and diffuse
+        fields_new = copy.deepcopy(fields)
+        fields_new = self.degrade_fields(fields_new, timestep)
+        fields_new = self.diffuse_fields(fields_new, timestep)
 
-        # TODO -- add degradation
+        # get delta_fields
+        delta_fields = {
+            mol_id: fields_new[mol_id] - field
+            for mol_id, field in fields.items()}
 
         # get each agent's local environment
-        local_environments = self.set_local_environments(cells, fields)
+        local_environments = self.set_local_environments(cells, fields_new)
 
         update = {'fields': delta_fields}
         if local_environments:
@@ -221,36 +226,38 @@ class Fields(Process):
             self.parameters['n_bins'][0],
             self.parameters['n_bins'][1])
 
-    # diffusion functions
-    def diffusion_delta(self, field, timestep):
-        ''' calculate concentration changes cause by diffusion'''
-        field_new = field.copy()
+    def diffuse(self, field, timestep, diffusion_rate=None):
+        ''' diffuse a single field '''
+        if diffusion_rate is None:
+            diffusion_rate = self.diffusion_rate
         t = 0.0
         dt = min(timestep, self.diffusion_dt)
         while t < timestep:
-            field_new += self.diffusion * dt * convolve(field_new, LAPLACIAN_2D, mode='reflect')
+            field += diffusion_rate * dt * convolve(field, LAPLACIAN_2D, mode='reflect')
             t += dt
+        return field
 
-        return field_new - field
-
-    def diffuse(self, fields, timestep):
-        delta_fields = {}
+    def diffuse_fields(self, fields, timestep):
+        ''' diffuse fields in a fields dictionary '''
         for mol_id, field in fields.items():
             # run diffusion if molecule field is not uniform
             if len(set(field.flatten())) != 1:
-                delta = self.diffusion_delta(field, timestep)
-            else:
-                delta = np.zeros_like(field)
-            delta_fields[mol_id] = delta
+                new = self.diffuse(field, timestep)
+                fields[mol_id] = new
+        return fields
 
-        return delta_fields
+    def degrade_fields(self, fields, timestep):
+        """
+        Note: this only applies if the molecule has a rate in parameters['degradation']
+        """
+        for mol_id, field in fields.items():
+            if mol_id in self.parameters['degradation']:
+                degradation_rate = self.parameters['degradation'][mol_id]
+                degraded = field * degradation_rate * timestep
+                fields[mol_id] -= degraded
+        return fields
 
-    def degrade(self, fields, timestep):
-        import ipdb; ipdb.set_trace()
-        return {}
-
-def test_fields(config={}):
-
+def test_fields(config={}, total_time=30):
     # initialize process
     fields = Fields(config)
 
@@ -261,8 +268,8 @@ def test_fields(config={}):
     settings = {
         'return_raw_data': True,
         'initial_state': initial_state,
-        'total_time': 10,
-        'timestep': 1}
+        'total_time': total_time,
+    }
     return simulate_process(fields, settings)
 
 def plot_fields(data, config, out_dir='out', filename='fields'):
@@ -285,7 +292,9 @@ if __name__ == '__main__':
     config = {
         'n_bins': [10, 10],
         'bounds': [10 * units.um, 10 * units.um]}
-    data = test_fields(config)
+    data = test_fields(
+        config=config,
+        total_time=10000)
 
     # plot
     plot_fields(
