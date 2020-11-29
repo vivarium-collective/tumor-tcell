@@ -52,7 +52,7 @@ class TumorProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 20 * units.um, #  0.02 * units.mm,
+        'diameter': 10 * units.um, #  0.02 * units.mm,
         'initial_PDL1n': 1.0, #all start out this way based on data
 
         # death rates
@@ -237,7 +237,7 @@ class TumorProcess(Process):
         if cell_state == 'PDL1n':
             if IFNg >= self.parameters['IFNg_threshold']:
                 if IFNg_timer > self.parameters['cellstate_transition_time']:
-                    print('PDL1n become PDL1p!')
+                    #print('PDL1n become PDL1p!')
                     new_cell_state = 'PDL1p'
                     cell_state_count = 1
                     update.update({

@@ -40,7 +40,7 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-N_TUMORS = 25
+N_TUMORS = 35
 N_TCELLS = 3
 DEFAULT_TUMORS = {
     '{}_{}'.format(TUMOR_ID, n): {
@@ -49,7 +49,7 @@ DEFAULT_TUMORS = {
         'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
         #'PDL1': 50000,
         #'MHCI': 50000,
-        'diameter': 20,
+        'diameter': 10,
     } for n in range(N_TUMORS)
 }
 DEFAULT_TCELLS = {
@@ -59,7 +59,7 @@ DEFAULT_TCELLS = {
         'cell_state': 'PD1n',
         #'PD1': 0,
         #'TCR':50000,
-        'diameter': 10,
+        'diameter': 5,
     } for n in range(N_TCELLS)
 }
 
@@ -77,7 +77,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=200000,
+    total_time=100000,
     time_step=60
 ):
 
