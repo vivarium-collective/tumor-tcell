@@ -8,7 +8,7 @@ with open("README.md", 'r') as readme:
 
 setup(
     name='tumor-tcell',
-    version='0.0.8',
+    version='0.0.9',
     packages=[
         'tumor_tcell',
         'tumor_tcell.composites',
