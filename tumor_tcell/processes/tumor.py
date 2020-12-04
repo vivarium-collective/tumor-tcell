@@ -52,7 +52,8 @@ class TumorProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 10 * units.um, #  0.02 * units.mm,
+        'diameter': 10 * units.um, #  0.01 * units.mm,
+        'mass': 3 * units.ng,
         'initial_PDL1n': 1.0, #all start out this way based on data
 
         # death rates
@@ -130,6 +131,9 @@ class TumorProcess(Process):
             'boundary': {
                 'cell_type': {
                     '_value': 'tumor'
+                },
+                'mass': {
+                    '_value': self.parameters['mass']
                 },
                 'diameter': {
                     '_default': self.parameters['diameter']

@@ -40,7 +40,7 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-N_TUMORS = 35
+N_TUMORS = 50
 N_TCELLS = 3
 DEFAULT_TUMORS = {
     '{}_{}'.format(TUMOR_ID, n): {
@@ -77,7 +77,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=100000,
+    total_time=50000,
     time_step=60
 ):
 
@@ -190,7 +190,7 @@ def tumor_tcell_abm(
     return data
 
 
-def plots_suite(data, out_dir=None):
+def plots_suite(data, out_dir=None, bounds=BOUNDS):
 
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
@@ -220,7 +220,7 @@ def plots_suite(data, out_dir=None):
 
     # snapshots plot
     # extract data
-    env_config = {'bounds': remove_units(BOUNDS)}
+    env_config = {'bounds': remove_units(bounds)}
     agents = {time: time_data['agents'] for time, time_data in data.items()}
     fields = {time: time_data['fields'] for time, time_data in data.items()}
     plot_data = {
