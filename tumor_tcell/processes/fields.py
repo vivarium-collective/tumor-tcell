@@ -56,7 +56,8 @@ class Fields(Process):
             'IFNg': 1.25e-3,  # cm^2/day #(Liao, 2014)
         },
         'degradation': {
-            'IFNg': 2.16 / (24*60*60),  # 1/day converted to 1/sec #(Liao, 2014)
+            'IFNg': 2.16/(24*60*60),  # old parameter used
+            #'IFNg': 4 * 60 * 60,  # 4.5 hr half-life converted to seconds #(Kurzrock, 1985) this is what we want
         },
         #If we want to add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
     }
