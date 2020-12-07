@@ -10,3 +10,10 @@ def get_phylogeny(agent_ids):
       elif agent2 == agent1[0:-1]:
           phylogeny[agent2].append(agent1)
   return phylogeny
+
+
+def daughter_ab(mother_id):
+    return [
+        str(mother_id) + "A",
+        str(mother_id) + "B"
+    ]

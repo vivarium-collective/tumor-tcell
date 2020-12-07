@@ -16,17 +16,13 @@ from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.disintegrate import Disintegrate
 from tumor_tcell.processes.tumor import TumorProcess
 from tumor_tcell.processes.local_field import LocalField
+from tumor_tcell.processes.trigger_delay import DelayTrigger
 
-# directories
+# directories/libraries
+from tumor_tcell.library.phylogeny import daughter_ab
 from tumor_tcell import COMPOSITE_OUT_DIR
 
 NAME = 'tumor_agent'
-
-def daughter_ab(mother_id):
-    return [
-        str(mother_id) + "A",
-        str(mother_id) + "B"
-    ]
 
 
 class TumorAgent(Generator):
@@ -49,7 +45,7 @@ class TumorAgent(Generator):
             'tumor': {
                 'globals': {
                     'death': {
-                        '_emit': False,
+                        '_emit': True,
                     },
                     'divide': {
                         '_emit': False,
@@ -95,6 +91,7 @@ class TumorAgent(Generator):
             'local_field': LocalField(),
             'division': MetaDivision(meta_division_config),
             'death': Disintegrate(death_config),
+            'trigger_delay': DelayTrigger(),
         }
 
     def generate_topology(self, config):
@@ -102,7 +99,8 @@ class TumorAgent(Generator):
         agents_path = config['agents_path']
         field_path = config['field_path']
         dimensions_path = config['dimensions_path']
-        death_trigger_path = boundary_path + ('death',)
+        death_state_path = boundary_path + ('death',)
+        death_trigger_path = boundary_path + ('death_trigger',)
 
         return {
             'tumor': {
@@ -123,7 +121,12 @@ class TumorAgent(Generator):
             },
             'death': {
                 'trigger': death_trigger_path,
-                'agents': agents_path}
+                'agents': agents_path,
+            },
+            'trigger_delay': {
+                'source': death_state_path,
+                'target': death_trigger_path,
+            }
         }
 
 
@@ -140,7 +143,8 @@ def test_tumor_agent(total_time=1000):
         'return_raw_data': True,
         'timestep': 10,
         'total_time': total_time}
-    return simulate_compartment_in_experiment(compartment, settings)
+    output = simulate_compartment_in_experiment(compartment, settings)
+    return output
 
 def run_compartment(out_dir='out'):
     data = test_tumor_agent(total_time=10000)

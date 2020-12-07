@@ -257,8 +257,6 @@ class TCellProcess(Process):
             if random.uniform(0, 1) < prob_death:
                 # print('DEATH PD1- cell!')
                 return {
-                    '_delete': {
-                        'path': self.self_path},
                     'globals': {
                         'death': 'PD1n_apoptosis'}}
 
@@ -271,8 +269,6 @@ class TCellProcess(Process):
                 if random.uniform(0, 1) < prob_death:
                     # print('DEATH PD1+ cell with PDL1!')
                     return {
-                        '_delete': {
-                            'path': self.self_path},
                         'globals': {
                             'death': 'PD1p_PDL1_death'}}
 
@@ -284,8 +280,6 @@ class TCellProcess(Process):
                 if random.uniform(0, 1) < prob_death:
                     # print('DEATH PD1+ cell without PDL1!')
                     return {
-                        '_delete': {
-                            'path': self.self_path},
                         'globals': {
                             'death': 'PD1p_apoptosis'}}
 

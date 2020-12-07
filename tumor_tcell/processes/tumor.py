@@ -198,8 +198,6 @@ class TumorProcess(Process):
         if random.uniform(0, 1) < prob_death:
             #print('Apoptosis!')
             return {
-                '_delete': {
-                    'path': self.self_path},
                 'globals': {
                     'death': 'apoptosis'}}
 
@@ -207,8 +205,6 @@ class TumorProcess(Process):
         if cytotoxic_packets >= self.parameters['cytotoxic_packet_threshold']:
             #print('Tcell_death!')
             return {
-                '_delete': {
-                    'path': self.self_path},
                 'globals': {
                     'death': 'Tcell_death'}}
 
