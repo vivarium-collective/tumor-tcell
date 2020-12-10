@@ -40,19 +40,10 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-N_TUMORS = 50
-N_TCELLS = 3
-DEFAULT_TUMORS = {
-    '{}_{}'.format(TUMOR_ID, n): {
-        #'location': [x, y],
-        'type': 'tumor',
-        'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
-        #'PDL1': 50000,
-        #'MHCI': 50000,
-        'diameter': 10,
-    } for n in range(N_TUMORS)
-}
-DEFAULT_TCELLS = {
+
+
+def get_tcells(number=1):
+    return {
     '{}_{}'.format(TCELL_ID, n): {
         #'location': [x, y],
         'type': 'tcell',
@@ -60,13 +51,31 @@ DEFAULT_TCELLS = {
         #'PD1': 0,
         #'TCR':50000,
         'diameter': 5,
-    } for n in range(N_TCELLS)
+    } for n in range(number)
 }
+
+def get_tumors(number=1):
+    return {
+        '{}_{}'.format(TUMOR_ID, n): {
+            # 'location': [x, y],
+            'type': 'tumor',
+            'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
+            # 'PDL1': 50000,
+            # 'MHCI': 50000,
+            'diameter': 10,
+        } for n in range(number)
+    }
 
 def random_location(bounds):
     return [
         random.uniform(0, bounds[0]),
         random.uniform(0, bounds[1])]
+
+# make defaults
+N_TUMORS = 50
+N_TCELLS = 3
+DEFAULT_TUMORS = get_tumors(number=N_TUMORS)
+DEFAULT_TCELLS = get_tcells(number=N_TCELLS)
 
 
 # simulation # 1
@@ -190,6 +199,14 @@ def tumor_tcell_abm(
     return data
 
 
+def small_experiment():
+    return tumor_tcell_abm(
+        tumors=get_tumors(number=1),
+        tcells=get_tcells(number=1),
+    )
+
+
+
 def plots_suite(data, out_dir=None, bounds=BOUNDS):
 
     # separate out tcell and tumor data for multigen plots
@@ -240,6 +257,7 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
 # all of the experiments go here for easy access by control class
 experiments_library = {
     '1': tumor_tcell_abm,
+    '2': small_experiment,
 }
 plots_library = {
     '1': plots_suite,
@@ -249,7 +267,12 @@ workflow_library = {
         'name': 'tumor_tcell_experiment',
         'experiment': '1',
         'plots': ['1'],
-    }
+    },
+    '2': {
+        'name': 'small_experiment',
+        'experiment': '2',
+        'plots': ['1'],
+    },
 }
 
 if __name__ == '__main__':
