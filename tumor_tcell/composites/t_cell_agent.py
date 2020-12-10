@@ -141,8 +141,10 @@ def test_tcell_agent(total_time=1000):
     compartment = TCellAgent(parameters)
 
     # settings for simulation and plot
+    initial = compartment.initial_state()
+    initial['internal']['cell_state'] = 'PD1p'  # set an initial state
     settings = {
-        'initial_state': compartment.initial_state(),
+        'initial_state': initial,
         'outer_path': ('agents', agent_id),
         'return_raw_data': True,
         'timestep': 10,
