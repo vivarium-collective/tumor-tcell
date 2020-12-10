@@ -138,6 +138,9 @@ class TumorProcess(Process):
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },
+                'velocity': {
+                    '_default': 0.0,
+                },
                 'external': {
                     'IFNg': {
                         '_default': 0.0 * CONCENTRATION_UNIT,

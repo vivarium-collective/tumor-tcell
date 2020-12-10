@@ -33,7 +33,7 @@ from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 # global parameters
-
+TIMESTEP = 60
 NBINS = [10, 10]
 DEPTH = 10  # um
 BOUNDS = [200 * units.um, 200 * units.um]
@@ -87,7 +87,7 @@ def tumor_tcell_abm(
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
     total_time=50000,
-    time_step=60
+    time_step=TIMESTEP,
 ):
 
     ## configure the cells

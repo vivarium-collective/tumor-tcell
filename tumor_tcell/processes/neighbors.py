@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from tumor_tcell.library.pymunk_multibody import PymunkMultibody
+from tumor_tcell.library.pymunk_minimal import PymunkMinimal
 from vivarium.library.units import units, remove_units
 from vivarium.core.process import Process
 from vivarium.core.composition import process_in_experiment
@@ -122,7 +122,7 @@ class Neighbors(Process):
             'jitter_force': self.parameters['jitter_force'],
             'bounds': copy.deepcopy(parameters['bounds']),
             'physics_dt': time_step / 10}
-        self.physics = PymunkMultibody(multibody_config)
+        self.physics = PymunkMinimal(multibody_config)
 
         # interactive plot for visualization
         self.animate = self.parameters['animate']
@@ -151,6 +151,9 @@ class Neighbors(Process):
                         #'_emit': True,
                         '_default': 1 * units.fg,
                         '_updater': 'set'},
+                    'velocity': {
+                        '_default': 0.0
+                    }
                 },
                 'neighbors': {
                     'present': {
