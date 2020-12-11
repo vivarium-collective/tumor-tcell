@@ -2,17 +2,12 @@ import random
 import math
 import copy
 
-from vivarium.library.units import units
+from vivarium.library.units import units, Quantity
 
-# pymunk imports
-import pymunkoptions
-pymunkoptions.options["debug"] = False
 import pymunk
 
 
 PI = math.pi
-
-DEBUG_SIZE = 600  # size of the pygame debug screen
 
 
 
@@ -37,6 +32,10 @@ def random_body_position(body):
             location = (diameter, random.uniform(0, diameter))
     return location
 
+def random_direction(velocity):
+    angle = random.uniform(0, 360)
+    return (velocity * math.cos(angle), velocity * math.sin(angle))
+
 
 class NullScreen(object):
     def update_screen(self):
@@ -57,13 +56,12 @@ class PymunkMinimal(object):
         'friction': 0.9,
         'physics_dt': 0.01,
         # configured parameters
-        'pymunk_length_unit': units.mm,
-        'pymunk_mass_unit': units.fg,
+        'length_unit': units.mm,
+        'mass_unit': units.fg,
+        'velocity_unit': units.mm / units.s,
         'bounds': [20, 20],
         'barriers': False,
         'initial_cells': {},
-        # for debugging
-        'screen': None,
     }
 
     def __init__(self, config):
@@ -73,23 +71,16 @@ class PymunkMinimal(object):
         self.physics_dt = config.get('physics_dt', self.defaults['physics_dt'])
 
         # configured parameters
-        self.pymunk_length_unit = config.get('pymunk_length_unit', self.defaults['pymunk_length_unit'])
-        self.pymunk_mass_unit = config.get('pymunk_mass_unit', self.defaults['pymunk_mass_unit'])
+        self.length_unit = config.get('length_unit', self.defaults['length_unit'])
+        self.mass_unit = config.get('mass_unit', self.defaults['mass_unit'])
+        self.velocity_unit = config.get('velocity_unit', self.defaults['velocity_unit'])
         self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
         bounds = config.get('bounds', self.defaults['bounds'])
-        self.bounds = [bound.to(self.pymunk_length_unit).magnitude for bound in bounds]
+        self.bounds = [bound.to(self.length_unit).magnitude for bound in bounds]
         barriers = config.get('barriers', self.defaults['barriers'])
 
         # initialize pymunk space
         self.space = pymunk.Space()
-
-        # debug screen
-        self.screen = config.get('screen')
-        if self.screen is None:
-            self.screen = NullScreen()
-        self.screen.configure({
-            'space': self.space,
-            'bounds': self.bounds})
 
         # add static barriers
         self.add_barriers(self.bounds, barriers)
@@ -100,14 +91,12 @@ class PymunkMinimal(object):
         for cell_id, specs in initial_cells.items():
             self.add_body_from_center(cell_id, specs)
 
+
     def run(self, timestep):
         if self.physics_dt > timestep:
             print('timestep skipped by pymunk_multibody: {}'.format(timestep))
             return
-
         self.space.step(timestep)
-
-        self.screen.update_screen()
 
 
     def add_barriers(self, bounds, barriers):
@@ -158,7 +147,7 @@ class PymunkMinimal(object):
         for line in static_lines:
             line.elasticity = 0.0  # bounce
             line.friction = 0.8
-        self.space.add(static_lines)
+            self.space.add(line)
 
     def get_shape(self, boundary):
         '''
@@ -202,6 +191,14 @@ class PymunkMinimal(object):
         # add body to cells dictionary
         self.bodies[body_id] = (body, shape)
 
+    def set_velocity(self, body_id, velocity):
+        body, shape = self.bodies[body_id]
+        if isinstance(velocity, Quantity):
+            v = velocity.to(self.velocity_unit).magnitude
+            body.velocity = random_direction(v)
+        else:
+            body.velocity = random_direction(velocity)
+
     def update_body(self, body_id, specs):
         boundary = specs['boundary']
         diameter = boundary['diameter']
@@ -235,17 +232,17 @@ class PymunkMinimal(object):
         pymunk_bodies = copy.deepcopy(bodies)
         for bodies_id, specs in pymunk_bodies.items():
             # convert location
-            pymunk_bodies[bodies_id]['boundary']['location'] = [loc.to(self.pymunk_length_unit).magnitude for loc in specs['boundary']['location']]
+            pymunk_bodies[bodies_id]['boundary']['location'] = [loc.to(self.length_unit).magnitude for loc in specs['boundary']['location']]
             # convert diameter
-            pymunk_bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.pymunk_length_unit).magnitude
+            pymunk_bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.length_unit).magnitude
             # convert mass
-            pymunk_bodies[bodies_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.pymunk_mass_unit).magnitude
+            pymunk_bodies[bodies_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.mass_unit).magnitude
         return pymunk_bodies
 
 
     def pymunk_location_to_body_units(self, bodies):
         for body_id, location in bodies.items():
-            bodies[body_id] = [(loc * self.pymunk_length_unit) for loc in location]
+            bodies[body_id] = [(loc * self.length_unit) for loc in location]
         return bodies
 
 
@@ -286,26 +283,29 @@ class PymunkMinimal(object):
 def test_minimal(
         total_time=2,
         cell_shape='rectangle',
+        velocity=10.0 * units.um / units.min,  #  um/minute
         n_cells=1,
-        screen=None):
+):
 
     bounds = [500 * units.um, 500 * units.um]
     center_location = [0.5*loc.magnitude for loc in bounds]
+    cell_ids = [str(cell_idx) for cell_idx in range(n_cells)]
     cells = {
-        str(cell_idx): {
+        cell_id: {
             'boundary': {
                 'location': center_location,
                 'volume': 15,
                 'diameter': 30,
-                'mass': 1}}
-        for cell_idx in range(n_cells)
+                'mass': 1,
+                'velocity': velocity,
+            }}
+        for cell_id in cell_ids
     }
     config = {
         'cell_shape': cell_shape,
         'bounds': bounds,
         'barriers': False,
         'initial_cells': cells,
-        'screen': screen
     }
     multibody = PymunkMinimal(config)
 
@@ -315,7 +315,12 @@ def test_minimal(
     while time < total_time:
         time += time_step
         multibody.run(time_step)
+        for cell_id in cell_ids:
+            multibody.set_velocity(cell_id, velocity)
+
+        print(multibody.get_body_positions())
 
 
 if __name__ == '__main__':
-    test_minimal(10)
+    test_minimal(
+        total_time=10)
