@@ -193,7 +193,7 @@ def tumor_tcell_abm(
 
     # run simulation
     experiment.update(total_time)
-    data = experiment.emitter.get_data()
+    data = experiment.emitter.get_data_deserialized()
     experiment.end()
 
     return data
@@ -203,12 +203,12 @@ def small_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=1),
         tcells=get_tcells(number=1),
+        total_time=1000,
     )
 
 
 
 def plots_suite(data, out_dir=None, bounds=BOUNDS):
-
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
     tumor_data = {}
@@ -241,7 +241,7 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
     agents = {time: time_data['agents'] for time, time_data in data.items()}
     fields = {time: time_data['fields'] for time, time_data in data.items()}
     plot_data = {
-        'agents': agents,
+        'agents': remove_units(agents),
         'fields': fields,
         'config': env_config}
     plot_config = {

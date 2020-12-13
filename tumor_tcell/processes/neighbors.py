@@ -152,7 +152,7 @@ class Neighbors(Process):
                         '_default': 1 * units.fg,
                         '_updater': 'set'},
                     'velocity': {
-                        '_default': 0.0
+                        '_default': 0.0 * units.um / units.s
                     }
                 },
                 'neighbors': {

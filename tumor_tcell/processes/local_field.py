@@ -10,6 +10,7 @@ from vivarium_cell.library.lattice_utils import (
 )
 
 CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
+LENGTH_UNIT = units.um
 
 
 class LocalField(Deriver):
@@ -28,7 +29,7 @@ class LocalField(Deriver):
                 }
             },
             'location': {
-                '_default': [0.5, 0.5]
+                '_default': [0.5 * LENGTH_UNIT, 0.5 * LENGTH_UNIT]
             },
             'fields': {
                 '*': {

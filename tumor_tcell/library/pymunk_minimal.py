@@ -8,7 +8,9 @@ import pymunk
 
 
 PI = math.pi
-
+DEFAULT_LENGTH_UNIT = units.um
+DEFAULT_VELOCITY_UNIT = units.um / units.s
+DEFAULT_MASS_UNIT = units.fg
 
 
 def random_body_position(body):
@@ -56,10 +58,10 @@ class PymunkMinimal(object):
         'friction': 0.9,
         'physics_dt': 0.01,
         # configured parameters
-        'length_unit': units.mm,
-        'mass_unit': units.fg,
-        'velocity_unit': units.mm / units.s,
-        'bounds': [20, 20],
+        'length_unit': DEFAULT_LENGTH_UNIT,
+        'mass_unit': DEFAULT_MASS_UNIT,
+        'velocity_unit': DEFAULT_VELOCITY_UNIT,
+        'bounds': [20*DEFAULT_LENGTH_UNIT, 20*DEFAULT_LENGTH_UNIT],
         'barriers': False,
         'initial_cells': {},
     }
@@ -227,6 +229,8 @@ class PymunkMinimal(object):
         # update body
         self.bodies[body_id] = (new_body, new_shape)
 
+        if 'velocity' in boundary:
+            self.set_velocity(body_id, boundary['velocity'])
 
     def bodies_to_pymunk_units(self, bodies):
         pymunk_bodies = copy.deepcopy(bodies)
