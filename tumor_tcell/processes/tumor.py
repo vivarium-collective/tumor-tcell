@@ -140,6 +140,7 @@ class TumorProcess(Process):
                 },
                 'velocity': {
                     '_default': 0.0 * units.um / units.s,
+                    '_updater': 'set',
                 },
                 'external': {
                     'IFNg': {

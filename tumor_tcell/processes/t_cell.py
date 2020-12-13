@@ -191,7 +191,6 @@ class TCellProcess(Process):
                 'velocity': {
                     '_default': self.parameters['PD1n_migration'],
                     '_updater': 'set',
-                    '_emit': True,
                 },
                 'exchange': {
                     'IFNg': {
