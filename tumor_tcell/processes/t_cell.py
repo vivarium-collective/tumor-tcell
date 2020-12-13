@@ -81,12 +81,12 @@ class TCellProcess(Process):
         'PD1p_growth_8hr': 0.20,  # 20% division in 28 hours
 
         # migration
-        'PD1n_migration': 10.0,  # um/minute (Boissonnas 2007)
-        'PD1n_migration_MHCIp_tumor': 2.0,  # um/minute (Boissonnas 2007)
+        'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
+        'PD1n_migration_MHCIp_tumor': 2.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
         'PD1n_migration_MHCIp_tumor_dwell_velocity': 0.0,
         'PD1n_migration_MHCIp_tumor_dwell_time': 25.0,  # minutes (Thibaut 2020)
-        'PD1p_migration': 5.0,   # um/minute (Boissonnas 2007)
-        'PD1p_migration_MHCIp_tumor': 1.0,   # um/minute (Boissonnas 2007)
+        'PD1p_migration': 5.0 * units.um/units.min,   # um/minute (Boissonnas 2007)
+        'PD1p_migration_MHCIp_tumor': 1.0 * units.um/units.min,   # um/minute (Boissonnas 2007)
         'PD1p_migration_MHCIp_tumor_dwell_time': 10.0,  # minutes (Thibaut 2020)
 
         # killing

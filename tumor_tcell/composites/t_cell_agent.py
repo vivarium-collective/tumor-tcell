@@ -13,7 +13,7 @@ from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # processes
 from vivarium.processes.meta_division import MetaDivision
-from vivarium.processes.disintegrate import Disintegrate
+from vivarium.processes.remove import Remove
 from tumor_tcell.processes.t_cell import TCellProcess
 from tumor_tcell.processes.local_field import LocalField
 from tumor_tcell.processes.trigger_delay import DelayTrigger
@@ -94,7 +94,7 @@ class TCellAgent(Generator):
             't_cell': TCellProcess(config['tcell']),
             'local_field': LocalField(),
             'division': MetaDivision(meta_division_config),
-            'death': Disintegrate(death_config),
+            'death': Remove(death_config),
             'trigger_delay': DelayTrigger(),
         }
 

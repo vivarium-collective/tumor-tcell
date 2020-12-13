@@ -124,7 +124,7 @@ class Fields(Process):
             '*': {
                 'boundary': {
                     'location': {
-                        '_default': [0.5 * bound for bound in self.bounds],
+                        # '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set'},
                     'external': local_concentration_schema
                 }}}
