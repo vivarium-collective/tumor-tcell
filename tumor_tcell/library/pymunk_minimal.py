@@ -253,7 +253,7 @@ def test_minimal(
 ):
 
     bounds = [500, 500]
-    center_location = [0.5*loc.magnitude for loc in bounds]
+    center_location = [0.5*loc for loc in bounds]
     cell_ids = [str(cell_idx) for cell_idx in range(n_cells)]
     cells = {
         cell_id: {
