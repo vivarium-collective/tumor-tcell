@@ -110,7 +110,7 @@ class Neighbors(Process):
         self.length_unit = self.parameters['length_unit']
         self.mass_unit = self.parameters['mass_unit']
         self.velocity_unit = self.parameters['velocity_unit']
-        self.neighbor_distance = self.parameters['neighbor_distance']
+        self.neighbor_distance = self.parameters['neighbor_distance'].to(self.length_unit).magnitude
         self.cell_loc_units = {}
 
         # make the multibody object
@@ -195,12 +195,12 @@ class Neighbors(Process):
         # run simulation
         self.physics.run(timestep)
 
-        # get new cell positions
+        # get new cell positions and neighbors
         cell_positions = self.physics.get_body_positions()
-        cell_positions = self.location_add_units(cell_positions)
-
-        # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
+
+        # add units to cell_positions
+        cell_positions = self.location_add_units(cell_positions)
 
         # exchange with neighbors
         exchange = {
