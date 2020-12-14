@@ -4,8 +4,6 @@ Multibody physics process with neighbor tracking
 ================================================
 """
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import random
 import math
@@ -17,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from tumor_tcell.library.pymunk_multibody import PymunkMultibody
+from tumor_tcell.library.pymunk_minimal import PymunkMinimal
 from vivarium.library.units import units, remove_units
 from vivarium.core.process import Process
 from vivarium.core.composition import process_in_experiment
@@ -29,6 +27,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 NAME = 'neighbors'
 DEFAULT_LENGTH_UNIT = units.um
 DEFAULT_MASS_UNIT = units.fg
+DEFAULT_VELOCITY_UNIT = units.um / units.s
 DEFAULT_BOUNDS = [20 * DEFAULT_LENGTH_UNIT, 20 * DEFAULT_LENGTH_UNIT]
 
 # constants
@@ -81,8 +80,6 @@ class Neighbors(Process):
     Arguments:
         parameters(dict): Accepts the following configuration keys:
 
-        * **jitter_force**: force applied to random positions along cell
-          bodies to mimic thermal fluctuations. Produces Brownian motion.
         * **bounds** (:py:class:`list`): size of the environment in
           micrometers, with ``[x, y]``.
         * ***animate*** (:py:class:`bool`): interactive matplotlib option to
@@ -99,9 +96,10 @@ class Neighbors(Process):
         'time_step': 2,
         'cells': {},
         'jitter_force': 1e-3,
-        'bounds': DEFAULT_BOUNDS,
-        'pymunk_length_unit': DEFAULT_LENGTH_UNIT,
-        'pymunk_mass_unit': DEFAULT_MASS_UNIT,
+        'bounds': remove_units(DEFAULT_BOUNDS),
+        'length_unit': DEFAULT_LENGTH_UNIT,
+        'mass_unit': DEFAULT_MASS_UNIT,
+        'velocity_unit': DEFAULT_VELOCITY_UNIT,
         'neighbor_distance': 1 * units.um,
         'animate': False,
     }
@@ -109,20 +107,20 @@ class Neighbors(Process):
     def __init__(self, parameters=None):
         super(Neighbors, self).__init__(parameters)
 
-        self.pymunk_length_unit = self.parameters['pymunk_length_unit']
-        self.pymunk_mass_unit = self.parameters['pymunk_mass_unit']
-        self.neighbor_distance = self.parameters['neighbor_distance']
+        self.length_unit = self.parameters['length_unit']
+        self.mass_unit = self.parameters['mass_unit']
+        self.velocity_unit = self.parameters['velocity_unit']
+        self.neighbor_distance = self.parameters['neighbor_distance'].to(self.length_unit).magnitude
         self.cell_loc_units = {}
 
         # make the multibody object
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
-            'pymunk_length_unit': self.pymunk_length_unit,
-            'jitter_force': self.parameters['jitter_force'],
-            'bounds': copy.deepcopy(parameters['bounds']),
-            'physics_dt': time_step / 10}
-        self.physics = PymunkMultibody(multibody_config)
+            'bounds': [b.to(self.length_unit).magnitude for b in parameters['bounds']],
+            'physics_dt': time_step / 10,
+        }
+        self.physics = PymunkMinimal(multibody_config)
 
         # interactive plot for visualization
         self.animate = self.parameters['animate']
@@ -145,12 +143,14 @@ class Neighbors(Process):
                         '_divider': 'set'},
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0 * units.um,
+                        '_default': 1.0 * self.length_unit,
                         '_updater': 'set'},
                     'mass': {
-                        #'_emit': True,
-                        '_default': 1 * units.fg,
+                        '_default': 1 * self.mass_unit,
                         '_updater': 'set'},
+                    'velocity': {
+                        '_default': 0.0 * self.velocity_unit,
+                    }
                 },
                 'neighbors': {
                     'present': {
@@ -189,16 +189,18 @@ class Neighbors(Process):
             self.animate_frame(cells)
 
         # update physics with new cells
+        cells = self.bodies_remove_units(cells)
         self.physics.update_bodies(cells)
 
         # run simulation
         self.physics.run(timestep)
 
-        # get new cell positions
+        # get new cell positions and neighbors
         cell_positions = self.physics.get_body_positions()
-
-        # get neighbors
         cell_neighbors = self.get_all_neighbors(cells, cell_positions)
+
+        # add units to cell_positions
+        cell_positions = self.location_add_units(cell_positions)
 
         # exchange with neighbors
         exchange = {
@@ -231,6 +233,25 @@ class Neighbors(Process):
         }
 
         return update
+
+    def bodies_remove_units(self, bodies):
+        for bodies_id, specs in bodies.items():
+            # convert location
+            bodies[bodies_id]['boundary']['location'] = [loc.to(self.length_unit).magnitude for loc in specs['boundary']['location']]
+            # convert diameter
+            bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.length_unit).magnitude
+            # convert mass
+            bodies[bodies_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.mass_unit).magnitude
+            # convert velocity
+            bodies[bodies_id]['boundary']['velocity'] = specs['boundary']['velocity'].to(self.velocity_unit).magnitude
+        return bodies
+
+
+    def location_add_units(self, bodies):
+        for body_id, location in bodies.items():
+            bodies[body_id] = [(loc * self.length_unit) for loc in location]
+        return bodies
+
 
     def get_neighbors(self, cell_loc, cell_radius, neighbor_loc, neighbor_radius):
         neighbors = {}
@@ -283,10 +304,10 @@ class Neighbors(Process):
         return cell_neighbors
 
     def remove_length_units(self, value):
-        return value.to(self.parameters['pymunk_length_unit']).magnitude
+        return value.to(self.length_unit).magnitude
 
     def remove_mass_units(self, value):
-        return value.to(self.parameters['pymunk_mass_unit']).magnitude
+        return value.to(self.mass_unit).magnitude
 
     ## matplotlib interactive plot
     def animate_frame(self, cells):
@@ -318,6 +339,7 @@ class Neighbors(Process):
 def single_cell_config(config):
     # cell dimensions
     diameter = 1 * DEFAULT_LENGTH_UNIT
+    velocity = 1 * DEFAULT_VELOCITY_UNIT
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -328,6 +350,7 @@ def single_cell_config(config):
     return {
         'boundary': {
         'location': location,
+        'velocity': velocity,
         'volume': volume,
         'diameter': diameter,
         'mass': 1339 * units.fg,
@@ -361,7 +384,7 @@ def test_growth_division(config=default_gd_config, settings={}):
 
     # make the process
     multibody = Neighbors(config)
-    experiment = process_in_experiment(multibody)
+    experiment = process_in_experiment(multibody, settings)
     experiment.state.update_subschema(
         ('cells',), {
             'boundary': {
@@ -442,6 +465,8 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
         'growth_rate': 0.02,
         'growth_rate_noise': 0.02,
         'division_volume': 2.6 * DEFAULT_LENGTH_UNIT ** 3,
+        'progress_bar': False,
+        'display_info': False,
         'total_time': 120}
     gd_config = {
         'animate': True,

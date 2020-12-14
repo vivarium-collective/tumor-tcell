@@ -1,21 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
 import random
 import math
-import copy
 
-from vivarium.library.units import units
-
-# pymunk imports
-import pymunkoptions
-pymunkoptions.options["debug"] = False
 import pymunk
 
 
 PI = math.pi
-
-DEBUG_SIZE = 600  # size of the pygame debug screen
-
 
 
 def random_body_position(body):
@@ -39,6 +28,10 @@ def random_body_position(body):
             location = (diameter, random.uniform(0, diameter))
     return location
 
+def random_direction(velocity):
+    angle = random.uniform(0, 360)
+    return (velocity * math.cos(angle), velocity * math.sin(angle))
+
 
 class NullScreen(object):
     def update_screen(self):
@@ -47,7 +40,7 @@ class NullScreen(object):
         pass
 
 
-class PymunkMultibody(object):
+class PymunkMinimal(object):
     """
     Multibody object for interfacing with pymunk
     """
@@ -56,52 +49,29 @@ class PymunkMultibody(object):
         'cell_shape': 'segment',
         # hardcoded parameters
         'elasticity': 0.9,
-        'damping': 0.5,  # 1 is no damping, 0 is full damping
-        'angular_damping': 0.8,
-        'friction': 0.9,  # does this do anything?
-        'physics_dt': 0.001,
-        'force_scaling': 1e2,  # scales from pN
+        'friction': 0.9,
         # configured parameters
-        'pymunk_length_unit': units.mm,
-        'pymunk_mass_unit': units.fg,
-        'jitter_force': 1e-3,
+        'physics_dt': 0.01,
         'bounds': [20, 20],
         'barriers': False,
         'initial_cells': {},
-        # for debugging
-        'screen': None,
     }
 
     def __init__(self, config):
         # hardcoded parameters
         self.elasticity = self.defaults['elasticity']
         self.friction = self.defaults['friction']
-        self.damping = self.defaults['damping']
-        self.angular_damping = self.defaults['angular_damping']
-        self.physics_dt = config.get('physics_dt', self.defaults['physics_dt'])
-        self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
-        self.pymunk_length_unit = config.get('pymunk_length_unit', self.defaults['pymunk_length_unit'])
-        self.pymunk_mass_unit = config.get('pymunk_mass_unit', self.defaults['pymunk_mass_unit'])
+        self.physics_dt = config.get('physics_dt', self.defaults['physics_dt'])
         self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
-        self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
-        bounds = config.get('bounds', self.defaults['bounds'])
-        self.bounds = [bound.to(self.pymunk_length_unit).magnitude for bound in bounds]
-        barriers = config.get('barriers', self.defaults['barriers'])
+        self.bounds = config.get('bounds', self.defaults['bounds'])
 
         # initialize pymunk space
         self.space = pymunk.Space()
 
-        # debug screen
-        self.screen = config.get('screen')
-        if self.screen is None:
-            self.screen = NullScreen()
-        self.screen.configure({
-            'space': self.space,
-            'bounds': self.bounds})
-
         # add static barriers
+        barriers = config.get('barriers', self.defaults['barriers'])
         self.add_barriers(self.bounds, barriers)
 
         # initialize cells
@@ -110,40 +80,13 @@ class PymunkMultibody(object):
         for cell_id, specs in initial_cells.items():
             self.add_body_from_center(cell_id, specs)
 
+
     def run(self, timestep):
         if self.physics_dt > timestep:
             print('timestep skipped by pymunk_multibody: {}'.format(timestep))
             return
+        self.space.step(timestep)
 
-        time = 0
-        while time < timestep:
-            time += self.physics_dt
-
-            # apply forces
-            for body in self.space.bodies:
-                self.apply_jitter_force(body)
-                self.apply_viscous_force(body)
-
-            # run for a physics timestep
-            self.space.step(self.physics_dt)
-
-        self.screen.update_screen()
-
-    def apply_jitter_force(self, body):
-        jitter_location = random_body_position(body)
-        jitter_force = [
-            random.normalvariate(0, self.jitter_force),
-            random.normalvariate(0, self.jitter_force)]
-        scaled_jitter_force = [
-            force * self.force_scaling
-            for force in jitter_force]
-        body.apply_impulse_at_local_point(
-            scaled_jitter_force,
-            jitter_location)
-
-    def apply_viscous_force(self, body):
-        # dampen velocity
-        body.velocity = body.velocity * self.damping + (body.force / body.mass) * self.physics_dt
 
     def add_barriers(self, bounds, barriers):
         """ Create static barriers """
@@ -193,7 +136,7 @@ class PymunkMultibody(object):
         for line in static_lines:
             line.elasticity = 0.0  # bounce
             line.friction = 0.8
-        self.space.add(static_lines)
+            self.space.add(line)
 
     def get_shape(self, boundary):
         '''
@@ -237,6 +180,10 @@ class PymunkMultibody(object):
         # add body to cells dictionary
         self.bodies[body_id] = (body, shape)
 
+    def set_velocity(self, body_id, velocity):
+        body, shape = self.bodies[body_id]
+        body.velocity = random_direction(velocity)
+
     def update_body(self, body_id, specs):
         boundary = specs['boundary']
         diameter = boundary['diameter']
@@ -253,7 +200,6 @@ class PymunkMultibody(object):
 
         new_body.position = position
         new_body.velocity = body.velocity
-        new_body.angular_velocity = body.angular_velocity
         new_body.diameter = diameter
 
         new_shape.elasticity = shape.elasticity
@@ -266,31 +212,12 @@ class PymunkMultibody(object):
         # update body
         self.bodies[body_id] = (new_body, new_shape)
 
+        if 'velocity' in boundary:
+            self.set_velocity(body_id, boundary['velocity'])
 
-    def bodies_to_pymunk_units(self, bodies):
-        pymunk_bodies = copy.deepcopy(bodies)
-        for bodies_id, specs in pymunk_bodies.items():
-            # convert location
-            pymunk_bodies[bodies_id]['boundary']['location'] = [loc.to(self.pymunk_length_unit).magnitude for loc in specs['boundary']['location']]
-            # convert diameter
-            pymunk_bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.pymunk_length_unit).magnitude
-            # convert mass
-            pymunk_bodies[bodies_id]['boundary']['mass'] = specs['boundary']['mass'].to(self.pymunk_mass_unit).magnitude
-        return pymunk_bodies
-
-
-    def pymunk_location_to_body_units(self, bodies):
-        for body_id, location in bodies.items():
-            bodies[body_id] = [(loc * self.pymunk_length_unit) for loc in location]
-        return bodies
-
-
-    def update_bodies(self, raw_bodies):
+    def update_bodies(self, bodies):
         # if an cell has been removed from the cells store,
         # remove it from space and bodies
-
-        # convert to pymunk_units
-        bodies = self.bodies_to_pymunk_units(raw_bodies)
 
         removed_bodies = [
             body_id for body_id in self.bodies.keys()
@@ -312,40 +239,40 @@ class PymunkMultibody(object):
         return tuple(pos for pos in body.position)
 
     def get_body_positions(self):
-        bodies = {
+        return {
             body_id: self.get_body_position(body_id)
             for body_id in self.bodies.keys()}
-        return self.pymunk_location_to_body_units(bodies)
 
 
 
-def test_multibody(
+def test_minimal(
         total_time=2,
         cell_shape='rectangle',
+        velocity=10.0,  #  um / min
         n_cells=1,
-        jitter_force=1e1,
-        screen=None):
+):
 
-    bounds = [500 * units.um, 500 * units.um]
-    center_location = [0.5*loc.magnitude for loc in bounds]
+    bounds = [500, 500]
+    center_location = [0.5*loc for loc in bounds]
+    cell_ids = [str(cell_idx) for cell_idx in range(n_cells)]
     cells = {
-        str(cell_idx): {
+        cell_id: {
             'boundary': {
                 'location': center_location,
                 'volume': 15,
                 'diameter': 30,
-                'mass': 1}}
-        for cell_idx in range(n_cells)
+                'mass': 1,
+                'velocity': velocity,
+            }}
+        for cell_id in cell_ids
     }
     config = {
         'cell_shape': cell_shape,
-        'jitter_force': jitter_force,
         'bounds': bounds,
         'barriers': False,
         'initial_cells': cells,
-        'screen': screen
     }
-    multibody = PymunkMultibody(config)
+    multibody = PymunkMinimal(config)
 
     # run simulation
     time = 0
@@ -353,7 +280,12 @@ def test_multibody(
     while time < total_time:
         time += time_step
         multibody.run(time_step)
+        for cell_id in cell_ids:
+            multibody.set_velocity(cell_id, velocity)
+
+        print(multibody.get_body_positions())
 
 
 if __name__ == '__main__':
-    test_multibody(10)
+    test_minimal(
+        total_time=10)
