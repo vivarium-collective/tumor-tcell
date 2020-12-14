@@ -51,7 +51,7 @@ def get_tcells(number=1):
         #'PD1': 0,
         #'TCR':50000,
         'velocity': 10.0 * units.um/units.min,
-        'diameter': 5,
+        'diameter': 5 * units.um,
     } for n in range(number)
 }
 
@@ -63,7 +63,7 @@ def get_tumors(number=1):
             'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
             # 'PDL1': 50000,
             # 'MHCI': 50000,
-            'diameter': 10,
+            'diameter': 10 * units.um,
         } for n in range(number)
     }
 
@@ -151,7 +151,7 @@ def tumor_tcell_abm(
         agent_id: {
             'boundary': {
                 'location': state.get('location', random_location(bounds)),
-                'diameter': state.get('diameter', 10) * units.um,
+                'diameter': state.get('diameter', 10 * units.um),
                 'velocity': state.get('velocity', 0.0 * units.um/units.min),
             },
             'internal': {
@@ -172,7 +172,7 @@ def tumor_tcell_abm(
             },
             'boundary': {
                 'location': state.get('location', random_location(bounds)),
-                'diameter': state.get('diameter', 20) * units.um,
+                'diameter': state.get('diameter', 20 * units.um),
                 'velocity': state.get('velocity', 0.0 * units.um/units.min),
             },
             'neighbors': {
@@ -204,8 +204,8 @@ def tumor_tcell_abm(
 
 def small_experiment():
     return tumor_tcell_abm(
-        tumors=get_tumors(number=10),
-        tcells=get_tcells(number=10),
+        tumors=get_tumors(number=2),
+        tcells=get_tcells(number=2),
         total_time=1000,
     )
 
