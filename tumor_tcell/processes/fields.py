@@ -49,15 +49,14 @@ class Fields(Process):
         'n_bins': [10, 10],
         'bounds': [10 * units.um, 10 * units.um],
         'depth': 3000.0,  # um
-        'default_diffusion_dt': 0.01,
+        'default_diffusion_dt': 0.1,
         'default_diffusion_rate': 5e-1,
         'gradient': {},
         'diffusion': {
             'IFNg': 1.25e-3,  # cm^2/day #(Liao, 2014)
         },
-        'degradation': {
-            'IFNg': 2.16/(24*60*60),  # old parameter used
-            #'IFNg': 4 * 60 * 60,  # 4.5 hr half-life converted to seconds #(Kurzrock, 1985) this is what we want
+        'decay': {
+            'IFNg': np.log(2)/(4.5*60*60),  # 4.5 hr half-life converted to exponential decay rate #(Kurzrock, 1985)
         },
         #If we want to add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
     }
@@ -124,7 +123,7 @@ class Fields(Process):
             '*': {
                 'boundary': {
                     'location': {
-                        '_default': [0.5 * bound for bound in self.bounds],
+                        # '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set'},
                     'external': local_concentration_schema
                 }}}
@@ -243,27 +242,26 @@ class Fields(Process):
         for mol_id, field in fields.items():
             # run diffusion if molecule field is not uniform
             if len(set(field.flatten())) != 1:
-                new = self.diffuse(field, timestep)
-                fields[mol_id] = new
+                fields[mol_id] = self.diffuse(field, timestep)
         return fields
 
     def degrade_fields(self, fields, timestep):
         """
-        Note: this only applies if the molecule has a rate in parameters['degradation']
+        Note: this only applies if the molecule has a rate in parameters['decay']
         """
         for mol_id, field in fields.items():
-            if mol_id in self.parameters['degradation']:
-                degradation_rate = self.parameters['degradation'][mol_id]
-                degraded = field * degradation_rate * timestep
-                fields[mol_id] -= degraded
+            if mol_id in self.parameters['decay']:
+                decay_rate = self.parameters['decay'][mol_id]
+                degraded = field * np.exp(-decay_rate * timestep)
+                fields[mol_id] = degraded
         return fields
 
-def test_fields(config={}, total_time=30):
+def test_fields(config={}, initial={'random': 5.0}, total_time=30):
     # initialize process
     fields = Fields(config)
 
     # get initial state from process
-    initial_state = fields.initial_state({'random': 5.0})
+    initial_state = fields.initial_state(initial)
 
     # run experiment
     settings = {
@@ -290,15 +288,30 @@ if __name__ == '__main__':
     out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
     os.makedirs(out_dir, exist_ok=True)
 
-    config = {
+    # run decay
+    decay_config = {
+        'time_step': 60,
         'n_bins': [10, 10],
         'bounds': [10 * units.um, 10 * units.um]}
-    data = test_fields(
-        config=config,
-        total_time=10000)
-
-    # plot
+    decay_data = test_fields(
+        config=decay_config,
+        initial={'uniform': 1.0},
+        total_time=4.5*60*60)
     plot_fields(
-        data,
-        remove_units(config),
-        out_dir, 'test_field')
+        decay_data,
+        remove_units(decay_config),
+        out_dir, 'test_decay')
+
+    # run diffuse
+    diffuse_config = {
+        'time_step': 60,
+        'n_bins': [10, 10],
+        'bounds': [10 * units.um, 10 * units.um]}
+    diffuse_data = test_fields(
+        config=diffuse_config,
+        initial={'random': 1.0},
+        total_time=4.5*60*60)
+    plot_fields(
+        diffuse_data,
+        remove_units(diffuse_config),
+        out_dir, 'test_diffuse')
