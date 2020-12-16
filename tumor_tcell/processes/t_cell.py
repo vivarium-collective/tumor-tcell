@@ -392,11 +392,6 @@ class TCellProcess(Process):
 
 
         # behavior
-        # TODO migration
-        #  #also dependent on MHCI+/PDL1+
-        #  #50% bound vs. 30% bound in flow cytometry experiment on low vs. high
-        #  #Migration rates above in parameters
-
         # Killing by passing cytotoxic packets to tumor
         if new_cell_state == 'PD1n':
 
@@ -433,7 +428,7 @@ class TCellProcess(Process):
                     'exchange': {'IFNg': int(IFNg)}})
 
             #Change velocity of cell based on presence of MHCI and experimental dwell time
-            if velocity_timer == 0:
+            if velocity_timer == 0 or TCR < self.parameters['ligand_threshold']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1n_migration']})
             else:
@@ -479,7 +474,7 @@ class TCellProcess(Process):
                     'exchange': {'IFNg': int(IFNg)}})
 
             #Change velocity of cell based on presence of MHCI and experimental dwell time
-            if velocity_timer == 0:
+            if velocity_timer == 0 or TCR < self.parameters['ligand_threshold']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1p_migration']})
             else:
