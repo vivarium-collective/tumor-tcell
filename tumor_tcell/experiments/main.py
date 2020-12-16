@@ -73,8 +73,8 @@ def random_location(bounds):
         random.uniform(0, bounds[1])]
 
 # make defaults
-N_TUMORS = 50
-N_TCELLS = 3
+N_TUMORS = 100
+N_TCELLS = 6
 DEFAULT_TUMORS = get_tumors(number=N_TUMORS)
 DEFAULT_TCELLS = get_tcells(number=N_TCELLS)
 
