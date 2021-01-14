@@ -7,7 +7,7 @@ T-cell Agent
 import os
 
 # core imports
-from vivarium.core.process import Generator
+from vivarium.core.process import Composite
 from vivarium.core.composition import simulate_compartment_in_experiment
 from vivarium.plots.agents_multigen import plot_agents_multigen
 
@@ -26,7 +26,7 @@ from tumor_tcell import COMPOSITE_OUT_DIR
 NAME = 'tcell_agent'
 
 
-class TCellAgent(Generator):
+class TCellAgent(Composite):
 
     name = NAME
     defaults = {
@@ -84,7 +84,7 @@ class TCellAgent(Generator):
             daughter_ids_function=daughter_ab,
             daughter_path=daughter_path,
             agent_id=agent_id,
-            compartment=self)
+            generator=self)
 
         # death config
         death_config = {

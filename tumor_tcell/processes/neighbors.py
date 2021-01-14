@@ -146,7 +146,7 @@ class Neighbors(Process):
                         '_default': 1.0 * self.length_unit,
                         '_updater': 'set'},
                     'mass': {
-                        '_default': 1 * self.mass_unit,
+                        '_default': 1.0 * self.mass_unit,
                         '_updater': 'set'},
                     'velocity': {
                         '_default': 0.0 * self.velocity_unit,
@@ -431,8 +431,7 @@ def test_growth_division(config=default_gd_config, settings={}):
                 daughter_updates = []
                 for daughter_id in daughter_ids:
                     daughter_updates.append({
-                        'daughter': daughter_id,
-                        'path': (daughter_id,),
+                        'key': daughter_id,
                         'processes': {},
                         'topology': {},
                         'initial_state': {}})
