@@ -7,7 +7,7 @@ Tumor microenvironment
 import os
 import random
 
-from vivarium.core.process import Generator
+from vivarium.core.process import Composite
 from vivarium.core.composition import (
     compartment_in_experiment,
     COMPOSITE_OUT_DIR,
@@ -27,7 +27,7 @@ NAME = 'tumor_microenvironment'
 DEFAULT_BOUNDS = [50 * units.um, 50 * units.um]
 
 
-class TumorMicroEnvironment(Generator):
+class TumorMicroEnvironment(Composite):
     """ Tumor micro-environment
 
     Models a spatial environment in which t-cells and tumors interact

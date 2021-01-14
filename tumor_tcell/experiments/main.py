@@ -17,7 +17,7 @@ from vivarium.core.composition import (
     agent_environment_experiment,
     make_agent_ids,
     compose_experiment,
-    GENERATORS_KEY,
+    FACTORY_KEY,
     EXPERIMENT_OUT_DIR,
 )
 from vivarium.library.units import units, remove_units
@@ -95,7 +95,7 @@ def tumor_tcell_abm(
     # t-cell configuration
     t_cell_hierarchy = {
         agent_id: {
-            GENERATORS_KEY: {
+            FACTORY_KEY: {
                 'type': TCellAgent,
                 'config': {
                     'time_step': time_step,
@@ -108,7 +108,7 @@ def tumor_tcell_abm(
     # tumor configuration
     tumor_hierarchy = {
         agent_id: {
-            GENERATORS_KEY: {
+            FACTORY_KEY: {
                 'type': TumorAgent,
                 'config': {
                     'time_step': time_step,
@@ -121,7 +121,7 @@ def tumor_tcell_abm(
     # declare the full hierarchy with the environments
     hierarchy = {
         # generate the tumor micro-environment at the top level
-        GENERATORS_KEY: {
+        FACTORY_KEY: {
             'type': TumorMicroEnvironment,
             'config': {
                 'neighbors_multibody': {
@@ -143,7 +143,7 @@ def tumor_tcell_abm(
     }
 
     # make environment instance to get an initial state
-    environment = TumorMicroEnvironment(hierarchy[GENERATORS_KEY]['config'])
+    environment = TumorMicroEnvironment(hierarchy[FACTORY_KEY]['config'])
     initial_env = environment.initial_state({'uniform': 0.0})
 
     # initialize state

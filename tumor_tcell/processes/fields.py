@@ -170,6 +170,7 @@ class Fields(Process):
         cells = states['cells']
 
         # degrade and diffuse
+        # TODO -- use set update, so you don't need to do the copy and get the delta
         fields_new = copy.deepcopy(fields)
         fields_new = self.degrade_fields(fields_new, timestep)
         fields_new = self.diffuse_fields(fields_new, timestep)
