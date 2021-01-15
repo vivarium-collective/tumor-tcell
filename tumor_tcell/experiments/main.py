@@ -47,7 +47,7 @@ def get_tcells(number=1):
     '{}_{}'.format(TCELL_ID, n): {
         #'location': [x, y],
         'type': 'tcell',
-        'cell_state': 'PD1n',
+        'cell_state': 'PD1n' if random.uniform(0, 1) < 0.5 else 'PD1p',
         #'PD1': 0,
         #'TCR':50000,
         'velocity': 10.0 * units.um/units.min,

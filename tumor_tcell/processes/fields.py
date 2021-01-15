@@ -48,9 +48,9 @@ class Fields(Process):
         'initial_state': {},
         'n_bins': [10, 10],
         'bounds': [10 * units.um, 10 * units.um],
-        'depth': 3000.0,  # um
+        'depth': 5000.0,  # um
         'default_diffusion_dt': 0.1,
-        'default_diffusion_rate': 5e-1,
+        'default_diffusion_rate': 1.25e-3,
         'gradient': {},
         'diffusion': {
             'IFNg': 1.25e-3,  # cm^2/day #(Liao, 2014)
