@@ -46,7 +46,7 @@ class TCellProcess(Process):
     defaults = {
         'time_step': TIMESTEP,
         'diameter': 5 * units.um,  # 0.01 * units.mm,
-        'mass': 0.6 * units.fg,  # 1E6 times less than cell for migration,
+        'mass': 2 * units.ng,
         'initial_PD1n': 0.8,
         'transition_PD1n_to_PD1p_10days': 0.95,  # nearly 95% by 10 days (Wherry 2007)
         'cellstate_transition_time': 259200,  # extended contact with tumor cells expressing MHCI for more
