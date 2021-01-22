@@ -29,7 +29,7 @@ def random_body_position(body):
     return location
 
 def random_direction(velocity):
-    angle = random.uniform(0, 360)
+    angle = random.uniform(0, 2*PI)
     return (velocity * math.cos(angle), velocity * math.sin(angle))
 
 
