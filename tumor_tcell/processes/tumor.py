@@ -52,12 +52,12 @@ class TumorProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 10 * units.um, #  0.01 * units.mm,
+        'diameter': 15 * units.um, #  0.01 * units.mm,
         'mass': 8 * units.ng,
         'initial_PDL1n': 1.0, #all start out this way based on data
 
         # death rates
-        'death_apoptosis': 0.95,  # negligible compared to growth/killing 0.95 by 5 day (Gong, 2017)
+        'death_apoptosis': 0.5,  # negligible compared to growth/killing 0.95 by 5 day (Gong, 2017)
         'cytotoxic_packet_threshold': 128 * 100,  # need at least 128 packets for death (multiply by 10 for T cells)
 
         # division rate
