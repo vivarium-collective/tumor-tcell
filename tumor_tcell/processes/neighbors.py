@@ -28,7 +28,7 @@ NAME = 'neighbors'
 DEFAULT_LENGTH_UNIT = units.um
 DEFAULT_MASS_UNIT = units.fg
 DEFAULT_VELOCITY_UNIT = units.um / units.s
-DEFAULT_BOUNDS = [20 * DEFAULT_LENGTH_UNIT, 20 * DEFAULT_LENGTH_UNIT]
+DEFAULT_BOUNDS = [200 * DEFAULT_LENGTH_UNIT, 200 * DEFAULT_LENGTH_UNIT]
 
 # constants
 PI = math.pi
@@ -336,10 +336,12 @@ class Neighbors(Process):
 
 
 # configs
+DEFAULT_DIAMETER = 7.5 * DEFAULT_LENGTH_UNIT
+
 def single_cell_config(config):
     # cell dimensions
-    diameter = 1 * DEFAULT_LENGTH_UNIT
-    velocity = 1 * DEFAULT_VELOCITY_UNIT
+    diameter = DEFAULT_DIAMETER
+    velocity = 10/60 * DEFAULT_VELOCITY_UNIT
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -353,7 +355,7 @@ def single_cell_config(config):
         'velocity': velocity,
         'volume': volume,
         'diameter': diameter,
-        'mass': 1339 * units.fg,
+        'mass': 5 * units.ng,
         'thrust': 0,
         'torque': 0}}
 
@@ -463,7 +465,7 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
     settings = {
         'growth_rate': 0.02,
         'growth_rate_noise': 0.02,
-        'division_volume': 2.6 * DEFAULT_LENGTH_UNIT ** 3,
+        'division_volume': sphere_volume_from_diameter(2 * DEFAULT_LENGTH_UNIT),
         'progress_bar': False,
         'display_info': False,
         'total_time': 120}
