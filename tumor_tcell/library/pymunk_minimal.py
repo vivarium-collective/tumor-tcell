@@ -90,7 +90,7 @@ class PymunkMinimal(object):
 
     def add_barriers(self, bounds, barriers):
         """ Create static barriers """
-        thickness = 50.0
+        thickness = 100.0
         offset = thickness
         x_bound = bounds[0]
         y_bound = bounds[1]
