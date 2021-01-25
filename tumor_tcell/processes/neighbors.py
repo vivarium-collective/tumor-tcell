@@ -341,7 +341,7 @@ DEFAULT_DIAMETER = 7.5 * DEFAULT_LENGTH_UNIT
 def single_cell_config(config):
     # cell dimensions
     diameter = DEFAULT_DIAMETER
-    velocity = 10/60 * DEFAULT_VELOCITY_UNIT
+    velocity = 10 * DEFAULT_VELOCITY_UNIT  # 10/60 * DEFAULT_VELOCITY_UNIT
     volume = sphere_volume_from_diameter(diameter)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
