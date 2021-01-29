@@ -449,7 +449,7 @@ def test_growth_division(config=default_gd_config, settings={}):
                             'diameter': new_diameter,
                             'mass': new_mass * units.fg}}}
 
-            invoked_update.append((InvokeUpdate({'cells': update}), None, None))
+            invoked_update.append((InvokeUpdate({'cells': update}), None))
 
         # update experiment
         experiment.send_updates(invoked_update)
