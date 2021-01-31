@@ -9,14 +9,19 @@ from vivarium_cell.library.lattice_utils import (
     count_to_concentration,
 )
 
-CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
+CONCENTRATION_UNIT = units.ng / units.mL  # alternative (units.mmol / units.L) concentration would not use molecular_weight
 LENGTH_UNIT = units.um
 
 
 class LocalField(Deriver):
 
     name = 'local_field'
-    defaults = {}
+    defaults = {
+        'molecular_weight': {
+            'IFNg': 17000 * units.g / units.mol
+        },
+        'concentration_unit': CONCENTRATION_UNIT
+    }
 
     def __init__(self, parameters=None):
         super(LocalField, self).__init__(parameters)
@@ -69,9 +74,12 @@ class LocalField(Deriver):
             delta_fields[mol_id] = np.zeros(
                 (n_bins[0], n_bins[1]), dtype=np.float64)
             exchange = value * units.count
+            molecular_weight = self.parameters['molecular_weight'][mol_id]
             concentration = count_to_concentration(exchange, bin_volume)
-            delta_fields[mol_id][bin_site[0], bin_site[1]] += concentration.to(
-                units.mmol / units.L).magnitude
+            concentration = (concentration * molecular_weight).to(
+                self.parameters['concentration_unit'])
+
+            delta_fields[mol_id][bin_site[0], bin_site[1]] += concentration.magnitude
             reset_exchanges[mol_id] = {
                 '_value': 0,
                 '_updater': 'set'}

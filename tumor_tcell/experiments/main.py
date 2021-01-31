@@ -204,8 +204,8 @@ def tumor_tcell_abm(
 
 def small_experiment():
     return tumor_tcell_abm(
-        tumors=get_tumors(number=2),
-        tcells=get_tcells(number=2),
+        tumors=get_tumors(number=0),
+        tcells=get_tcells(number=1),
         total_time=1000,
     )
 
