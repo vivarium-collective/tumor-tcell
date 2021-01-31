@@ -50,10 +50,10 @@ class Fields(Process):
         'bounds': [10 * units.um, 10 * units.um],
         'depth': 5000.0,  # um
         'default_diffusion_dt': 0.1,
-        'default_diffusion_rate': 1.25e-3,
+        'default_diffusion_rate': 1e-1,
         'gradient': {},
         'diffusion': {
-            'IFNg': 1.25e-3,  # cm^2/day #(Liao, 2014)
+            'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day #(Liao, 2014)
         },
         'decay': {
             'IFNg': np.log(2)/(4.5*60*60),  # 4.5 hr half-life converted to exponential decay rate #(Kurzrock, 1985)
@@ -84,7 +84,7 @@ class Fields(Process):
         dx2 = dx * dy
         self.diffusion_rate = diffusion_rate / dx2
         self.molecule_specific_diffusion = {
-            mol_id: diff_rate/dx2
+            mol_id: diff_rate.to(LENGTH_UNIT**2/units.s).magnitude/dx2
             for mol_id, diff_rate in self.parameters['diffusion'].items()}
 
         # get diffusion timestep
