@@ -87,6 +87,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
+    initial_env_config={'uniform': 0.0},
     total_time=50000,
     time_step=TIMESTEP,
 ):
@@ -144,7 +145,7 @@ def tumor_tcell_abm(
 
     # make environment instance to get an initial state
     environment = TumorMicroEnvironment(hierarchy[FACTORY_KEY]['config'])
-    initial_env = environment.initial_state({'uniform': 0.0})
+    initial_env = environment.initial_state(initial_env_config)
 
     # initialize state
     initial_t_cells = {
@@ -204,8 +205,9 @@ def tumor_tcell_abm(
 
 def small_experiment():
     return tumor_tcell_abm(
-        tumors=get_tumors(number=0),
+        tumors=get_tumors(number=1),
         tcells=get_tcells(number=1),
+        initial_env_config={'random': 1.0},
         total_time=1000,
     )
 

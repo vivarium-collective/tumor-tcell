@@ -83,6 +83,9 @@ class Fields(Process):
         dy = length_y / bins_y
         dx2 = dx * dy
         self.diffusion_rate = diffusion_rate / dx2
+        self.molecule_specific_diffusion = {
+            mol_id: diff_rate/dx2
+            for mol_id, diff_rate in self.parameters['diffusion'].items()}
 
         # get diffusion timestep
         diffusion_dt = 0.5 * dx ** 2 * dy ** 2 / (2 * diffusion_rate * (dx ** 2 + dy ** 2))
@@ -227,10 +230,8 @@ class Fields(Process):
             self.parameters['n_bins'][0],
             self.parameters['n_bins'][1])
 
-    def diffuse(self, field, timestep, diffusion_rate=None):
+    def diffuse(self, field, timestep, diffusion_rate):
         ''' diffuse a single field '''
-        if diffusion_rate is None:
-            diffusion_rate = self.diffusion_rate
         t = 0.0
         dt = min(timestep, self.diffusion_dt)
         while t < timestep:
@@ -241,9 +242,10 @@ class Fields(Process):
     def diffuse_fields(self, fields, timestep):
         ''' diffuse fields in a fields dictionary '''
         for mol_id, field in fields.items():
+            diffusion_rate = self.molecule_specific_diffusion.get(mol_id, self.diffusion_rate)
             # run diffusion if molecule field is not uniform
             if len(set(field.flatten())) != 1:
-                fields[mol_id] = self.diffuse(field, timestep)
+                fields[mol_id] = self.diffuse(field, timestep, diffusion_rate)
         return fields
 
     def degrade_fields(self, fields, timestep):
