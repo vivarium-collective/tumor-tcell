@@ -90,18 +90,19 @@ class LocalField(Deriver):
 
 
 def test_local_fields():
-    parameters = {}
+    mol_name = 'A'
+    parameters = {'molecular_weight': {mol_name: 1e3 * units.g / units.mol}}
     local_fields_process = LocalField(parameters)
 
     bounds = [5, 5]
     n_bins = [3, 3]
     initial_state = {
         'exchanges': {
-            'A': 20
+            mol_name: 20
         },
         'location': [0.5, 0.5],
         'fields': {
-            'A': np.ones((n_bins[0], n_bins[1]), dtype=np.float64)
+            mol_name: np.ones((n_bins[0], n_bins[1]), dtype=np.float64)
         },
         'dimensions': {
             'bounds': bounds,
