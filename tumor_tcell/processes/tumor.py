@@ -65,12 +65,11 @@ class TumorProcess(Process):
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # cell_state transition
-        'IFNg_threshold': 6E-8,  # mmol/L, converted from 1 ng/mL TODO -- get concentrations! CONCENTRATION_UNIT
+        'IFNg_threshold': 1,  #1 ng/mL
         'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
         
         # migration
         'tumor_migration': 0.25,  # um/minute (Weigelin 2012)
-        #TODO - @Eran - how to manage migration with square grids if migration is smaller than grid?
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4, #TODO ref
