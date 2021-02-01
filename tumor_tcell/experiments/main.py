@@ -35,7 +35,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 # global parameters
 TIMESTEP = 60
 NBINS = [10, 10]
-DEPTH = 10  # um
+DEPTH = 5000  # um
 BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
@@ -207,8 +207,10 @@ def small_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=1),
         tcells=get_tcells(number=1),
-        initial_env_config={'random': 1.0},
-        total_time=1000,
+        initial_env_config={'uniform': 0.0},
+        total_time=10000,
+        bounds=[20*units.um, 20*units.um],
+        n_bins=[1, 1]
     )
 
 

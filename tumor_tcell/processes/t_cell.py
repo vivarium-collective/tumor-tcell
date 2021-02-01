@@ -492,6 +492,9 @@ class TCellProcess(Process):
         update['neighbors']['transfer'].update({
             'cytotoxic_packets': cytotoxic_transfer})
 
+        # if 'exchange' in update['boundary'] and "IFNg" in update['boundary']['exchange']:
+        #     import ipdb; ipdb.set_trace()
+
         return update
 
 
