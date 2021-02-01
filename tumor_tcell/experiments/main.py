@@ -202,6 +202,17 @@ def tumor_tcell_abm(
 
     return data
 
+def medium_experiment():
+    return tumor_tcell_abm(
+        tumors=get_tumors(number=3),
+        tcells=get_tcells(number=3),
+        initial_env_config={'uniform': 0.0},
+        total_time=50000,
+        bounds=[30*units.um, 30*units.um],
+        n_bins=[3, 3]
+    )
+
+
 
 def small_experiment():
     return tumor_tcell_abm(
@@ -265,6 +276,7 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
 experiments_library = {
     '1': tumor_tcell_abm,
     '2': small_experiment,
+    '3': medium_experiment,
 }
 plots_library = {
     '1': plots_suite,
@@ -278,6 +290,11 @@ workflow_library = {
     '2': {
         'name': 'small_experiment',
         'experiment': '2',
+        'plots': ['1'],
+    },
+    '3': {
+        'name': 'medium_experiment',
+        'experiment': '3',
         'plots': ['1'],
     },
 }
