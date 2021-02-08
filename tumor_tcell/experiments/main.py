@@ -35,7 +35,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 # global parameters
 TIMESTEP = 60
 NBINS = [10, 10]
-DEPTH = 5000  # um
+DEPTH = 30  # um
 BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
