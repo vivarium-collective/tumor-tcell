@@ -21,7 +21,7 @@ from tumor_tcell.processes.fields import Fields
 # from vivarium_cell.processes.diffusion_field import DiffusionField
 
 # plots
-from vivarium_cell.plots.multibody_physics import plot_snapshots
+from tumor_tcell.plots.snapshots import plot_snapshots
 
 NAME = 'tumor_microenvironment'
 DEFAULT_BOUNDS = [50 * units.um, 50 * units.um]

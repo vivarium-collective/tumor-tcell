@@ -15,6 +15,7 @@ setup(
         'tumor_tcell.processes',
         'tumor_tcell.experiments',
         'tumor_tcell.library',
+        'tumor_tcell.plots',
     ],
     author='John Hickey, Eran Agmon',
     author_email='jwhickey@stanford.edu, eagmon@stanford.edu',
