@@ -22,7 +22,7 @@ from vivarium.core.control import Control
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
-from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
+from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, get_agent_colors
 # from vivarium_cell.plots.multibody_physics import plot_tags, plot_snapshots
 
 # tumor-tcell imports
@@ -86,7 +86,7 @@ def tumor_tcell_abm(
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
     initial_env_config={'uniform': 0.0},
-    total_time=50000,
+    total_time=5000,
     time_step=TIMESTEP,
 ):
 
@@ -200,29 +200,35 @@ def tumor_tcell_abm(
 
     return data
 
+MEDIUM_BOUNDS = [30*units.um, 30*units.um]
 def medium_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=3),
         tcells=get_tcells(number=3),
         initial_env_config={'uniform': 0.0},
         total_time=50000,
-        bounds=[30*units.um, 30*units.um],
+        bounds=MEDIUM_BOUNDS,
         n_bins=[3, 3]
     )
 
 
-
+SMALL_BOUNDS = [20*units.um, 20*units.um]
 def small_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=1),
         tcells=get_tcells(number=1),
         initial_env_config={'uniform': 0.0},
-        total_time=10000,
+        total_time=100000,
         bounds=[20*units.um, 20*units.um],
         n_bins=[1, 1]
     )
 
 
+def plots_suite_small_bounds(data, out_dir=None, bounds=SMALL_BOUNDS):
+    return plots_suite(data, out_dir, bounds)
+
+def plots_suite_medium_bounds(data, out_dir=None, bounds=MEDIUM_BOUNDS):
+    return plots_suite(data, out_dir, bounds)
 
 def plots_suite(data, out_dir=None, bounds=BOUNDS):
     # separate out tcell and tumor data for multigen plots
@@ -255,8 +261,10 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
     # extract data
     agents, fields = format_snapshot_data(data)
 
-    # import ipdb; ipdb.set_trace()
+    # get agent ids
+    agent_colors = get_agent_colors(agents, phylogeny_names=True)
 
+    # TODO -- logic to set colors. This might need to use tags plot
     # cell_colors = {
     #     agent_id: 'b' if value['cell_type'] is 'tumor' else 'r'
     #     for agent_id, value in agents.items()}
@@ -265,6 +273,7 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
         bounds=remove_units(bounds),
         agents=remove_units(agents),
         fields=fields,
+        agent_colors=agent_colors,
         n_snapshots=5,
         out_dir=out_dir,
         filename='snapshots',
@@ -280,6 +289,8 @@ experiments_library = {
 }
 plots_library = {
     '1': plots_suite,
+    '2': plots_suite_small_bounds,
+    '3': plots_suite_medium_bounds,
 }
 workflow_library = {
     '1': {
@@ -290,12 +301,12 @@ workflow_library = {
     '2': {
         'name': 'small_experiment',
         'experiment': '2',
-        'plots': ['1'],
+        'plots': ['2'],
     },
     '3': {
         'name': 'medium_experiment',
         'experiment': '3',
-        'plots': ['1'],
+        'plots': ['3'],
     },
 }
 
