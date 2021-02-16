@@ -261,19 +261,17 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
     # extract data
     agents, fields = format_snapshot_data(data)
 
-    # get agent ids
-    agent_colors = get_agent_colors(agents, phylogeny_names=True)
-
-    # TODO -- logic to set colors. This might need to use tags plot
-    # cell_colors = {
-    #     agent_id: 'b' if value['cell_type'] is 'tumor' else 'r'
-    #     for agent_id, value in agents.items()}
+    # set tag colors.
+    tag_colors = {
+        ('internal', 'cell_state', 'PDL1p'): 'r',
+        ('internal', 'cell_state', 'PDL1n'): 'g',
+    }
 
     fig3 = plot_snapshots(
         bounds=remove_units(bounds),
         agents=remove_units(agents),
         fields=fields,
-        agent_colors=agent_colors,
+        tag_colors=tag_colors,
         n_snapshots=5,
         out_dir=out_dir,
         filename='snapshots',
