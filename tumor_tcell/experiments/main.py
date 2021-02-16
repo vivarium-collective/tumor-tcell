@@ -253,37 +253,22 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
 
     # snapshots plot
     # extract data
-    # env_config = {'bounds': remove_units(bounds)}
-    # agents = {time: time_data['agents'] for time, time_data in data.items()}
-    # fields = {time: time_data['fields'] for time, time_data in data.items()}
-    # plot_data = {
-    #     'agents': remove_units(agents),
-    #     'fields': fields,
-    #     'config': env_config}
-    # plot_config = {
-    #     'fields': [],
-    #     'n_snapshots': 8,
-    #     'agent_shape': 'circle',
-    #     'out_dir': out_dir}
-
-    # fig3 = plot_snapshots(plot_data, plot_config)
     agents, fields = format_snapshot_data(data)
 
-    import ipdb;
-    ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
+
     # cell_colors = {
     #     agent_id: 'b' if value['cell_type'] is 'tumor' else 'r'
     #     for agent_id, value in agents.items()}
 
-    plot_snapshots(
+    fig3 = plot_snapshots(
         bounds=remove_units(bounds),
-        agents=agents,
+        agents=remove_units(agents),
         fields=fields,
         n_snapshots=5,
         out_dir=out_dir,
-        filename='snapshots.pdf',
+        filename='snapshots',
     )
-
 
     return fig1, fig2, fig3
 

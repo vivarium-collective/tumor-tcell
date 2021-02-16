@@ -287,6 +287,8 @@ def plot_snapshots(
         agents={},
         fields={},
         n_snapshots=6,
+        agent_shape='circle',
+        # agent_colors=None,
         phylogeny_names=True,
         skip_fields=[],
         include_fields=None,
@@ -357,6 +359,7 @@ def plot_snapshots(
         time_indices=time_indices,
         snapshot_times=snapshot_times,
         bounds=bounds,
+        agent_shape=agent_shape,
         out_dir=out_dir,
         filename=filename,
     )
@@ -375,7 +378,7 @@ def make_snapshots_figure(
     dead_color=[0, 0, 0],
     default_font_size=36,
     field_label_size=20,
-    agent_shape='segment',
+    agent_shape='circle',
     out_dir=None,
     filename='snapshots',
 ):
