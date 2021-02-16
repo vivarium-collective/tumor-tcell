@@ -146,8 +146,11 @@ def plot_agent(
 
         # Create a circle
         circle = patches.Circle(
-            (x, y), radius, linewidth=membrane_width,
+            (x, y),
+            radius,
+            linewidth=membrane_width,
             edgecolor=membrane_color,
+            facecolor=rgb
         )
         ax.add_patch(circle)
 
@@ -170,6 +173,7 @@ def plot_agents(
         membrane_color (list): List of 3 floats that define the RGB
             color to use for agent outlines.
     '''
+
     if not agent_colors:
         agent_colors = dict()
     for agent_id, agent_data in agents.items():
@@ -288,7 +292,7 @@ def plot_snapshots(
         fields={},
         n_snapshots=6,
         agent_shape='circle',
-        # agent_colors=None,
+        agent_colors=None,
         phylogeny_names=True,
         skip_fields=[],
         include_fields=None,
@@ -342,9 +346,6 @@ def plot_snapshots(
 
     # get fields id and range
     field_range = get_field_range(fields, time_vec, include_fields, skip_fields)
-
-    # get agent ids
-    agent_colors = get_agent_colors(agents, phylogeny_names)
 
     # get time data
     time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
