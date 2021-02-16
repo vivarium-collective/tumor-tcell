@@ -7,9 +7,9 @@ Tumor microenvironment
 import os
 import random
 
-from vivarium.core.process import Composite
+from vivarium.core.process import Composer
 from vivarium.core.composition import (
-    compartment_in_experiment,
+    composer_in_experiment,
     COMPOSITE_OUT_DIR,
 )
 from vivarium.library.dict_utils import deep_merge
@@ -27,7 +27,7 @@ NAME = 'tumor_microenvironment'
 DEFAULT_BOUNDS = [50 * units.um, 50 * units.um]
 
 
-class TumorMicroEnvironment(Composite):
+class TumorMicroEnvironment(Composer):
     """ Tumor micro-environment
 
     Models a spatial environment in which t-cells and tumors interact
@@ -173,7 +173,7 @@ def test_microenvironment(
     experiment_settings = {
         'compartment': config,
         'initial_state': initial_state}
-    experiment = compartment_in_experiment(
+    experiment = composer_in_experiment(
         compartment,
         experiment_settings)
 
