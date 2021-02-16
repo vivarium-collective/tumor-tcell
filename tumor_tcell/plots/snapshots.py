@@ -6,6 +6,7 @@ import itertools
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from matplotlib.lines import Line2D
 import matplotlib.lines as mlines
 from matplotlib.lines import Line2D
 from matplotlib.colors import hsv_to_rgb
@@ -76,8 +77,12 @@ def plot_agent(
     x_center = data['boundary']['location'][0]
     y_center = data['boundary']['location'][1]
 
-    # get color, convert to rgb
-    rgb = hsv_to_rgb(color)
+    if isinstance(color, str):
+        # assume matplotlib color
+        rgb = color
+    else:
+        # get color, convert to rgb
+        rgb = hsv_to_rgb(color)
 
     if agent_shape == 'rectangle':
         theta = data['boundary']['angle'] / PI * 180 + 90  # rotate 90 degrees to match field
@@ -293,7 +298,7 @@ def plot_snapshots(
         n_snapshots=6,
         agent_shape='circle',
         agent_colors=None,
-        phylogeny_names=True,
+        tag_colors=None,
         skip_fields=[],
         include_fields=None,
         out_dir=None,
@@ -354,6 +359,7 @@ def plot_snapshots(
     return make_snapshots_figure(
         agents=agents,
         agent_colors=agent_colors,
+        tag_colors=tag_colors,
         fields=fields,
         field_range=field_range,
         n_snapshots=n_snapshots,
@@ -366,6 +372,18 @@ def plot_snapshots(
     )
 
 
+def get_value_at_path(d, path):
+    step = path[0]
+    if step in d:
+        sub_d = d[step]
+        if isinstance(sub_d, dict):
+            return get_value_at_path(sub_d, path[1:])
+        else:
+            return sub_d
+    else:
+        return None
+
+
 def make_snapshots_figure(
     agents,
     fields,
@@ -376,6 +394,7 @@ def make_snapshots_figure(
     plot_width=12,
     field_range=None,
     agent_colors=None,
+    tag_colors=None,
     dead_color=[0, 0, 0],
     default_font_size=36,
     field_label_size=20,
@@ -403,6 +422,8 @@ def make_snapshots_figure(
     '''
     edge_length_x = bounds[0]
     edge_length_y = bounds[1]
+    tag_colors = tag_colors or {}
+    agent_colors = agent_colors or {}
 
     # make the figure
     field_ids = list(field_range.keys())
@@ -440,8 +461,18 @@ def make_snapshots_figure(
                                 vmin=vmin,
                                 vmax=vmax,
                                 cmap='BuPu')
+
                 if agents:
                     agents_now = agents[time]
+
+                    # use tag_colors
+                    for agent_id, state in agents_now.items():
+                        for path, color in tag_colors.items():
+                            target = path[-1]
+                            value = get_value_at_path(state, path[:-1])
+                            if value == target:
+                                agent_colors[agent_id] = color
+
                     plot_agents(
                         ax, agents_now, agent_colors, agent_shape, dead_color)
 
@@ -458,6 +489,14 @@ def make_snapshots_figure(
                     cax = divider.append_axes("left", size="5%", pad=0.0)
                     fig.colorbar(im, cax=cax, format='%.6f')
                     ax.axis('off')
+
+                    if tag_colors:
+                        legend_patches = [
+                            Line2D([0], [0], marker='o', color='w', label=path[-1],
+                                   markerfacecolor=color, markersize=30)
+                            for path, color in tag_colors.items()]
+                        ax.legend(handles=legend_patches, loc='center right')
+
         else:
             row_idx = 0
             ax = init_axes(
