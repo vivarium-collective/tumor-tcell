@@ -8,7 +8,7 @@ import argparse
 
 from vivarium.library.units import units
 from vivarium.core.process import Process
-from vivarium.core.composition import simulate_process_in_experiment
+from vivarium.core.composition import simulate_process
 from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium.plots.simulation_output import plot_simulation_output
 
@@ -359,7 +359,7 @@ def test_single_Tumor(
     settings['initial_state'] = Tumor_process.initial_state()
 
     # run experiment
-    timeseries = simulate_process_in_experiment(Tumor_process, settings)
+    timeseries = simulate_process(Tumor_process, settings)
 
     # plot
     plot_settings = {'remove_zeros': False}
@@ -391,7 +391,7 @@ def test_batch_tumor(
         sim_settings['initial_state'] = Tumor_process.initial_state()
 
         # run experiment
-        raw_data = simulate_process_in_experiment(Tumor_process, sim_settings)
+        raw_data = simulate_process(Tumor_process, sim_settings)
         for time, time_data in raw_data.items():
             if time not in combined_raw_data:
                 combined_raw_data[time] = {'agents': {}}

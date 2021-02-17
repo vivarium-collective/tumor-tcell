@@ -10,7 +10,7 @@ import argparse
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
 from vivarium.core.process import Process
-from vivarium.core.composition import simulate_process_in_experiment
+from vivarium.core.composition import simulate_process
 from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium.plots.simulation_output import plot_simulation_output
 
@@ -568,7 +568,7 @@ def test_single_t_cell(
     settings['initial_state'] = t_cell_process.initial_state()
 
     # run experiment
-    timeseries = simulate_process_in_experiment(t_cell_process, settings)
+    timeseries = simulate_process(t_cell_process, settings)
 
     # plot
     plot_settings = {
@@ -603,7 +603,7 @@ def test_batch_t_cell(
         sim_settings['initial_state'] = t_cell_process.initial_state()
 
         # run experiment
-        raw_data = simulate_process_in_experiment(t_cell_process, sim_settings)
+        raw_data = simulate_process(t_cell_process, sim_settings)
         for time, time_data in raw_data.items():
             if time not in combined_raw_data:
                 combined_raw_data[time] = {'agents': {}}

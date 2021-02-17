@@ -15,6 +15,7 @@ setup(
         'tumor_tcell.processes',
         'tumor_tcell.experiments',
         'tumor_tcell.library',
+        'tumor_tcell.plots',
     ],
     author='John Hickey, Eran Agmon',
     author_email='jwhickey@stanford.edu, eagmon@stanford.edu',
@@ -27,6 +28,6 @@ setup(
     package_data={},
     include_package_data=True,
     install_requires=[
-        'vivarium-core==0.1.5',
+        'vivarium-core>=0.2.0',
         'vivarium-cell==0.1.2',
         'pymunk'])
