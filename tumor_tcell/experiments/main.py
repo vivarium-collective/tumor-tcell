@@ -14,18 +14,16 @@ import random
 
 # vivarium-core imports
 from vivarium.core.composition import (
-    agent_environment_experiment,
-    make_agent_ids,
     compose_experiment,
-    FACTORY_KEY,
-    EXPERIMENT_OUT_DIR,
+    COMPOSER_KEY,
 )
 from vivarium.library.units import units, remove_units
 from vivarium.core.control import Control
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
-from vivarium_cell.plots.multibody_physics import plot_tags, plot_snapshots
+from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, get_agent_colors
+# from vivarium_cell.plots.multibody_physics import plot_tags, plot_snapshots
 
 # tumor-tcell imports
 from tumor_tcell.composites.tumor_agent import TumorAgent
@@ -88,7 +86,7 @@ def tumor_tcell_abm(
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
     initial_env_config={'uniform': 0.0},
-    total_time=50000,
+    total_time=5000,
     time_step=TIMESTEP,
 ):
 
@@ -96,7 +94,7 @@ def tumor_tcell_abm(
     # t-cell configuration
     t_cell_hierarchy = {
         agent_id: {
-            FACTORY_KEY: {
+            COMPOSER_KEY: {
                 'type': TCellAgent,
                 'config': {
                     'time_step': time_step,
@@ -109,7 +107,7 @@ def tumor_tcell_abm(
     # tumor configuration
     tumor_hierarchy = {
         agent_id: {
-            FACTORY_KEY: {
+            COMPOSER_KEY: {
                 'type': TumorAgent,
                 'config': {
                     'time_step': time_step,
@@ -122,7 +120,7 @@ def tumor_tcell_abm(
     # declare the full hierarchy with the environments
     hierarchy = {
         # generate the tumor micro-environment at the top level
-        FACTORY_KEY: {
+        COMPOSER_KEY: {
             'type': TumorMicroEnvironment,
             'config': {
                 'neighbors_multibody': {
@@ -144,7 +142,7 @@ def tumor_tcell_abm(
     }
 
     # make environment instance to get an initial state
-    environment = TumorMicroEnvironment(hierarchy[FACTORY_KEY]['config'])
+    environment = TumorMicroEnvironment(hierarchy[COMPOSER_KEY]['config'])
     initial_env = environment.initial_state(initial_env_config)
 
     # initialize state
@@ -202,29 +200,35 @@ def tumor_tcell_abm(
 
     return data
 
+MEDIUM_BOUNDS = [30*units.um, 30*units.um]
 def medium_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=3),
         tcells=get_tcells(number=3),
         initial_env_config={'uniform': 0.0},
         total_time=50000,
-        bounds=[30*units.um, 30*units.um],
+        bounds=MEDIUM_BOUNDS,
         n_bins=[3, 3]
     )
 
 
-
+SMALL_BOUNDS = [20*units.um, 20*units.um]
 def small_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=1),
         tcells=get_tcells(number=1),
         initial_env_config={'uniform': 0.0},
-        total_time=10000,
+        total_time=100000,
         bounds=[20*units.um, 20*units.um],
         n_bins=[1, 1]
     )
 
 
+def plots_suite_small_bounds(data, out_dir=None, bounds=SMALL_BOUNDS):
+    return plots_suite(data, out_dir, bounds)
+
+def plots_suite_medium_bounds(data, out_dir=None, bounds=MEDIUM_BOUNDS):
+    return plots_suite(data, out_dir, bounds)
 
 def plots_suite(data, out_dir=None, bounds=BOUNDS):
     # separate out tcell and tumor data for multigen plots
@@ -255,20 +259,23 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
 
     # snapshots plot
     # extract data
-    env_config = {'bounds': remove_units(bounds)}
-    agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
-    plot_data = {
-        'agents': remove_units(agents),
-        'fields': fields,
-        'config': env_config}
-    plot_config = {
-        'fields': [],
-        'n_snapshots': 8,
-        'agent_shape': 'circle',
-        'out_dir': out_dir}
-    fig3 = plot_snapshots(plot_data, plot_config)
+    agents, fields = format_snapshot_data(data)
 
+    # set tag colors.
+    tag_colors = {
+        ('internal', 'cell_state', 'PDL1p'): 'r',
+        ('internal', 'cell_state', 'PDL1n'): 'g',
+    }
+
+    fig3 = plot_snapshots(
+        bounds=remove_units(bounds),
+        agents=remove_units(agents),
+        fields=fields,
+        tag_colors=tag_colors,
+        n_snapshots=5,
+        out_dir=out_dir,
+        filename='snapshots',
+    )
 
     return fig1, fig2, fig3
 
@@ -280,6 +287,8 @@ experiments_library = {
 }
 plots_library = {
     '1': plots_suite,
+    '2': plots_suite_small_bounds,
+    '3': plots_suite_medium_bounds,
 }
 workflow_library = {
     '1': {
@@ -290,12 +299,12 @@ workflow_library = {
     '2': {
         'name': 'small_experiment',
         'experiment': '2',
-        'plots': ['1'],
+        'plots': ['2'],
     },
     '3': {
         'name': 'medium_experiment',
         'experiment': '3',
-        'plots': ['1'],
+        'plots': ['3'],
     },
 }
 

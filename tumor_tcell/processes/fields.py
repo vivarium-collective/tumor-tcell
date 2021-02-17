@@ -20,7 +20,7 @@ from vivarium_cell.library.lattice_utils import (
 )
 
 # plotting
-from vivarium_cell.plots.multibody_physics import plot_snapshots
+from tumor_tcell.plots.snapshots import plot_snapshots
 
 # directories
 from tumor_tcell import PROCESS_OUT_DIR

@@ -7,8 +7,8 @@ Tumor Agent
 import os
 
 # core imports
-from vivarium.core.process import Composite
-from vivarium.core.composition import simulate_compartment_in_experiment
+from vivarium.core.process import Composer
+from vivarium.core.composition import simulate_composer
 from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # processes
@@ -25,7 +25,7 @@ from tumor_tcell import COMPOSITE_OUT_DIR
 NAME = 'tumor_agent'
 
 
-class TumorAgent(Composite):
+class TumorAgent(Composer):
 
     name = NAME
     defaults = {
@@ -80,7 +80,7 @@ class TumorAgent(Composite):
             daughter_ids_function=daughter_ab,
             daughter_path=daughter_path,
             agent_id=agent_id,
-            generator=self)
+            composer=self)
 
         # death config
         death_config = {
@@ -143,7 +143,7 @@ def test_tumor_agent(total_time=1000):
         'return_raw_data': True,
         'timestep': 10,
         'total_time': total_time}
-    output = simulate_compartment_in_experiment(compartment, settings)
+    output = simulate_composer(compartment, settings)
     return output
 
 def run_compartment(out_dir='out'):
