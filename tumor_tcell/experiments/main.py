@@ -32,7 +32,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 
 # global parameters
 TIMESTEP = 60
-NBINS = [10, 10]
+NBINS = [40, 40]
 DEPTH = 30  # um
 BOUNDS = [200 * units.um, 200 * units.um]
 
@@ -45,7 +45,7 @@ def get_tcells(number=1):
     '{}_{}'.format(TCELL_ID, n): {
         #'location': [x, y],
         'type': 'tcell',
-        'cell_state': 'PD1n' if random.uniform(0, 1) < 0.5 else 'PD1p',
+        'cell_state': 'PD1n' if random.uniform(0, 1) < 0.3 else 'PD1p',
         #'PD1': 0,
         #'TCR':50000,
         'velocity': 10.0 * units.um/units.min,
@@ -58,7 +58,7 @@ def get_tumors(number=1):
         '{}_{}'.format(TUMOR_ID, n): {
             # 'location': [x, y],
             'type': 'tumor',
-            'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.5 else 'PDL1p',
+            'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.9 else 'PDL1p',
             # 'PDL1': 50000,
             # 'MHCI': 50000,
             'diameter': 10 * units.um,
@@ -86,7 +86,7 @@ def tumor_tcell_abm(
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
     initial_env_config={'uniform': 0.0},
-    total_time=5000,
+    total_time=50000,
     time_step=TIMESTEP,
 ):
 
@@ -263,8 +263,10 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
 
     # set tag colors.
     tag_colors = {
-        ('internal', 'cell_state', 'PDL1p'): 'r',
-        ('internal', 'cell_state', 'PDL1n'): 'g',
+        ('internal', 'cell_state', 'PDL1p'): 'skyblue',
+        ('internal', 'cell_state', 'PDL1n'): 'indianred',
+        ('internal', 'cell_state', 'PD1p'): 'limegreen',
+        ('internal', 'cell_state', 'PD1n'): 'darkorange',
     }
 
     fig3 = plot_snapshots(
@@ -272,7 +274,7 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
         agents=remove_units(agents),
         fields=fields,
         tag_colors=tag_colors,
-        n_snapshots=5,
+        n_snapshots=8,
         out_dir=out_dir,
         filename='snapshots',
     )
