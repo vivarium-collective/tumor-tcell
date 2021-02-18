@@ -88,12 +88,13 @@ class TCellProcess(Process):
         'PD1p_migration': 5.0 * units.um/units.min,   # um/minute (Boissonnas 2007)
         #'PD1p_migration_MHCIp_tumor': 1.0 * units.um/units.min,   # um/minute (Boissonnas 2007) - expected behavior
         'PD1p_migration_MHCIp_tumor_dwell_time': 10.0*60,  # minutes converted to seconds (Thibaut 2020)
+        'migration_refractory_time': 30.0 * 60,  # 5 minutes of refractory plus 25 minutes of dwell (Thibaut 2020)
 
         # killing
             # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
         # linear production over 4-6 hr up to a total of 102+-20 granules # (Betts, 2004), (Zhang, 2006)
         'cytotoxic_packet_production': 40/60,  # number of packets/min produced in T cells ##converted to packets/seconds
-        'PD1n_cytotoxic_packets_max':10000, #max number able to produce
+        'PD1n_cytotoxic_packets_max': 10000, #max number able to produce
 
         # 1:10 fold reduction of PD1+ T cell cytotoxic production (Zelinskyy, 2005)
         'PD1p_cytotoxic_packets_max': 1000,  # max number able to produce
@@ -180,7 +181,7 @@ class TCellProcess(Process):
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate',
-                },  # affects TCR expression
+                },  # affects dwell time at tumor
             },
             'boundary': {
                 'cell_type': {
@@ -370,26 +371,13 @@ class TCellProcess(Process):
                         'cell_state_count': cell_state_count})
                     update['boundary'].update({
                         'MHCI_timer': timestep})
-                    if velocity_timer == self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']:
-                        update['internal'].update({
-                            'velocity_timer': -self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']})
 
-                    else:
-                        update['internal'].update({
-                            'velocity_timer': timestep})
 
         elif cell_state == 'PD1p':
             cell_state_count = 0
             update['internal'].update({
                 'cell_state': new_cell_state,
                 'cell_state_count': cell_state_count})
-            if velocity_timer == self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']:
-                update['internal'].update({
-                    'velocity_timer': -self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']})
-            else:
-                update['internal'].update({
-                    'velocity_timer': timestep})
-
 
         # behavior
         # Killing by passing cytotoxic packets to tumor
@@ -405,6 +393,9 @@ class TCellProcess(Process):
                     new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] * timestep
                     update['internal'].update({
                         'total_cytotoxic_packets': new_cytotoxic_packets})
+
+                update['internal'].update({
+                    'velocity_timer': timestep})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
@@ -422,18 +413,28 @@ class TCellProcess(Process):
                     update['internal'].update({
                         'total_cytotoxic_packets': new_cytotoxic_packets})
 
+                update['internal'].update({
+                    'velocity_timer': timestep})
+
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            #Change velocity of cell based on presence of MHCI and experimental dwell time
-            if velocity_timer == 0 or TCR < self.parameters['ligand_threshold']:
+            # Reset the velocity timer after refractory period
+            if velocity_timer == self.parameters['migration_refractory_time']:
+                update['internal'].update({
+                    'velocity_timer': -self.parameters['migration_refractory_time']})
+            elif velocity_timer > self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1n_migration']})
-            else:
+            elif velocity_timer > 0:
                 update['boundary'].update({
                     'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+            elif velocity_timer == 0:
+                update['boundary'].update({
+                    'velocity': self.parameters['PD1n_migration']})
+
 
         elif new_cell_state == 'PD1p':
             PD1 = self.parameters['PD1p_PD1_equilibrium']
@@ -448,6 +449,9 @@ class TCellProcess(Process):
 
                 update['neighbors']['present'].update({
                     'PD1': PD1})
+
+                update['internal'].update({
+                    'velocity_timer': timestep})
 
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
@@ -467,19 +471,28 @@ class TCellProcess(Process):
                 update['neighbors']['present'].update({
                     'PD1': PD1})
 
+                update['internal'].update({
+                    'velocity_timer': timestep})
+
                 # produce IFNg  # rates are determined above
                 IFNg = self.parameters['PD1p_IFNg_production'] / \
                        self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            #Change velocity of cell based on presence of MHCI and experimental dwell time
-            if velocity_timer == 0 or TCR < self.parameters['ligand_threshold']:
+            # Reset the velocity timer after refractory period
+            if velocity_timer == self.parameters['migration_refractory_time']:
+                update['internal'].update({
+                    'velocity_timer': -self.parameters['migration_refractory_time']})
+            elif velocity_timer > self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1p_migration']})
-            else:
+            elif velocity_timer > 0:
                 update['boundary'].update({
                     'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+            elif velocity_timer == 0:
+                update['boundary'].update({
+                    'velocity': self.parameters['PD1p_migration']})
 
 
         #keep cytotoxic transfer to max limit between tumor and T cells and remove from T cell total when transfer

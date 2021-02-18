@@ -295,7 +295,7 @@ def plot_snapshots(
         bounds,
         agents={},
         fields={},
-        n_snapshots=6,
+        n_snapshots=8,
         agent_shape='circle',
         agent_colors=None,
         tag_colors=None,

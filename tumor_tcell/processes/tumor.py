@@ -160,7 +160,7 @@ class TumorProcess(Process):
                         '_updater': 'set',
                     },  # membrane protein, promotes T cell exhuastion and deactivation with PD1
                     'MHCI': {
-                        '_default': 0,
+                        '_default': 1000,
                         '_emit': True,
                         '_updater': 'set',
                     }  # membrane protein, promotes Tumor death and T cell activation with TCR
@@ -260,7 +260,7 @@ class TumorProcess(Process):
             cell_state_count = 0
 
         # behavior
-        MHCI = 0
+        MHCI = 1000
         PDL1 = 0
 
         if new_cell_state == 'PDL1p':
