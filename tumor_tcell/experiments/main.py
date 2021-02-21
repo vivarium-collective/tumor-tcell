@@ -23,7 +23,6 @@ from vivarium.core.control import Control
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
 from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, get_agent_colors
-# from vivarium_cell.plots.multibody_physics import plot_tags, plot_snapshots
 
 # tumor-tcell imports
 from tumor_tcell.composites.tumor_agent import TumorAgent

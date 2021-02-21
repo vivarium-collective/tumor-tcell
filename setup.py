@@ -28,6 +28,6 @@ setup(
     package_data={},
     include_package_data=True,
     install_requires=[
-        'vivarium-core>=0.2.0',
-        'vivarium-cell==0.1.2',
+        'vivarium-core>=0.2.2',
+        'vivarium-multibody==0.0.6',
         'pymunk'])

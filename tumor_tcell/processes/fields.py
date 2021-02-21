@@ -14,7 +14,7 @@ from scipy.ndimage import convolve
 from vivarium.core.process import Process
 from vivarium.core.composition import simulate_process
 from vivarium.library.units import units, remove_units
-from vivarium_cell.library.lattice_utils import (
+from vivarium_multibody.library.lattice_utils import (
     get_bin_site,
     get_bin_volume,
 )

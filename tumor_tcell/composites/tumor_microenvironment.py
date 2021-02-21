@@ -18,7 +18,6 @@ from vivarium.library.units import units, remove_units
 # processes
 from tumor_tcell.processes.neighbors import Neighbors
 from tumor_tcell.processes.fields import Fields
-# from vivarium_cell.processes.diffusion_field import DiffusionField
 
 # plots
 from tumor_tcell.plots.snapshots import plot_snapshots
