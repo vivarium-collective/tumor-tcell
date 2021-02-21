@@ -3,7 +3,7 @@ import numpy as np
 from vivarium.core.process import Deriver
 from vivarium.library.units import units, remove_units
 
-from vivarium_cell.library.lattice_utils import (
+from vivarium_multibody.library.lattice_utils import (
     get_bin_site,
     get_bin_volume,
     count_to_concentration,
