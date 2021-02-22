@@ -86,6 +86,8 @@ def tumor_tcell_abm(
     tcells=DEFAULT_TCELLS,
     initial_env_config={'uniform': 0.0},
     total_time=50000,
+    sim_step=10 * TIMESTEP,
+    halt_threshold=200,  # stop simulation at this number
     time_step=TIMESTEP,
 ):
 
@@ -190,14 +192,23 @@ def tumor_tcell_abm(
     # configure the simulation experiment
     experiment = compose_experiment(
         hierarchy=hierarchy,
-        initial_state=initial_state)
+        initial_state=initial_state,
+        # settings={'display_info': False}
+    )
 
-    # run simulation
-    experiment.update(total_time)
+    # run simulation and terminate upon reaching total_time or halt_threshold
+    time = 0
+    n_cells = len(experiment.state.get_value()['agents'])
+    while n_cells < halt_threshold and time <= total_time:
+        experiment.update(sim_step)
+        time += sim_step
+        n_cells = len(experiment.state.get_value()['agents'])
+
     data = experiment.emitter.get_data_deserialized()
     experiment.end()
 
     return data
+
 
 MEDIUM_BOUNDS = [30*units.um, 30*units.um]
 def medium_experiment():
