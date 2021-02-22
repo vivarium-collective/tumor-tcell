@@ -148,12 +148,12 @@ class TCellProcess(Process):
                     '_updater': 'set'},
                 'PD1n_divide_count': {
                     '_default': 0,
-                    '_emit': True,
+                    '_emit': False, #true for monitoring behavior in process
                     '_divider': 'zero',
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
-                    '_emit': True,
+                    '_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'}
             },
             'internal': {
@@ -164,7 +164,7 @@ class TCellProcess(Process):
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    '_emit': True,
+                    '_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'
                 },
                 'total_cytotoxic_packets': {
