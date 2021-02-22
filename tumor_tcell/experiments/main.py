@@ -44,7 +44,7 @@ def get_tcells(number=1):
     '{}_{}'.format(TCELL_ID, n): {
         #'location': [x, y],
         'type': 'tcell',
-        'cell_state': 'PD1n' if random.uniform(0, 1) < 0.3 else 'PD1p',
+        'cell_state': 'PD1n' if random.uniform(0, 1) < 0.2 else 'PD1p',
         #'PD1': 0,
         #'TCR':50000,
         'velocity': 10.0 * units.um/units.min,
@@ -87,7 +87,7 @@ def tumor_tcell_abm(
     initial_env_config={'uniform': 0.0},
     total_time=50000,
     sim_step=10 * TIMESTEP,
-    halt_threshold=200,  # stop simulation at this number
+    halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
 ):
 

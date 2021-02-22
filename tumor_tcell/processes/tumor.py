@@ -112,7 +112,7 @@ class TumorProcess(Process):
                     '_updater': 'set'},
                 'PDL1n_divide_count': {
                     '_default': 0,
-                    '_emit': True,
+                    '_emit': False, #true for monitoring behavior in process
                     '_divider': 'zero',
                     '_updater': 'accumulate'}
             },
@@ -124,7 +124,7 @@ class TumorProcess(Process):
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    '_emit': True,
+                    '_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'}
             },
             'boundary': {
@@ -148,7 +148,7 @@ class TumorProcess(Process):
                     }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
                 'IFNg_timer': {
                     '_default': 0,
-                    '_emit': True,
+                    '_emit': True, #true for monitoring behavior in process
                     '_updater': 'accumulate',
                 },  # cytokine changes tumor phenotype
             },
