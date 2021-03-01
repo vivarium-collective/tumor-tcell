@@ -39,12 +39,12 @@ TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
 
 
-def get_tcells(number=1):
+def get_tcells(number=1, state_per=0.5):
     return {
     '{}_{}'.format(TCELL_ID, n): {
         #'location': [x, y],
         'type': 'tcell',
-        'cell_state': 'PD1n' if random.uniform(0, 1) < 0.2 else 'PD1p',
+        'cell_state': 'PD1n' if random.uniform(0, 1) < state_per else 'PD1p',
         #'PD1': 0,
         #'TCR':50000,
         'velocity': 10.0 * units.um/units.min,
@@ -52,12 +52,12 @@ def get_tcells(number=1):
     } for n in range(number)
 }
 
-def get_tumors(number=1):
+def get_tumors(number=1, state_per=0.5):
     return {
         '{}_{}'.format(TUMOR_ID, n): {
             # 'location': [x, y],
             'type': 'tumor',
-            'cell_state': 'PDL1n' if random.uniform(0, 1) < 0.9 else 'PDL1p',
+            'cell_state': 'PDL1n' if random.uniform(0, 1) < state_per else 'PDL1p',
             # 'PDL1': 50000,
             # 'MHCI': 50000,
             'diameter': 10 * units.um,
@@ -84,12 +84,13 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    initial_env_config={'uniform': 0.0},
     total_time=50000,
-    sim_step=10 * TIMESTEP,
+    sim_step=60 * TIMESTEP,
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
+    emit_step=None,
 ):
+    initial_env_config={'uniform': 0.0}
 
     ## configure the cells
     # t-cell configuration
@@ -190,10 +191,14 @@ def tumor_tcell_abm(
     }
 
     # configure the simulation experiment
+    settings = {
+        'emit_step': emit_step,
+        'display_info': False,
+    }
     experiment = compose_experiment(
         hierarchy=hierarchy,
         initial_state=initial_state,
-        # settings={'display_info': False}
+        settings=settings
     )
 
     # run simulation and terminate upon reaching total_time or halt_threshold

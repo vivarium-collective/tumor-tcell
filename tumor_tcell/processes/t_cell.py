@@ -144,16 +144,16 @@ class TCellProcess(Process):
                     '_updater': 'set'},
                 'divide': {
                     '_default': False,
-                    '_emit': True,
+                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'set'},
                 'PD1n_divide_count': {
                     '_default': 0,
-                    '_emit': False, #true for monitoring behavior in process
+                    #'_emit': False, #true for monitoring behavior in process
                     '_divider': 'zero',
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
-                    '_emit': False, #true for monitoring behavior in process
+                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'}
             },
             'internal': {
@@ -164,12 +164,12 @@ class TCellProcess(Process):
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    '_emit': False, #true for monitoring behavior in process
+                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'
                 },
                 'total_cytotoxic_packets': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'
                 },
                 'TCR_timer': {
@@ -202,7 +202,7 @@ class TCellProcess(Process):
                 'exchange': {
                     'IFNg': {
                         '_default': 0,  # counts
-                        '_emit': True,
+                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'accumulate',
                     }},
                 'external': {
@@ -220,7 +220,7 @@ class TCellProcess(Process):
                 'present': {
                     'PD1': {
                         '_default': 0,
-                        '_emit': True,
+                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'set',
                     }, # membrane protein, promotes T-cell death
                     'TCR': {
@@ -233,12 +233,12 @@ class TCellProcess(Process):
                     'PDL1': {
                         '_default': 0,
                         '_updater': 'set',
-                        '_emit': True,
+                        #'_emit': False, #true for monitoring behavior in process
                     },
                     'MHCI': {
                         '_default': 0,
                         '_updater': 'set',
-                        '_emit': True,
+                        #'_emit': False, #true for monitoring behavior in process
                     }
                 },
                 'transfer': {
