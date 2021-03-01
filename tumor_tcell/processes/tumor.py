@@ -108,11 +108,11 @@ class TumorProcess(Process):
                     '_updater': 'set'},
                 'divide': {
                     '_default': False,
-                    '_emit': True,
+                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'set'},
                 'PDL1n_divide_count': {
                     '_default': 0,
-                    '_emit': False, #true for monitoring behavior in process
+                    #'_emit': False, #true for monitoring behavior in process
                     '_divider': 'zero',
                     '_updater': 'accumulate'}
             },
@@ -124,7 +124,7 @@ class TumorProcess(Process):
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    '_emit': False, #true for monitoring behavior in process
+                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'}
             },
             'boundary': {
@@ -156,19 +156,19 @@ class TumorProcess(Process):
                 'present': {
                     'PDL1': {
                         '_default': 0,
-                        '_emit': True,
+                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'set',
                     },  # membrane protein, promotes T cell exhuastion and deactivation with PD1
                     'MHCI': {
                         '_default': 1000,
-                        '_emit': True,
+                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'set',
                     }  # membrane protein, promotes Tumor death and T cell activation with TCR
                 },
                 'accept': {
                     'PD1': {
                         '_default': 0,
-                        '_emit': True,
+                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'set',
                     },
                     'TCR': {
