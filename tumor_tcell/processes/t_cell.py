@@ -20,7 +20,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'T_cell'
 TIMESTEP = 60  # seconds
-CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
+CONCENTRATION_UNIT = 1
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -69,7 +69,6 @@ class TCellProcess(Process):
 
         # production rates
         'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
-        # TODO @Eran - the other IFNg is in ng/mL how does this production get converted?
 
         'PD1p_IFNg_production': 0.0,  # molecule counts/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
