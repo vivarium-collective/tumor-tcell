@@ -204,11 +204,6 @@ class Neighbors(Process):
         # add units to cell_positions
         cell_positions = self.location_add_units(cell_positions)
 
-
-        # for cell_id, (posx, posy) in cell_positions.items():
-        #     if (posx < 0 or posy < 0):
-        #         import ipdb; ipdb.set_trace()
-
         # exchange with neighbors
         exchange = {
             cell_id: {
@@ -472,12 +467,12 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
 
     bounds = DEFAULT_BOUNDS
     settings = {
-        'growth_rate': 0.02,
+        'growth_rate': 0.04,
         'growth_rate_noise': 0.02,
         'division_volume': sphere_volume_from_diameter(10 * DEFAULT_LENGTH_UNIT),
         'progress_bar': False,
         'display_info': False,
-        'total_time': 120}
+        'total_time': 500}
     gd_config = {
         'animate': True,
         'jitter_force': 1e0,

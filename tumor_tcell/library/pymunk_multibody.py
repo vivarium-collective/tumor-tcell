@@ -53,6 +53,10 @@ def random_body_position(body):
             location = (width, random.uniform(0, length))
     return location
 
+def random_direction(velocity):
+    angle = random.uniform(0, 2*PI)
+    return (velocity * math.cos(angle), velocity * math.sin(angle))
+
 
 class NullScreen(object):
     def update_screen(self):
@@ -326,12 +330,17 @@ class PymunkMultibody(object):
         # add body to agents dictionary
         self.bodies[body_id] = (body, shape)
 
+    def set_velocity(self, body_id, velocity):
+        body, shape = self.bodies[body_id]
+        body.velocity = random_direction(velocity)
+
     def update_body(self, body_id, specs):
         boundary = specs['boundary']
         if self.agent_shape == 'circle':
 
             diameter = boundary['diameter']
             mass = boundary['mass']
+            velocity = boundary['velocity']
 
             body, shape = self.bodies[body_id]
             position = body.position
@@ -380,6 +389,9 @@ class PymunkMultibody(object):
 
         # update body
         self.bodies[body_id] = (new_body, new_shape)
+
+        if 'velocity' in boundary:
+            self.set_velocity(body_id, boundary['velocity'])
 
     def update_bodies(self, bodies):
         # if an agent has been removed from the agents store,
