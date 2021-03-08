@@ -39,7 +39,7 @@ class LocalField(Deriver):
             'fields': {
                 '*': {
                     '_default': np.ones(1),
-                    '_updater': 'accumulate',
+                    #'_updater': 'accumulate',
                 }
             },
             'dimensions': {

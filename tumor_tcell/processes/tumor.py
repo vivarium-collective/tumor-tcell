@@ -72,7 +72,7 @@ class TumorProcess(Process):
         'tumor_migration': 0.25,  # um/minute (Weigelin 2012)
 
         #IFNg Internalization max rate
-        'Max_IFNg_internalization': 21, #number of IFNg 1250 molecules/cell/hr degraded conv to minutes
+        'Max_IFNg_internalization': 21/60, #number of IFNg 1250 molecules/cell/hr degraded conv to seconds
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4, #TODO ref
@@ -283,15 +283,11 @@ class TumorProcess(Process):
         elif new_cell_state == 'PDL1n':
             pass
 
-        if IFNg > self.parameters['Max_IFNg_internalization']:
-            # produce IFNg  # rates are determined above
-            IFNg_degrade = self.parameters['Max_IFNg_internalization']
-            update['boundary'].update({
-                'exchange': {'IFNg': -int(IFNg_degrade)}})
-        else:
-            IFNg_degrade = IFNg
-            update['boundary'].update({
-                'exchange': {'IFNg': -int(IFNg_degrade)}})
+        # produce IFNg  # rates are determined above
+        IFNg_degrade = self.parameters['Max_IFNg_internalization']*timestep
+        update['boundary'].update({
+            'exchange': {'IFNg': -int(IFNg_degrade)}})
+
 
         return update
 

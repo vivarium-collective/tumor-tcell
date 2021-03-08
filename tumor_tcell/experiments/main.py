@@ -84,7 +84,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=5000,
+    total_time=50000,
     sim_step=60 * TIMESTEP,
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,

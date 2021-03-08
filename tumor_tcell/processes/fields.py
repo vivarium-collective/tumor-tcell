@@ -137,7 +137,7 @@ class Fields(Process):
                 field: {
                     # '_value': self.initial_state.get(field, self.ones_field()),
                     '_default': self.ones_field(),
-                    '_updater': 'accumulate',
+                    '_updater': 'nonnegative_accumulate',
                     '_emit': True,
                 }
                 for field in self.parameters['molecules']
