@@ -147,9 +147,7 @@ class PymunkMinimal(object):
 
     def set_velocity(self, body_id, velocity):
         body, shape = self.bodies[body_id]
-        # body.velocity = random_direction(velocity)
-
-        # import ipdb; ipdb.set_trace()
+        body.velocity = random_direction(velocity)
 
 
     def update_body(self, body_id, specs):

@@ -328,29 +328,48 @@ class PymunkMultibody(object):
 
     def update_body(self, body_id, specs):
         boundary = specs['boundary']
-        length = boundary['length']
-        width = boundary['width']
-        mass = boundary['mass']
-        thrust = boundary['thrust']
-        torque = boundary['torque']
+        if self.agent_shape == 'circle':
 
-        body, shape = self.bodies[body_id]
-        position = body.position
-        angle = body.angle
+            diameter = boundary['diameter']
+            mass = boundary['mass']
 
-        # get shape, inertia, make body, assign body to shape
-        new_shape = self.get_shape(boundary)
-        inertia = self.get_inertia(new_shape, mass)
-        new_body = pymunk.Body(mass, inertia)
-        new_shape.body = new_body
+            body, shape = self.bodies[body_id]
+            position = body.position
 
-        new_body.position = position
-        new_body.angle = angle
-        new_body.velocity = body.velocity
-        new_body.angular_velocity = body.angular_velocity
-        new_body.dimensions = (width, length)
-        new_body.thrust = thrust
-        new_body.torque = torque
+            # get shape, inertia, make body, assign body to shape
+            new_shape = self.get_shape(boundary)
+            inertia = self.get_inertia(new_shape, mass)
+            new_body = pymunk.Body(mass, inertia)
+            new_shape.body = new_body
+
+            new_body.position = position
+            new_body.velocity = body.velocity
+            new_body.diameter = diameter
+
+        else:
+            length = boundary['length']
+            width = boundary['width']
+            mass = boundary['mass']
+            thrust = boundary['thrust']
+            torque = boundary['torque']
+
+            body, shape = self.bodies[body_id]
+            position = body.position
+            angle = body.angle
+
+            # get shape, inertia, make body, assign body to shape
+            new_shape = self.get_shape(boundary)
+            inertia = self.get_inertia(new_shape, mass)
+            new_body = pymunk.Body(mass, inertia)
+            new_shape.body = new_body
+
+            new_body.position = position
+            new_body.angle = angle
+            new_body.velocity = body.velocity
+            new_body.angular_velocity = body.angular_velocity
+            new_body.dimensions = (width, length)
+            new_body.thrust = thrust
+            new_body.torque = torque
 
         new_shape.elasticity = shape.elasticity
         new_shape.friction = shape.friction
@@ -380,17 +399,13 @@ class PymunkMultibody(object):
             else:
                 self.add_body_from_center(body_id, specs)
 
-    def get_body_position(self, agent_id):
-        body, shape = self.bodies[agent_id]
-        return {
-            'location': [pos for pos in body.position],
-            'angle': body.angle,
-        }
+    def get_body_position(self, cell_id):
+        body, shape = self.bodies[cell_id]
+        return tuple(pos for pos in body.position)
 
     def get_body_positions(self):
         return {
-            body_id: {
-                'boundary': self.get_body_position(body_id)}
+            body_id: self.get_body_position(body_id)
             for body_id in self.bodies.keys()}
 
 
