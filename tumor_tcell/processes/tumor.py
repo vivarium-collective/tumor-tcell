@@ -71,6 +71,9 @@ class TumorProcess(Process):
         # migration
         'tumor_migration': 0.25,  # um/minute (Weigelin 2012)
 
+        #IFNg Internalization max rate
+        'Max_IFNg_internalization': 21/60, #number of IFNg 1250 molecules/cell/hr degraded conv to seconds
+
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4, #TODO ref
         'PDL1p_MHCI_equilibrium': 5e4, #TODO ref
@@ -146,6 +149,12 @@ class TumorProcess(Process):
                         '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
                     }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
+                'exchange': {
+                    'IFNg': {
+                        '_default': 0,  # counts
+                        # '_emit': False, #true for monitoring behavior in process
+                        '_updater': 'accumulate',
+                    }},
                 'IFNg_timer': {
                     '_default': 0,
                     '_emit': True, #true for monitoring behavior in process
@@ -274,7 +283,11 @@ class TumorProcess(Process):
         elif new_cell_state == 'PDL1n':
             pass
 
-        # TODO migration - Do after the environment is set up
+        # produce IFNg  # rates are determined above
+        IFNg_degrade = self.parameters['Max_IFNg_internalization']*timestep
+        update['boundary'].update({
+            'exchange': {'IFNg': -int(IFNg_degrade)}})
+
 
         return update
 
