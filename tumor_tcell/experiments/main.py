@@ -32,7 +32,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 # global parameters
 TIMESTEP = 60
 NBINS = [40, 40]
-DEPTH = 30  # um
+DEPTH = 10  # um
 BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
@@ -84,7 +84,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=50000,
+    total_time=80000,
     sim_step=60 * TIMESTEP,
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
