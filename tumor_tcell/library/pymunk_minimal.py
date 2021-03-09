@@ -53,6 +53,7 @@ class PymunkMinimal(object):
         # configured parameters
         'physics_dt': 0.01,
         'bounds': [20, 20],
+        'barriers': False,
         'initial_cells': {},
     }
 
@@ -64,13 +65,14 @@ class PymunkMinimal(object):
         # configured parameters
         self.physics_dt = config.get('physics_dt', self.defaults['physics_dt'])
         self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
-        bounds = config.get('bounds', self.defaults['bounds'])
+        self.bounds = config.get('bounds', self.defaults['bounds'])
 
         # initialize pymunk space
         self.space = pymunk.Space()
 
         # add static barriers
-        self.add_barriers(self.space, bounds)
+        barriers = config.get('barriers', self.defaults['barriers'])
+        self.add_barriers(self.bounds, barriers)
 
         # initialize cells
         initial_cells = config.get('initial_cells', self.defaults['initial_cells'])
@@ -86,22 +88,55 @@ class PymunkMinimal(object):
         self.space.step(timestep)
 
 
-    def add_barriers(self, space, bounds):
+    def add_barriers(self, bounds, barriers):
         """ Create static barriers """
-        static_body = space.static_body
-
-        thickness = 500
+        thickness = 100.0
         offset = thickness
-        x0 = 0 - offset
-        x1 = bounds[0] + offset
-        y0 = 0 - offset
-        y1 = bounds[1] + offset
-        ps = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
-        for i in range(4):
-            segment = pymunk.Segment(static_body, ps[i], ps[(i+1) % 4], thickness)
-            segment.elasticity = 0.0
-            segment.friction = 0.8
-            space.add(segment)
+        x_bound = bounds[0]
+        y_bound = bounds[1]
+
+        static_body = self.space.static_body
+        static_lines = [
+            pymunk.Segment(
+                static_body,
+                (0.0-offset, 0.0-offset),
+                (x_bound+offset, 0.0-offset),
+                thickness),
+            pymunk.Segment(
+                static_body,
+                (x_bound+offset, 0.0-offset),
+                (x_bound+offset, y_bound+offset),
+                thickness),
+            pymunk.Segment(
+                static_body,
+                (x_bound+offset, y_bound+offset),
+                (0.0-offset, y_bound+offset),
+                thickness),
+            pymunk.Segment(
+                static_body,
+                (0.0-offset, y_bound+offset),
+                (0.0-offset, 0.0-offset),
+                thickness),
+        ]
+
+        if barriers:
+            spacer_thickness = barriers.get('spacer_thickness', 0.1)
+            channel_height = barriers.get('channel_height')
+            channel_space = barriers.get('channel_space')
+            n_lines = math.floor(x_bound/channel_space)
+
+            machine_lines = [
+                pymunk.Segment(
+                    static_body,
+                    (channel_space * line, 0),
+                    (channel_space * line, channel_height), spacer_thickness)
+                for line in range(n_lines)]
+            static_lines += machine_lines
+
+        for line in static_lines:
+            line.elasticity = 0.0  # bounce
+            line.friction = 0.8
+            self.space.add(line)
 
     def get_shape(self, boundary):
         '''
@@ -148,7 +183,6 @@ class PymunkMinimal(object):
     def set_velocity(self, body_id, velocity):
         body, shape = self.bodies[body_id]
         body.velocity = random_direction(velocity)
-
 
     def update_body(self, body_id, specs):
         boundary = specs['boundary']
@@ -235,6 +269,7 @@ def test_minimal(
     config = {
         'cell_shape': cell_shape,
         'bounds': bounds,
+        'barriers': False,
         'initial_cells': cells,
     }
     multibody = PymunkMinimal(config)
@@ -253,4 +288,4 @@ def test_minimal(
 
 if __name__ == '__main__':
     test_minimal(
-        total_time=100)
+        total_time=10)
