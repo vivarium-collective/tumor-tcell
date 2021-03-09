@@ -6,30 +6,6 @@ import pymunk
 
 
 PI = math.pi
-DEBUG_SIZE = 600  # size of the pygame debug screen
-
-
-def get_force_with_angle(force, angle):
-    x = force * math.cos(angle)
-    y = force * math.sin(angle)
-    return [x, y]
-
-
-def front_from_corner(width, length, corner_position, angle):
-    half_width = width/2
-    dx = length * math.cos(angle) + half_width * math.cos(angle + PI/2)  # PI/2 gives a half-rotation for the width component
-    dy = length * math.sin(angle) + half_width * math.sin(angle + PI/2)
-    front_position = [corner_position[0] + dx, corner_position[1] + dy]
-    return np.array([front_position[0], front_position[1], angle])
-
-
-def corner_from_center(width, length, center_position, angle):
-    half_length = length/2
-    half_width = width/2
-    dx = half_length * math.cos(angle) + half_width * math.cos(angle + PI/2)
-    dy = half_length * math.sin(angle) + half_width * math.sin(angle + PI/2)
-    corner_position = [center_position[0] - dx, center_position[1] - dy]
-    return np.array([corner_position[0], corner_position[1], angle])
 
 
 def random_body_position(body):
@@ -135,31 +111,12 @@ class PymunkMultibody(object):
             # apply forces
             # for body in self.space.bodies:
             #     self.apply_jitter_force(body)
-            #     self.apply_motile_force(body)
             #     self.apply_viscous_force(body)
 
             # run for a physics timestep
             self.space.step(self.physics_dt)
 
         self.screen.update_screen()
-
-    def apply_motile_force(self, body):
-        width, length = body.dimensions
-        motile_location = (width / 2, 0)  # apply force at back end of body
-        thrust = 0.0
-        torque = 0.0
-        motile_force = [thrust, torque]
-
-        if hasattr(body, 'thrust'):
-            thrust = body.thrust
-            torque = body.torque
-            motile_force = [thrust, 0.0]
-
-            # add to angular velocity
-            body.angular_velocity += torque
-
-        scaled_motile_force = [force * self.force_scaling for force in motile_force]
-        body.apply_impulse_at_local_point(scaled_motile_force, motile_location)
 
     def apply_jitter_force(self, body):
         jitter_location = random_body_position(body)
