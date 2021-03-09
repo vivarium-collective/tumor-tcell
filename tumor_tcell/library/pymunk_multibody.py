@@ -259,7 +259,7 @@ class PymunkMultibody(object):
                 center_position[1])
             body.diameter = diameter
 
-        if self.agent_shape == 'segment':
+        elif self.agent_shape == 'segment':
             angle = boundary['angle']
             width = boundary['width']
             length = boundary['length']
@@ -277,6 +277,8 @@ class PymunkMultibody(object):
             body.dimensions = (width, length)
             body.angular_velocity = angular_velocity
 
+        else:
+            raise ValueError('agent_shape needs to be segment or circle')
 
         shape.elasticity = self.elasticity
         shape.friction = self.friction
@@ -381,9 +383,10 @@ class PymunkMultibody(object):
 
 def test_multibody(
         total_time=2,
-        agent_shape='rectangle',
+        agent_shape='circle',
         n_agents=1,
         jitter_force=1e1,
+        velocity=10.0,  #  um / min
         screen=None):
 
     bounds = [500, 500]
@@ -392,13 +395,11 @@ def test_multibody(
         str(agent_idx): {
             'boundary': {
                 'location': center_location,
-                'angle': random.uniform(0,2*PI),
                 'volume': 15,
-                'length': 30,
-                'width': 10,
+                'diameter': 30,
                 'mass': 1,
-                'thrust': 1e3,
-                'torque': 0.0}}
+                'velocity': velocity,
+            }}
         for agent_idx in range(n_agents)
     }
     config = {
