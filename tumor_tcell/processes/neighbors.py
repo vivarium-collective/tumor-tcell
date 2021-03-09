@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-# from tumor_tcell.library.pymunk_minimal import PymunkMinimal as Pymunk
-from tumor_tcell.library.pymunk_multibody import PymunkMultibody as Pymunk
+from tumor_tcell.library.pymunk_minimal import PymunkMinimal as Pymunk
+# from tumor_tcell.library.pymunk_multibody import PymunkMultibody as Pymunk
 from vivarium.library.units import units, remove_units
 from vivarium.core.process import Process
 from vivarium.core.composition import process_in_experiment

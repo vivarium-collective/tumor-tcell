@@ -34,13 +34,6 @@ def random_direction(velocity):
     return (velocity * math.cos(angle), velocity * math.sin(angle))
 
 
-class NullScreen(object):
-    def update_screen(self):
-        pass
-    def configure(self, config):
-        pass
-
-
 class PymunkMultibody(object):
     """
     Multibody object for interfacing with pymunk
@@ -60,8 +53,6 @@ class PymunkMultibody(object):
         'bounds': [20, 20],
         'barriers': False,
         'initial_agents': {},
-        # for debugging
-        'screen': None,
     }
 
     def __init__(self, config):
@@ -81,14 +72,6 @@ class PymunkMultibody(object):
 
         # initialize pymunk space
         self.space = pymunk.Space()
-
-        # debug screen
-        self.screen = config.get('screen')
-        if self.screen is None:
-            self.screen = NullScreen()
-        self.screen.configure({
-            'space': self.space,
-            'bounds': self.bounds})
 
         # add static barriers
         self.add_barriers(self.bounds, barriers)
@@ -115,8 +98,6 @@ class PymunkMultibody(object):
 
             # run for a physics timestep
             self.space.step(self.physics_dt)
-
-        self.screen.update_screen()
 
     def apply_jitter_force(self, body):
         jitter_location = random_body_position(body)
@@ -387,7 +368,7 @@ def test_multibody(
         n_agents=1,
         jitter_force=1e1,
         velocity=10.0,  #  um / min
-        screen=None):
+):
 
     bounds = [500, 500]
     center_location = [0.5*loc for loc in bounds]
@@ -408,7 +389,6 @@ def test_multibody(
         'bounds': bounds,
         'barriers': False,
         'initial_agents': agents,
-        'screen': screen
     }
     multibody = PymunkMultibody(config)
 
