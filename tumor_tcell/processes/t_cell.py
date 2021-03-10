@@ -63,9 +63,9 @@ class TCellProcess(Process):
 
         # death rates (Petrovas 2007)
         'PDL1_critical_number': 1e4,  # threshold number of PDL1 molecules/cell to trigger death
-        'death_PD1p_14hr': 0.35,  # 0.7 / 14 hrs
-        'death_PD1n_14hr': 0.1,  # 0.2 / 14 hrs
-        'death_PD1p_next_to_PDL1p_14hr': 0.5,  # 0.95 / 14 hrs
+        'death_PD1p_14hr': 0.7,  # 0.7 / 14 hrs
+        'death_PD1n_14hr': 0.2,  # 0.2 / 14 hrs
+        'death_PD1p_next_to_PDL1p_14hr': 0.95,  # 0.95 / 14 hrs
 
         # production rates
         'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
@@ -76,8 +76,8 @@ class TCellProcess(Process):
         'ligand_threshold': 1e4,  # molecules/neighbor cell
 
         # division rate (Petrovas 2007, Vodnala 2019)
-        'PD1n_growth_8hr': 0.45,  # 90% division in 28 hours
-        'PD1p_growth_8hr': 0.10,  # 20% division in 28 hours
+        'PD1n_growth_8hr': 0.90,  # 90% division in 28 hours
+        'PD1p_growth_8hr': 0.20,  # 20% division in 28 hours
 
         # migration
         'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
