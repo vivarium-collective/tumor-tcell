@@ -70,7 +70,7 @@ class TCellProcess(Process):
         # production rates
         'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
 
-        'PD1p_IFNg_production': 0.0,  # molecule counts/cell/second
+        'PD1p_IFNg_production': 1.62e3/3600,  # molecule counts/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell

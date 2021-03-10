@@ -61,7 +61,7 @@ class TumorProcess(Process):
         'cytotoxic_packet_threshold': 128 * 100,  # need at least 128 packets for death (multiply by 10 for T cells)
 
         # division rate
-        'PDL1n_growth': 0.5,  # probability of division 24 hr (Eden, 2011)
+        'PDL1n_growth': 0.6,  # probability of division 24 hr (Eden, 2011)
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # cell_state transition
