@@ -11,6 +11,7 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 """
 
 import random
+import time as clock
 
 # vivarium-core imports
 from vivarium.core.composition import (
@@ -90,7 +91,7 @@ def tumor_tcell_abm(
     time_step=TIMESTEP,
     emit_step=None,
 ):
-    initial_env_config={'uniform': 0.0}
+    initial_env_config = {'uniform': 0.0}
 
     ## configure the cells
     # t-cell configuration
@@ -100,11 +101,8 @@ def tumor_tcell_abm(
                 'type': TCellAgent,
                 'config': {
                     'time_step': time_step,
-                    'agent_id': agent_id,
-                }
-            }
-        } for agent_id in tcells.keys()
-    }
+                    'agent_id': agent_id,}}
+        } for agent_id in tcells.keys()}
 
     # tumor configuration
     tumor_hierarchy = {
@@ -113,11 +111,8 @@ def tumor_tcell_abm(
                 'type': TumorAgent,
                 'config': {
                     'time_step': time_step,
-                    'agent_id': agent_id,
-                }
-            }
-        } for agent_id in tumors.keys()
-    }
+                    'agent_id': agent_id}}
+        } for agent_id in tumors.keys()}
 
     # declare the full hierarchy with the environments
     hierarchy = {
@@ -128,20 +123,15 @@ def tumor_tcell_abm(
                 'neighbors_multibody': {
                     'time_step': time_step,
                     'bounds': bounds,
-                    'jitter_force': 5e-4,
-                },
+                    'jitter_force': 5e-4},
                 'diffusion_field': {
                     'time_step': time_step,
                     'molecules': field_molecules,
                     'bounds': bounds,
                     'n_bins': n_bins,
-                    'depth': depth,
-                }
-            }
-        },
+                    'depth': depth}}},
         # cells are one level down, under the 'agents' key
-        'agents': {**t_cell_hierarchy, **tumor_hierarchy}
-    }
+        'agents': {**t_cell_hierarchy, **tumor_hierarchy}}
 
     # make environment instance to get an initial state
     environment = TumorMicroEnvironment(hierarchy[COMPOSER_KEY]['config'])
@@ -153,65 +143,62 @@ def tumor_tcell_abm(
             'boundary': {
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 10 * units.um),
-                'velocity': state.get('velocity', 0.0 * units.um/units.min),
-            },
+                'velocity': state.get('velocity', 0.0 * units.um/units.min)},
             'internal': {
-                'cell_state': state.get('cell_state', None)
-            },
+                'cell_state': state.get('cell_state', None)},
             'neighbors': {
                 'present': {
                     'PD1': state.get('PD1', None),
-                    'TCR': state.get('TCR', 50000)
-                }
-            },
-        } for agent_id, state in tcells.items()
-    }
+                    'TCR': state.get('TCR', 50000)}
+            }} for agent_id, state in tcells.items()}
+
     initial_tumors = {
         agent_id: {
             'internal': {
-                'cell_state': state.get('cell_state', None)
-            },
+                'cell_state': state.get('cell_state', None)},
             'boundary': {
                 'location': state.get('location', random_location(bounds)),
                 'diameter': state.get('diameter', 20 * units.um),
-                'velocity': state.get('velocity', 0.0 * units.um/units.min),
-            },
+                'velocity': state.get('velocity', 0.0 * units.um/units.min)},
             'neighbors': {
                 'present': {
                     'PDL1': state.get('PDL1', None),
-                    'MHCI': state.get('MHCI', None)
-                }
-            },
-        } for agent_id, state in tumors.items()
-    }
+                    'MHCI': state.get('MHCI', None)}
+            }} for agent_id, state in tumors.items()}
+
     initial_state = {
         **initial_env,
         'agents': {
-            **initial_t_cells, **initial_tumors}
-    }
+            **initial_t_cells, **initial_tumors}}
 
     # configure the simulation experiment
     settings = {
         'emit_step': emit_step,
-        'display_info': False,
-    }
+        'display_info': False}
     experiment = compose_experiment(
         hierarchy=hierarchy,
         initial_state=initial_state,
-        settings=settings
-    )
+        settings=settings)
 
     # run simulation and terminate upon reaching total_time or halt_threshold
     time = 0
+    clock_start = clock.time()
     n_cells = len(experiment.state.get_value()['agents'])
     while n_cells < halt_threshold and time <= total_time:
         experiment.update(sim_step)
         time += sim_step
         n_cells = len(experiment.state.get_value()['agents'])
 
-    data = experiment.emitter.get_data_deserialized()
+    # print runtime and finalize
+    clock_finish = clock.time() - clock_start
+    if clock_finish < 1:
+        print('Completed in {:.6f} seconds'.format(clock_finish))
+    else:
+        print('Completed in {:.2f} seconds'.format(clock_finish))
     experiment.end()
 
+    # return time
+    data = experiment.emitter.get_data_deserialized()
     return data
 
 
@@ -220,7 +207,6 @@ def medium_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=3),
         tcells=get_tcells(number=3),
-        initial_env_config={'uniform': 0.0},
         total_time=50000,
         bounds=MEDIUM_BOUNDS,
         n_bins=[3, 3]
@@ -232,7 +218,6 @@ def small_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=1),
         tcells=get_tcells(number=1),
-        initial_env_config={'uniform': 0.0},
         total_time=100000,
         bounds=[20*units.um, 20*units.um],
         n_bins=[1, 1]
