@@ -14,10 +14,7 @@ import random
 import time as clock
 
 # vivarium-core imports
-from vivarium.core.composition import (
-    compose_experiment,
-    COMPOSER_KEY,
-)
+from vivarium.core.experiment import Experiment, timestamp
 from vivarium.library.units import units, remove_units
 from vivarium.core.control import Control
 
@@ -43,32 +40,27 @@ TCELL_ID = 'tcell'
 def get_tcells(number=1, state_per=0.5):
     return {
     '{}_{}'.format(TCELL_ID, n): {
-        #'location': [x, y],
         'type': 'tcell',
         'cell_state': 'PD1n' if random.uniform(0, 1) < state_per else 'PD1p',
-        #'PD1': 0,
-        #'TCR':50000,
         'velocity': 10.0 * units.um/units.min,
         'diameter': 5 * units.um,
-    } for n in range(number)
-}
+    } for n in range(number)}
+
 
 def get_tumors(number=1, state_per=0.5):
     return {
         '{}_{}'.format(TUMOR_ID, n): {
-            # 'location': [x, y],
             'type': 'tumor',
             'cell_state': 'PDL1n' if random.uniform(0, 1) < state_per else 'PDL1p',
-            # 'PDL1': 50000,
-            # 'MHCI': 50000,
             'diameter': 10 * units.um,
-        } for n in range(number)
-    }
+        } for n in range(number)}
+
 
 def random_location(bounds):
     return [
         random.uniform(0, bounds[0]),
         random.uniform(0, bounds[1])]
+
 
 # make defaults
 N_TUMORS = 150
@@ -90,54 +82,53 @@ def tumor_tcell_abm(
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
     emit_step=None,
+    emitter='timeseries',
+    parallel=False,
 ):
     initial_env_config = {'uniform': 0.0}
 
-    ## configure the cells
-    # t-cell configuration
-    t_cell_hierarchy = {
-        agent_id: {
-            COMPOSER_KEY: {
-                'type': TCellAgent,
-                'config': {
-                    'time_step': time_step,
-                    'agent_id': agent_id,}}
-        } for agent_id in tcells.keys()}
+    t_cell_config = {
+        '_parallel': parallel,
+        'time_step': time_step}
+    tumor_config = {
+        '_parallel': parallel,
+        'time_step': time_step}
+    environment_config = {
+        'neighbors_multibody': {
+            '_parallel': parallel,
+            'time_step': time_step,
+            'bounds': bounds,
+            'jitter_force': 5e-4},
+        'diffusion_field': {
+            '_parallel': parallel,
+            'time_step': time_step,
+            'molecules': field_molecules,
+            'bounds': bounds,
+            'n_bins': n_bins,
+            'depth': depth}}
 
-    # tumor configuration
-    tumor_hierarchy = {
-        agent_id: {
-            COMPOSER_KEY: {
-                'type': TumorAgent,
-                'config': {
-                    'time_step': time_step,
-                    'agent_id': agent_id}}
-        } for agent_id in tumors.keys()}
+    # make the composers
+    t_cell_composer = TCellAgent(t_cell_config)
+    tumor_composer = TumorAgent(tumor_config)
+    environment_composer = TumorMicroEnvironment(environment_config)
 
-    # declare the full hierarchy with the environments
-    hierarchy = {
-        # generate the tumor micro-environment at the top level
-        COMPOSER_KEY: {
-            'type': TumorMicroEnvironment,
-            'config': {
-                'neighbors_multibody': {
-                    'time_step': time_step,
-                    'bounds': bounds,
-                    'jitter_force': 5e-4},
-                'diffusion_field': {
-                    'time_step': time_step,
-                    'molecules': field_molecules,
-                    'bounds': bounds,
-                    'n_bins': n_bins,
-                    'depth': depth}}},
-        # cells are one level down, under the 'agents' key
-        'agents': {**t_cell_hierarchy, **tumor_hierarchy}}
+    # initialize the composite with the environment
+    composite_model = environment_composer.generate()
 
-    # make environment instance to get an initial state
-    environment = TumorMicroEnvironment(hierarchy[COMPOSER_KEY]['config'])
-    initial_env = environment.initial_state(initial_env_config)
+    # add tcells to the composite
+    for agent_id in tcells.keys():
+        t_cell = t_cell_composer.generate({'agent_id': agent_id})
+        composite_model.merge(composite=t_cell, path=('agents', agent_id))
 
-    # initialize state
+    # add tumors to the composite
+    for agent_id in tumors.keys():
+        tumor = tumor_composer.generate({'agent_id': agent_id})
+        composite_model.merge(composite=tumor, path=('agents', agent_id))
+
+    # make initial environment state
+    initial_env = composite_model.initial_state(initial_env_config)
+
+    # initialize cell state
     initial_t_cells = {
         agent_id: {
             'boundary': {
@@ -171,14 +162,18 @@ def tumor_tcell_abm(
         'agents': {
             **initial_t_cells, **initial_tumors}}
 
-    # configure the simulation experiment
-    settings = {
+    # make the experiment
+    experiment_id = (f"tumor_tcell_{timestamp()}")
+    experiment_config = {
+        'processes': composite_model.processes,
+        'topology': composite_model.topology,
+        'initial_state': initial_state,
+        'display_info': False,
+        'experiment_id': experiment_id,
         'emit_step': emit_step,
-        'display_info': False}
-    experiment = compose_experiment(
-        hierarchy=hierarchy,
-        initial_state=initial_state,
-        settings=settings)
+        'emitter': {'type': emitter}}
+    print(f'Initializing experiment {experiment_id}')
+    experiment = Experiment(experiment_config)
 
     # run simulation and terminate upon reaching total_time or halt_threshold
     time = 0
@@ -191,10 +186,7 @@ def tumor_tcell_abm(
 
     # print runtime and finalize
     clock_finish = clock.time() - clock_start
-    if clock_finish < 1:
-        print('Completed in {:.6f} seconds'.format(clock_finish))
-    else:
-        print('Completed in {:.2f} seconds'.format(clock_finish))
+    print('Completed in {:.2f} seconds'.format(clock_finish))
     experiment.end()
 
     # return time
@@ -209,8 +201,7 @@ def medium_experiment():
         tcells=get_tcells(number=3),
         total_time=50000,
         bounds=MEDIUM_BOUNDS,
-        n_bins=[3, 3]
-    )
+        n_bins=[3, 3])
 
 
 SMALL_BOUNDS = [20*units.um, 20*units.um]
@@ -219,18 +210,23 @@ def small_experiment():
         tumors=get_tumors(number=1),
         tcells=get_tcells(number=1),
         total_time=100000,
-        bounds=[20*units.um, 20*units.um],
-        n_bins=[1, 1]
-    )
+        bounds=SMALL_BOUNDS,
+        n_bins=[1, 1])
 
 
-def plots_suite_small_bounds(data, out_dir=None, bounds=SMALL_BOUNDS):
+def plots_suite_small_bounds(
+        data, out_dir=None, bounds=SMALL_BOUNDS):
     return plots_suite(data, out_dir, bounds)
 
-def plots_suite_medium_bounds(data, out_dir=None, bounds=MEDIUM_BOUNDS):
+
+def plots_suite_medium_bounds(
+        data, out_dir=None, bounds=MEDIUM_BOUNDS):
     return plots_suite(data, out_dir, bounds)
 
-def plots_suite(data, out_dir=None, bounds=BOUNDS):
+
+def plots_suite(
+        data, out_dir=None, bounds=BOUNDS):
+
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
     tumor_data = {}
@@ -251,9 +247,7 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
     plot_settings = {
         'skip_paths': [
             ('boundary', 'diameter'),
-            ('boundary', 'location'),
-        ]
-    }
+            ('boundary', 'location')]}
     fig1 = plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
     fig2 = plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
 
@@ -266,8 +260,7 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
         ('internal', 'cell_state', 'PDL1p'): 'skyblue',
         ('internal', 'cell_state', 'PDL1n'): 'indianred',
         ('internal', 'cell_state', 'PD1p'): 'limegreen',
-        ('internal', 'cell_state', 'PD1n'): 'darkorange',
-    }
+        ('internal', 'cell_state', 'PD1n'): 'darkorange',}
 
     fig3 = plot_snapshots(
         bounds=remove_units(bounds),
@@ -276,12 +269,12 @@ def plots_suite(data, out_dir=None, bounds=BOUNDS):
         tag_colors=tag_colors,
         n_snapshots=8,
         out_dir=out_dir,
-        filename='snapshots',
-    )
+        filename='snapshots')
 
     return fig1, fig2, fig3
 
-# all of the experiments go here for easy access by control class
+
+# libraries of experiments and plots for easy access by Control
 experiments_library = {
     '1': tumor_tcell_abm,
     '2': small_experiment,
