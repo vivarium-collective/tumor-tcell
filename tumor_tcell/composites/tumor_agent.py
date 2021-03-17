@@ -73,6 +73,7 @@ class TumorAgent(Composer):
         return process.initial_state(config)
 
     def initialize_processes(self, config):
+        self.tumor_process = TumorProcess(config['tumor'])
         self.local_field = LocalField()
         self.delay_trigger = DelayTrigger()
 
@@ -99,7 +100,7 @@ class TumorAgent(Composer):
             'agent_id': agent_id}
 
         return {
-            'tumor': TumorProcess(config['tumor']),
+            'tumor': self.tumor_process,
             'local_field': self.local_field,
             'division': MetaDivision(meta_division_config),
             'death': Remove(death_config),
