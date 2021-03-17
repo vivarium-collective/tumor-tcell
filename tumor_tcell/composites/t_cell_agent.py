@@ -77,6 +77,7 @@ class TCellAgent(Composer):
         return process.initial_state(config)
 
     def initialize_processes(self, config):
+        self.tcell_process = TCellProcess(config['tcell'])
         self.local_field = LocalField()
         self.delay_trigger = DelayTrigger()
 
@@ -103,7 +104,7 @@ class TCellAgent(Composer):
             'agent_id': agent_id}
 
         return {
-            't_cell': TCellProcess(config['tcell']),
+            't_cell': self.tcell_process,
             'local_field': self.local_field,
             'division': MetaDivision(meta_division_config),
             'death': Remove(death_config),
