@@ -12,6 +12,7 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 
 import random
 import time as clock
+from tqdm import tqdm
 
 # vivarium-core imports
 from vivarium.core.experiment import Experiment, timestamp
@@ -88,10 +89,10 @@ def tumor_tcell_abm(
     initial_env_config = {'uniform': 0.0}
 
     t_cell_config = {
-        '_parallel': parallel,
+        'tcell': {'_parallel': parallel},
         'time_step': time_step}
     tumor_config = {
-        '_parallel': parallel,
+        'tumor': {'_parallel': parallel},
         'time_step': time_step}
     environment_config = {
         'neighbors_multibody': {
@@ -179,10 +180,10 @@ def tumor_tcell_abm(
     time = 0
     clock_start = clock.time()
     n_cells = len(experiment.state.get_value()['agents'])
-    while n_cells < halt_threshold and time <= total_time:
-        experiment.update(sim_step)
-        time += sim_step
-        n_cells = len(experiment.state.get_value()['agents'])
+    for _ in tqdm(range(0, total_time, sim_step)):
+        n_agents = len(experiment.state.get_value()['agents'])
+        if n_agents < halt_threshold:
+            experiment.update(sim_step)
 
     # print runtime and finalize
     clock_finish = clock.time() - clock_start
