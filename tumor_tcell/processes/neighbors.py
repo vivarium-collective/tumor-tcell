@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from tumor_tcell.library.pymunk_minimal import PymunkMinimal
+from tumor_tcell.library.pymunk_minimal import PymunkMinimal as Pymunk
+# from tumor_tcell.library.pymunk_multibody import PymunkMultibody as Pymunk
 from vivarium.library.units import units, remove_units
 from vivarium.core.process import Process
 from vivarium.core.composition import process_in_experiment
@@ -26,7 +27,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'neighbors'
 DEFAULT_LENGTH_UNIT = units.um
-DEFAULT_MASS_UNIT = units.fg
+DEFAULT_MASS_UNIT = units.ng
 DEFAULT_VELOCITY_UNIT = units.um / units.s
 DEFAULT_BOUNDS = [200 * DEFAULT_LENGTH_UNIT, 200 * DEFAULT_LENGTH_UNIT]
 
@@ -117,10 +118,11 @@ class Neighbors(Process):
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
-            'bounds': [b.to(self.length_unit).magnitude for b in parameters['bounds']],
-            'physics_dt': time_step / 10,
-        }
-        self.physics = PymunkMinimal(multibody_config)
+            'bounds': [
+                b.to(self.length_unit).magnitude
+                for b in parameters['bounds']],
+            'physics_dt': min(time_step/10, 0.1)}
+        self.physics = Pymunk(multibody_config)
 
         # interactive plot for visualization
         self.animate = self.parameters['animate']
@@ -329,8 +331,10 @@ class Neighbors(Process):
             circle = patches.Circle((x, y), radius, linewidth=1, edgecolor='b')
             self.ax.add_patch(circle)
 
-        plt.xlim([0, self.remove_length_units(bounds[0])])
-        plt.ylim([0, self.remove_length_units(bounds[1])])
+        xl=self.remove_length_units(bounds[0])
+        yl=self.remove_length_units(bounds[1])
+        plt.xlim([-xl, 2*xl])
+        plt.ylim([-yl, 2*yl])
         plt.draw()
         plt.pause(0.01)
 
@@ -463,12 +467,12 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
 
     bounds = DEFAULT_BOUNDS
     settings = {
-        'growth_rate': 0.02,
+        'growth_rate': 0.04,
         'growth_rate_noise': 0.02,
-        'division_volume': sphere_volume_from_diameter(2 * DEFAULT_LENGTH_UNIT),
+        'division_volume': sphere_volume_from_diameter(10 * DEFAULT_LENGTH_UNIT),
         'progress_bar': False,
         'display_info': False,
-        'total_time': 120}
+        'total_time': 500}
     gd_config = {
         'animate': True,
         'jitter_force': 1e0,

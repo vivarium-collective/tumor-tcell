@@ -29,6 +29,7 @@ class TumorAgent(Composer):
 
     name = NAME
     defaults = {
+        'reuse_processes': True,
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
@@ -65,12 +66,24 @@ class TumorAgent(Composer):
 
     def __init__(self, config):
         super(TumorAgent, self).__init__(config)
+        self.processes_initialized = False
 
     def initial_state(self, config=None):
         process = TumorProcess()
         return process.initial_state(config)
 
+    def initialize_processes(self, config):
+        self.tumor_process = TumorProcess(config['tumor'])
+        self.local_field = LocalField()
+        self.delay_trigger = DelayTrigger()
+
+        if self.config['reuse_processes']:
+            self.processes_initialized = True
+
     def generate_processes(self, config):
+        if not self.processes_initialized:
+            self.initialize_processes(config)
+
         daughter_path = config['daughter_path']
         agent_id = config['agent_id']
 
@@ -87,11 +100,11 @@ class TumorAgent(Composer):
             'agent_id': agent_id}
 
         return {
-            'tumor': TumorProcess(config['tumor']),
-            'local_field': LocalField(),
+            'tumor': self.tumor_process,
+            'local_field': self.local_field,
             'division': MetaDivision(meta_division_config),
             'death': Remove(death_config),
-            'trigger_delay': DelayTrigger(),
+            'trigger_delay': self.delay_trigger,
         }
 
     def generate_topology(self, config):
