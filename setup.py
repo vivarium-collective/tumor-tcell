@@ -30,4 +30,5 @@ setup(
     install_requires=[
         'vivarium-core>=0.2.9',
         'vivarium-multibody==0.0.6',
+        'tqdm',
         'pymunk'])
