@@ -8,7 +8,7 @@ with open("README.md", 'r') as readme:
 
 setup(
     name='tumor-tcell',
-    version='0.0.21',
+    version='0.0.26',
     packages=[
         'tumor_tcell',
         'tumor_tcell.composites',
@@ -28,6 +28,6 @@ setup(
     package_data={},
     include_package_data=True,
     install_requires=[
-        'vivarium-core>=0.2.2',
+        'vivarium-core>=0.2.9',
         'vivarium-multibody==0.0.6',
         'pymunk'])

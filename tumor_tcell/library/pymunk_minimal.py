@@ -80,13 +80,17 @@ class PymunkMinimal(object):
         for cell_id, specs in initial_cells.items():
             self.add_body_from_center(cell_id, specs)
 
-
     def run(self, timestep):
         if self.physics_dt > timestep:
             print('timestep skipped by pymunk_multibody: {}'.format(timestep))
             return
-        self.space.step(timestep)
 
+        time = 0
+        while time < timestep:
+            time += self.physics_dt
+
+            # run for a physics timestep
+            self.space.step(self.physics_dt)
 
     def add_barriers(self, bounds, barriers):
         """ Create static barriers """

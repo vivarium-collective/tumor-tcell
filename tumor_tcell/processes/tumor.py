@@ -61,7 +61,7 @@ class TumorProcess(Process):
         'cytotoxic_packet_threshold': 128 * 100,  # need at least 128 packets for death (multiply by 10 for T cells)
 
         # division rate
-        'PDL1n_growth': 0.95,  # probability of division 24 hr (Eden, 2011)
+        'PDL1n_growth': 0.6,  # probability of division 24 hr (Eden, 2011)
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # cell_state transition
@@ -69,7 +69,7 @@ class TumorProcess(Process):
         'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
         
         # migration
-        'tumor_migration': 0.25,  # um/minute (Weigelin 2012)
+        #'tumor_migration': 0.25,  # um/minute (Weigelin 2012) #set to 0 for now because smaller than T cells
 
         #IFNg Internalization max rate
         'Max_IFNg_internalization': 21/60, #number of IFNg 1250 molecules/cell/hr degraded conv to seconds
@@ -281,12 +281,11 @@ class TumorProcess(Process):
                 'MHCI': MHCI})
 
         elif new_cell_state == 'PDL1n':
-            pass
+            # degrade IFNg  # rates are determined above
+            IFNg_degrade = self.parameters['Max_IFNg_internalization'] * timestep
+            update['boundary'].update({
+                'exchange': {'IFNg': -int(IFNg_degrade)}})
 
-        # produce IFNg  # rates are determined above
-        IFNg_degrade = self.parameters['Max_IFNg_internalization']*timestep
-        update['boundary'].update({
-            'exchange': {'IFNg': -int(IFNg_degrade)}})
 
 
         return update
