@@ -421,7 +421,7 @@ class TCellProcess(Process):
                     'exchange': {'IFNg': int(IFNg)}})
 
             # Reset the velocity timer after refractory period
-            if velocity_timer == self.parameters['migration_refractory_time']:
+            if velocity_timer >= self.parameters['migration_refractory_time']:
                 update['internal'].update({
                     'velocity_timer': -self.parameters['migration_refractory_time']})
             elif velocity_timer > self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']:
@@ -480,7 +480,7 @@ class TCellProcess(Process):
                     'exchange': {'IFNg': int(IFNg)}})
 
             # Reset the velocity timer after refractory period
-            if velocity_timer == self.parameters['migration_refractory_time']:
+            if velocity_timer >= self.parameters['migration_refractory_time']:
                 update['internal'].update({
                     'velocity_timer': -self.parameters['migration_refractory_time']})
             elif velocity_timer > self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']:
