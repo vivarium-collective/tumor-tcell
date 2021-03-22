@@ -38,11 +38,13 @@ TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
 
 
-def get_tcells(number=1, state_per=0.5):
+def get_tcells(number=1, state_per=0.8):
     return {
     '{}_{}'.format(TCELL_ID, n): {
         'type': 'tcell',
         'cell_state': 'PD1n' if random.uniform(0, 1) < state_per else 'PD1p',
+        'TCR_timer': random.uniform(0, 5400),
+        'velocity_timer': random.uniform(0, 240),
         'velocity': 10.0 * units.um/units.min,
         'diameter': 5 * units.um,
     } for n in range(number)}
@@ -78,7 +80,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=40000,
+    total_time=50000,
     sim_step=60 * TIMESTEP,
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
@@ -137,7 +139,9 @@ def tumor_tcell_abm(
                 'diameter': state.get('diameter', 10 * units.um),
                 'velocity': state.get('velocity', 0.0 * units.um/units.min)},
             'internal': {
-                'cell_state': state.get('cell_state', None)},
+                'cell_state': state.get('cell_state', None),
+                'velocity_timer': state.get('velocity_timer', 0),
+                'TCR_timer': state.get('TCR_timer', 0)},
             'neighbors': {
                 'present': {
                     'PD1': state.get('PD1', None),
