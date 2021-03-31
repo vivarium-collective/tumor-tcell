@@ -81,7 +81,7 @@ def tumor_tcell_abm(
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
     total_time=50000,
-    sim_step=60 * TIMESTEP,
+    sim_step=1 * TIMESTEP,
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
     emit_step=None,
@@ -181,13 +181,14 @@ def tumor_tcell_abm(
     experiment = Experiment(experiment_config)
 
     # run simulation and terminate upon reaching total_time or halt_threshold
-    time = 0
     clock_start = clock.time()
-    n_cells = len(experiment.state.get_value()['agents'])
-    for _ in tqdm(range(0, total_time, sim_step)):
+    for time in tqdm(range(0, total_time, sim_step)):
         n_agents = len(experiment.state.get_value()['agents'])
         if n_agents < halt_threshold:
             experiment.update(sim_step)
+        else:
+            print(f'halt threshold of {halt_threshold} reached at time = {time}')
+            continue
 
     # print runtime and finalize
     clock_finish = clock.time() - clock_start
@@ -197,6 +198,23 @@ def tumor_tcell_abm(
     # return time
     data = experiment.emitter.get_data_deserialized()
     return data
+
+
+FULL_BOUNDS = [750*units.um, 750*units.um]
+def full_experiment():
+    return tumor_tcell_abm(
+        # tumors=get_tumors(number=3500),
+        # tcells=get_tcells(number=30),
+        # total_time=259200,
+        tumors=get_tumors(number=350),
+        tcells=get_tcells(number=30),
+        total_time=10*TIMESTEP,
+        bounds=FULL_BOUNDS,
+        n_bins=[75, 75],
+        halt_threshold=1000,
+        emitter='database',
+        # parallel=True,
+    )
 
 
 MEDIUM_BOUNDS = [30*units.um, 30*units.um]
@@ -226,6 +244,11 @@ def plots_suite_small_bounds(
 
 def plots_suite_medium_bounds(
         data, out_dir=None, bounds=MEDIUM_BOUNDS):
+    return plots_suite(data, out_dir, bounds)
+
+
+def plots_suite_full_bounds(
+        data, out_dir=None, bounds=FULL_BOUNDS):
     return plots_suite(data, out_dir, bounds)
 
 
@@ -284,11 +307,13 @@ experiments_library = {
     '1': tumor_tcell_abm,
     '2': small_experiment,
     '3': medium_experiment,
+    '4': full_experiment,
 }
 plots_library = {
     '1': plots_suite,
     '2': plots_suite_small_bounds,
     '3': plots_suite_medium_bounds,
+    '4': plots_suite_full_bounds,
 }
 workflow_library = {
     '1': {
@@ -305,6 +330,11 @@ workflow_library = {
         'name': 'medium_experiment',
         'experiment': '3',
         'plots': ['3'],
+    },
+    '4': {
+        'name': 'full_experiment',
+        'experiment': '4',
+        'plots': ['4'],
     },
 }
 
