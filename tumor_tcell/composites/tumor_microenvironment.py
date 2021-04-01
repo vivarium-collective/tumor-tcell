@@ -18,7 +18,6 @@ from vivarium.library.units import units, remove_units
 # processes
 from tumor_tcell.processes.neighbors import Neighbors
 from tumor_tcell.processes.fields import Fields
-from tumor_tcell.processes.deathlogger import DeathLogger
 
 # plots
 from tumor_tcell.plots.snapshots import plot_snapshots
@@ -42,7 +41,7 @@ class TumorMicroEnvironment(Composer):
     }
 
     def __init__(self, config=None):
-        super(TumorMicroEnvironment, self).__init__(config)
+        super().__init__(config)
 
     def initial_state(self, config=None):
         diffusion_field = Fields(self.config['diffusion_field'])
@@ -53,13 +52,11 @@ class TumorMicroEnvironment(Composer):
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
         diffusion_field = Fields(config['diffusion_field'])
-        logger = DeathLogger()
 
         # make dictionary of processes
         return {
             'neighbors_multibody': neighbors_multibody,
             'diffusion_field': diffusion_field,
-            'death_log': logger,
         }
 
     def generate_topology(self, config):
@@ -72,10 +69,6 @@ class TumorMicroEnvironment(Composer):
                 'fields': ('fields',),
                 'dimensions': ('dimensions',),
             },
-            'death_log': {
-                'source': ('agents',),
-                'log': ('log',),
-            }
         }
 
 

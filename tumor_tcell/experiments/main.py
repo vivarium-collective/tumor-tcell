@@ -27,6 +27,7 @@ from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, ge
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
+from tumor_tcell.composites.death_logger import DeathLogger
 
 # global parameters
 TIMESTEP = 60
@@ -81,7 +82,7 @@ def tumor_tcell_abm(
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
     total_time=50000,
-    sim_step=1 * TIMESTEP,
+    sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
     emit_step=None,
@@ -114,9 +115,12 @@ def tumor_tcell_abm(
     t_cell_composer = TCellAgent(t_cell_config)
     tumor_composer = TumorAgent(tumor_config)
     environment_composer = TumorMicroEnvironment(environment_config)
+    logger_composer = DeathLogger()
 
-    # initialize the composite with the environment
-    composite_model = environment_composer.generate()
+    # initialize the composite, and add the environment
+    composite_model = logger_composer.generate()
+    environment = environment_composer.generate()
+    composite_model.merge(composite=environment)
 
     # add tcells to the composite
     for agent_id in tcells.keys():
@@ -206,13 +210,16 @@ def full_experiment():
         # tumors=get_tumors(number=3500),
         # tcells=get_tcells(number=30),
         # total_time=259200,
-        tumors=get_tumors(number=350),
-        tcells=get_tcells(number=30),
-        total_time=10*TIMESTEP,
+        tumors=get_tumors(number=100),
+        tcells=get_tcells(number=10),
+        total_time=3000,
+        time_step=TIMESTEP,
+        sim_step=10*TIMESTEP,
+        emit_step=500,
         bounds=FULL_BOUNDS,
         n_bins=[75, 75],
         halt_threshold=1000,
-        emitter='database',
+        # emitter='database',
         # parallel=True,
     )
 
@@ -270,6 +277,10 @@ def plots_suite(
                 agent_id: agent_data
                 for agent_id, agent_data in all_agents_data.items()
                 if TUMOR_ID in agent_id}}
+
+    # get the final death log
+    times_vector = list(data.keys())
+    death_log = data[times_vector[-1]]['log']
 
     # make multigen plot for tcells and tumors
     plot_settings = {
