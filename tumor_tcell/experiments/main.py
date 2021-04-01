@@ -110,12 +110,13 @@ def tumor_tcell_abm(
             'bounds': bounds,
             'n_bins': n_bins,
             'depth': depth}}
+    logger_config = {'time_step': time_step}
 
     # make the composers
     t_cell_composer = TCellAgent(t_cell_config)
     tumor_composer = TumorAgent(tumor_config)
     environment_composer = TumorMicroEnvironment(environment_config)
-    logger_composer = DeathLogger()
+    logger_composer = DeathLogger(logger_config)
 
     # initialize the composite, and add the environment
     composite_model = logger_composer.generate()
