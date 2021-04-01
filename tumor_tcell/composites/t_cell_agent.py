@@ -16,7 +16,6 @@ from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.remove import Remove
 from tumor_tcell.processes.t_cell import TCellProcess
 from tumor_tcell.processes.local_field import LocalField
-from tumor_tcell.processes.trigger_delay import DelayTrigger
 
 # directories/libraries
 from tumor_tcell.library.phylogeny import daughter_ab
@@ -79,7 +78,6 @@ class TCellAgent(Composer):
     def initialize_processes(self, config):
         self.tcell_process = TCellProcess(config['tcell'])
         self.local_field = LocalField()
-        # self.delay_trigger = DelayTrigger()
 
         if self.config['reuse_processes']:
             self.processes_initialized = True
@@ -108,7 +106,6 @@ class TCellAgent(Composer):
             'local_field': self.local_field,
             'division': MetaDivision(meta_division_config),
             'death': Remove(death_config),
-            # 'trigger_delay': self.delay_trigger,
         }
 
     def generate_topology(self, config):
@@ -140,10 +137,6 @@ class TCellAgent(Composer):
                 'trigger': death_trigger_path,
                 'agents': agents_path,
             },
-            # 'trigger_delay': {
-            #     'source': death_state_path,
-            #     'target': death_trigger_path,
-            # }
         }
 
 

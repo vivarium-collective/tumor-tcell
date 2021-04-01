@@ -18,7 +18,7 @@ from vivarium.library.units import units, remove_units
 # processes
 from tumor_tcell.processes.neighbors import Neighbors
 from tumor_tcell.processes.fields import Fields
-from tumor_tcell.processes.logger import Logger
+from tumor_tcell.processes.deathlogger import DeathLogger
 
 # plots
 from tumor_tcell.plots.snapshots import plot_snapshots
@@ -38,17 +38,6 @@ class TumorMicroEnvironment(Composer):
             'bounds': DEFAULT_BOUNDS
         },
         'diffusion_field': {},
-        'logger': {
-            'source_schema': {
-                '*': {
-                    'boundary': {
-                        'death': {
-                            '_default': False
-                        }
-                    }
-                }
-            }
-        },
         '_schema': {},
     }
 
@@ -64,7 +53,7 @@ class TumorMicroEnvironment(Composer):
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
         diffusion_field = Fields(config['diffusion_field'])
-        logger = Logger(config['logger'])
+        logger = DeathLogger()
 
         # make dictionary of processes
         return {
