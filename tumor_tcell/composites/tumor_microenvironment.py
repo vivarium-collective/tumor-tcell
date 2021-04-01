@@ -41,7 +41,7 @@ class TumorMicroEnvironment(Composer):
     }
 
     def __init__(self, config=None):
-        super(TumorMicroEnvironment, self).__init__(config)
+        super().__init__(config)
 
     def initial_state(self, config=None):
         diffusion_field = Fields(self.config['diffusion_field'])
@@ -68,7 +68,7 @@ class TumorMicroEnvironment(Composer):
                 'cells': ('agents',),
                 'fields': ('fields',),
                 'dimensions': ('dimensions',),
-            }
+            },
         }
 
 
