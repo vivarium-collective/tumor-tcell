@@ -13,9 +13,13 @@ from vivarium.processes.clock import Clock
 
 
 class DeathLogger(Composer):
+    defaults = {'time_step': 1}
+    def __init__(self, config=None):
+        super().__init__(config)
     def generate_processes(self, config):
         return {
-            'clock': Clock(),
+            'clock': Clock({
+                'time_step': config['time_step']}),
             'death_log': Logger()}
     def generate_topology(self, config):
         return {
