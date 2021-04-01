@@ -75,7 +75,7 @@ class TumorAgent(Composer):
     def initialize_processes(self, config):
         self.tumor_process = TumorProcess(config['tumor'])
         self.local_field = LocalField()
-        self.delay_trigger = DelayTrigger()
+        # self.delay_trigger = DelayTrigger()
 
         if self.config['reuse_processes']:
             self.processes_initialized = True
@@ -104,7 +104,7 @@ class TumorAgent(Composer):
             'local_field': self.local_field,
             'division': MetaDivision(meta_division_config),
             'death': Remove(death_config),
-            'trigger_delay': self.delay_trigger,
+            # 'trigger_delay': self.delay_trigger,
         }
 
     def generate_topology(self, config):
@@ -112,7 +112,7 @@ class TumorAgent(Composer):
         agents_path = config['agents_path']
         field_path = config['field_path']
         dimensions_path = config['dimensions_path']
-        death_state_path = boundary_path + ('death',)
+        # death_state_path = boundary_path + ('death',)
         death_trigger_path = boundary_path + ('death_trigger',)
 
         return {
@@ -136,10 +136,10 @@ class TumorAgent(Composer):
                 'trigger': death_trigger_path,
                 'agents': agents_path,
             },
-            'trigger_delay': {
-                'source': death_state_path,
-                'target': death_trigger_path,
-            }
+            # 'trigger_delay': {
+            #     'source': death_state_path,
+            #     'target': death_trigger_path,
+            # }
         }
 
 
