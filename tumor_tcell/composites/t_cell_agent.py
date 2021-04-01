@@ -113,8 +113,6 @@ class TCellAgent(Composer):
         agents_path = config['agents_path']
         field_path = config['field_path']
         dimensions_path = config['dimensions_path']
-        # death_state_path = boundary_path + ('death',)
-        death_trigger_path = boundary_path + ('death_trigger',)
 
         return {
             't_cell': {
@@ -134,7 +132,7 @@ class TCellAgent(Composer):
                 'agents': agents_path,
             },
             'death': {
-                'trigger': death_trigger_path,
+                'trigger': boundary_path + ('death',),
                 'agents': agents_path,
             },
         }
