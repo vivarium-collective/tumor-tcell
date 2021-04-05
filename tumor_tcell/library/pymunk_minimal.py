@@ -51,6 +51,7 @@ class PymunkMinimal(object):
         'elasticity': 0.9,
         'friction': 0.9,
         # configured parameters
+        'jitter_force': 0.0,
         'physics_dt': 0.01,
         'bounds': [20, 20],
         'barriers': False,
@@ -66,6 +67,7 @@ class PymunkMinimal(object):
         self.physics_dt = config.get('physics_dt', self.defaults['physics_dt'])
         self.cell_shape = config.get('cell_shape', self.defaults['cell_shape'])
         self.bounds = config.get('bounds', self.defaults['bounds'])
+        self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
 
         # initialize pymunk space
         self.space = pymunk.Space()
@@ -89,8 +91,22 @@ class PymunkMinimal(object):
         while time < timestep:
             time += self.physics_dt
 
+            # apply forces
+            if self.jitter_force > 0:
+                for body in self.space.bodies:
+                    self.apply_jitter_force(body)
+
             # run for a physics timestep
             self.space.step(self.physics_dt)
+
+    def apply_jitter_force(self, body):
+        jitter_location = random_body_position(body)
+        jitter_force = [
+            random.normalvariate(0, self.jitter_force),
+            random.normalvariate(0, self.jitter_force)]
+        body.apply_impulse_at_local_point(
+            jitter_force,
+            jitter_location)
 
     def add_barriers(self, bounds, barriers):
         """ Create static barriers """

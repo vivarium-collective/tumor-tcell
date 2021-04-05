@@ -96,7 +96,7 @@ class Neighbors(Process):
     defaults = {
         'time_step': 2,
         'cells': {},
-        'jitter_force': 1e-3,
+        'jitter_force': 1e-6,
         'bounds': remove_units(DEFAULT_BOUNDS),
         'length_unit': DEFAULT_LENGTH_UNIT,
         'mass_unit': DEFAULT_MASS_UNIT,
@@ -106,7 +106,7 @@ class Neighbors(Process):
     }
 
     def __init__(self, parameters=None):
-        super(Neighbors, self).__init__(parameters)
+        super().__init__(parameters)
 
         self.length_unit = self.parameters['length_unit']
         self.mass_unit = self.parameters['mass_unit']
@@ -118,6 +118,7 @@ class Neighbors(Process):
         time_step = self.parameters['time_step']
         multibody_config = {
             'cell_shape': 'circle',
+            'jitter_force': self.parameters['jitter_force'],
             'bounds': [
                 b.to(self.length_unit).magnitude
                 for b in parameters['bounds']],
@@ -345,8 +346,8 @@ DEFAULT_DIAMETER = 7.5 * DEFAULT_LENGTH_UNIT
 def single_cell_config(config):
     # cell dimensions
     diameter = DEFAULT_DIAMETER
-    velocity = 10 * DEFAULT_VELOCITY_UNIT  # 10/60 * DEFAULT_VELOCITY_UNIT
     volume = sphere_volume_from_diameter(diameter)
+    velocity = config.get('velocity', 1 * DEFAULT_VELOCITY_UNIT)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
     if location:
@@ -475,9 +476,10 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
         'total_time': 500}
     gd_config = {
         'animate': True,
-        'jitter_force': 1e0,
+        'jitter_force': 1e-4,
         'bounds': bounds}
     body_config = {
+        'velocity': 5 * DEFAULT_VELOCITY_UNIT,
         'bounds': bounds,
         'cell_ids': cell_ids}
     gd_config.update(cell_body_config(body_config))
