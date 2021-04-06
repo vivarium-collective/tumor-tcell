@@ -90,7 +90,7 @@ def tumor_tcell_abm(
     parallel=False,
 ):
     initial_env_config = {'uniform': 0.0}
-    jitter_force = 1e-6
+    jitter_force = 0
     t_cell_config = {
         'tcell': {'_parallel': parallel},
         'time_step': time_step}
