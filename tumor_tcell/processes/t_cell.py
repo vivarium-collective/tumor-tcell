@@ -39,7 +39,7 @@ class TCellProcess(Process):
         - PD1n (PD1-)
 
     Expected Behavior
-        - approx 3 contacts required for cell death, 1-4 cells killed/day
+
     """
 
     name = NAME
@@ -48,36 +48,35 @@ class TCellProcess(Process):
         'diameter': 7.5 * units.um,  # 0.01 * units.mm,
         'mass': 2 * units.ng,
         'initial_PD1n': 0.8,
-        'transition_PD1n_to_PD1p_10days': 0.95,  # nearly 95% by 10 days (Wherry 2007)
-        'cellstate_transition_time': 259200,  # extended contact with tumor cells expressing MHCI for more
-               # than 3 days (expected to be 100% in tumor/chronic infection after 1 week) (Schietinger 2016)
+        'refractory_count_threshold': 3,  # assuming that cells have been stimulated twice already in culture
+        # and need 5 stimulations to become exhausted
 
         #Time before TCR downregulation
         'activation_time': 21600,  # activation enables 6 hours of activation and production of cytokines
         # before enters refractory state due to downregulation of TCR (Salerno, 2017), (Gallegos, 2016)
-        'activation_refractory_time': 86400,  # refractory period of 18 hours (plus original 6 h activation time)
+        'activation_refractory_time': 43200,  # refractory period of 18 hours (plus original 6 h activation time)
         # after activation period with limited ability to produce cytokines and cytotoxic packets and to
         # interact with MHCI (Salerno, 2017), (Gallegos, 2016)
         'TCR_downregulated': 0, #reduce TCR to 0 if activated more than 6 hours for another 18 hours
         'TCR_upregulated': 50000,  # reduce TCR to 0 if activated more than 6 hours for another 18 hours
 
         # death rates (Petrovas 2007)
-        'PDL1_critical_number': 1e4,  # threshold number of PDL1 molecules/cell to trigger death
-        'death_PD1p_14hr': 0.7,  # 0.7 / 14 hrs
-        'death_PD1n_14hr': 0.2,  # 0.2 / 14 hrs
-        'death_PD1p_next_to_PDL1p_14hr': 0.95,  # 0.95 / 14 hrs
+        'PDL1_critical_number': 1e4,  # threshold number of PDL1 molecules/cell to induce behavior
+        'death_PD1p_14hr': 0.35,  # 0.7 / 14 hrs
+        'death_PD1n_14hr': 0.1,  # 0.2 / 14 hrs
+        'death_PD1p_next_to_PDL1p_14hr': 0.475,  # 0.95 / 14 hrs
 
         # production rates
         'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
 
         'PD1p_IFNg_production': 1.62e3/3600,  # molecule counts/cell/second
-        'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
+        'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell
 
         # division rate (Petrovas 2007, Vodnala 2019)
-        'PD1n_growth_8hr': 0.90,  # 90% division in 28 hours
-        'PD1p_growth_8hr': 0.20,  # 20% division in 28 hours
+        'PD1n_growth_28hr': 0.5,  # 100% division in 28 hours
+        'PD1p_growth_28hr': 0.10,  # 20% division in 28 hours
 
         # migration
         'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
@@ -93,7 +92,7 @@ class TCellProcess(Process):
             # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
         # linear production over 4-6 hr up to a total of 102+-20 granules # (Betts, 2004), (Zhang, 2006)
         'cytotoxic_packet_production': 40/60,  # number of packets/min produced in T cells ##converted to packets/seconds
-        'PD1n_cytotoxic_packets_max': 10000, #max number able to produce
+        'PD1n_cytotoxic_packets_max': 10000,  #max number able to produce
 
         # 1:10 fold reduction of PD1+ T cell cytotoxic production (Zelinskyy, 2005)
         'PD1p_cytotoxic_packets_max': 1000,  # max number able to produce
@@ -103,7 +102,7 @@ class TCellProcess(Process):
         'MHCIn_reduction_production': 4,
 
         #Cytotoxic packet transfer rate for a minute timeperiod
-        'cytotoxic_transfer_rate':400, #number of packets/min that can be transferred to tumor cells
+        'cytotoxic_transfer_rate': 400,  #number of packets/min that can be transferred to tumor cells
 
         # settings
         'self_path': tuple(),
@@ -166,9 +165,14 @@ class TCellProcess(Process):
                     #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'
                 },
+                'refractory_count': {
+                    '_default': 0,
+                    #'_emit': True, #true for monitoring behavior in process
+                    '_updater': 'accumulate'
+                },
                 'total_cytotoxic_packets': {
                     '_default': 0,
-                    #'_emit': False, #true for monitoring behavior in process
+                    #'_emit': True, #true for monitoring behavior in process
                     '_updater': 'accumulate'
                 },
                 'TCR_timer': {
@@ -209,11 +213,6 @@ class TCellProcess(Process):
                         '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
                     }},
-                'MHCI_timer': {
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'accumulate',
-                },  # affects transition rate to PD1+
             },
             'neighbors': {
                 'present': {
@@ -255,10 +254,10 @@ class TCellProcess(Process):
         cell_state = states['internal']['cell_state']
         PDL1 = states['neighbors']['accept']['PDL1']
         MHCI = states['neighbors']['accept']['MHCI']
-        MHCI_timer = states['boundary']['MHCI_timer']
         TCR_timer = states['internal']['TCR_timer']
         velocity_timer = states['internal']['velocity_timer']
         TCR = states['neighbors']['present']['TCR']
+        refractory_count = states['internal']['refractory_count']
 
         # death
         if cell_state == 'PD1n':
@@ -298,7 +297,7 @@ class TCellProcess(Process):
         # division
         if cell_state == 'PD1n':
             prob_divide = get_probability_timestep(
-                self.parameters['PD1n_growth_8hr'],
+                self.parameters['PD1n_growth_28hr'],
                 100800,  # 28 hours (28*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
@@ -311,7 +310,7 @@ class TCellProcess(Process):
 
         elif cell_state == 'PD1p':
             prob_divide = get_probability_timestep(
-                self.parameters['PD1p_growth_8hr'],
+                self.parameters['PD1p_growth_28hr'],
                 100800,  # 28 hours (28*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
@@ -347,30 +346,24 @@ class TCellProcess(Process):
         if TCR_timer > self.parameters['activation_refractory_time']:
             TCR = self.parameters['TCR_upregulated']
             update['internal'].update({
-                'TCR_timer': -self.parameters['activation_refractory_time']})
+                'TCR_timer': -self.parameters['activation_refractory_time'],
+                'total_cytotoxic_packets': -states['internal']['total_cytotoxic_packets']})
             update['neighbors']['present'].update({
                 'TCR': TCR})
+            refractory_count_add = 1
+            update['internal'].update({
+                'refractory_count': refractory_count_add})
 
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PD1n':
-            if MHCI_timer > self.parameters['cellstate_transition_time']:
+            if refractory_count > self.parameters['refractory_count_threshold']:
                 #print('PD1n become PD1p!')
                 new_cell_state = 'PD1p'
                 cell_state_count = 1
                 update['internal'].update({
                     'cell_state': new_cell_state,
-                    'cell_state_count': cell_state_count})
-
-            else:
-                cell_state_count = 0
-                if MHCI > self.parameters['ligand_threshold']:
-                    update['internal'].update({
-                        'cell_state': new_cell_state,
-                        'cell_state_count': cell_state_count})
-                    update['boundary'].update({
-                        'MHCI_timer': timestep})
-
+                    'cell_state_count': cell_state_count,})
 
         elif cell_state == 'PD1p':
             cell_state_count = 0
@@ -503,9 +496,6 @@ class TCellProcess(Process):
             'cytotoxic_packets': -cytotoxic_transfer})
         update['neighbors']['transfer'].update({
             'cytotoxic_packets': cytotoxic_transfer})
-
-        # if 'exchange' in update['boundary'] and "IFNg" in update['boundary']['exchange']:
-        #     import ipdb; ipdb.set_trace()
 
         return update
 
