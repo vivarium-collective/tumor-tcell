@@ -90,7 +90,7 @@ def tumor_tcell_abm(
     parallel=False,
 ):
     initial_env_config = {'uniform': 0.0}
-
+    jitter_force = 1e-6
     t_cell_config = {
         'tcell': {'_parallel': parallel},
         'time_step': time_step}
@@ -102,7 +102,7 @@ def tumor_tcell_abm(
             '_parallel': parallel,
             'time_step': time_step,
             'bounds': bounds,
-            'jitter_force': 5e-4},
+            'jitter_force': jitter_force},
         'diffusion_field': {
             '_parallel': parallel,
             'time_step': time_step,
@@ -211,16 +211,16 @@ def full_experiment():
         # tumors=get_tumors(number=3500),
         # tcells=get_tcells(number=30),
         # total_time=259200,
-        tumors=get_tumors(number=100),
+        tumors=get_tumors(number=1000),
         tcells=get_tcells(number=10),
-        total_time=3000,
+        total_time=259200,
         time_step=TIMESTEP,
-        sim_step=10*TIMESTEP,
-        emit_step=500,
+        sim_step=100*TIMESTEP,
+        emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
         n_bins=[75, 75],
-        halt_threshold=1000,
-        # emitter='database',
+        halt_threshold=6000,
+        emitter='database',
         # parallel=True,
     )
 
