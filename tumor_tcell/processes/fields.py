@@ -56,7 +56,7 @@ class Fields(Process):
             'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day #(Liao, 2014)
         },
         'decay': {
-            'IFNg': np.log(2)/(7*60*60),  # 7 hr half-life converted to exponential decay rate #(Kurzrock, 1985)
+            'IFNg': np.log(2)/(4.5*60*60),  # 7 hr half-life converted to exponential decay rate #(Kurzrock, 1985)
         },
         #If we want to add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
     }

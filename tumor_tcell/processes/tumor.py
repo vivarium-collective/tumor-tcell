@@ -35,18 +35,6 @@ class TumorProcess(Process):
         - PDL1p (PDL1+, MHCI+)
         - PDL1n (PDL1-, MHCI-)
 
-    Required parameters:
-        -
-
-    Target behavior:
-
-        # death by cytotoxic packets from T cells
-        # should take about 120 min from start of T cell contact and about 2-3 contacts
-        # need to multiply total number by 10 because multiplied T cell number by this amount
-        # number needed for death refs: (Verret, 1987), (Betts, 2004), (Zhang, 2006)
-
-    TODOs
-
     """
 
     name = NAME
@@ -54,7 +42,7 @@ class TumorProcess(Process):
         'time_step': TIMESTEP,
         'diameter': 15 * units.um, #  0.01 * units.mm,
         'mass': 8 * units.ng,
-        'initial_PDL1n': 1.0, #all start out this way based on data
+        'initial_PDL1n': 0.9, #most start out this way based on data
 
         # death rates
         'death_apoptosis': 0.5,  # negligible compared to growth/killing 0.95 by 5 day (Gong, 2017)
@@ -64,15 +52,18 @@ class TumorProcess(Process):
         'PDL1n_growth': 0.6,  # probability of division 24 hr (Eden, 2011)
         #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
-        # cell_state transition
-        'IFNg_threshold': 1,  #1 ng/mL
-        'cellstate_transition_time': 6*60*60,  # Need at least 6 hours for state transition to occur.
-        
         # migration
         #'tumor_migration': 0.25,  # um/minute (Weigelin 2012) #set to 0 for now because smaller than T cells
 
-        #IFNg Internalization max rate
+        #IFNg Internalization
         'Max_IFNg_internalization': 21/60, #number of IFNg 1250 molecules/cell/hr degraded conv to seconds
+        #volume to convert counts to available IFNg molecules able to be internalized based on the diffusion
+        # coefficient and timestep of 60s
+        'external_IFNg_available_volume': 8.24*10 ** -8, #* units.mL, # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
+        'Avagadro_num': 6.022*10 ** 14, #* units.count / units.nmol, #convert back from ng
+        'IFNg_MW': 17000, #* units.ng / units.nmol,
+        'IFNg_threshold': 15000, #calculated from home data of incubating 1 ng/mL for 20 mL and 20x10^6 cells and half-life
+        'reduction_IFNg_internalization': 2, #based on data from (Ersvaer, 2007) & (Darzi, 2017)
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4, #TODO ref
@@ -125,6 +116,11 @@ class TumorProcess(Process):
                     '_emit': True,
                     '_updater': 'set'
                 },
+                'IFNg': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'accumulate'
+                },
                 'cell_state_count': {
                     '_default': 0,
                     #'_emit': False, #true for monitoring behavior in process
@@ -155,11 +151,6 @@ class TumorProcess(Process):
                         # '_emit': False, #true for monitoring behavior in process
                         '_updater': 'accumulate',
                     }},
-                'IFNg_timer': {
-                    '_default': 0,
-                    '_emit': True, #true for monitoring behavior in process
-                    '_updater': 'accumulate',
-                },  # cytokine changes tumor phenotype
             },
             'neighbors': {
                 'present': {
@@ -199,8 +190,14 @@ class TumorProcess(Process):
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
         cytotoxic_packets = states['neighbors']['receive']['cytotoxic_packets']
-        IFNg = states['boundary']['external']['IFNg']
-        IFNg_timer = states['boundary']['IFNg_timer']
+        external_IFNg = states['boundary']['external']['IFNg'] #concentration
+        internal_IFNg = states['internal']['IFNg'] #counts
+        #IFNg_timer = states['boundary']['IFNg_timer']
+
+
+        #determine available IFNg
+        available_IFNg = external_IFNg * self.parameters['external_IFNg_available_volume'] \
+                         * self.parameters['Avagadro_num'] / self.parameters['IFNg_MW']
 
         # death by apoptosis
         prob_death = get_probability_timestep(
@@ -247,23 +244,13 @@ class TumorProcess(Process):
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PDL1n':
-            if IFNg >= self.parameters['IFNg_threshold']:
-                if IFNg_timer > self.parameters['cellstate_transition_time']:
-                    #print('PDL1n become PDL1p!')
-                    new_cell_state = 'PDL1p'
-                    cell_state_count = 1
-                    update.update({
-                        'internal': {
-                            'cell_state': new_cell_state,
-                            'cell_state_count': cell_state_count}})
-
-                else:
-                    cell_state_count = 0
-                    update.update({
-                        'boundary': {
-                            'IFNg_timer': timestep
-                        }
-                    })
+            if internal_IFNg >= self.parameters['IFNg_threshold']:
+                new_cell_state = 'PDL1p'
+                cell_state_count = 1
+                update.update({
+                    'internal': {
+                        'cell_state': new_cell_state,
+                        'cell_state_count': cell_state_count}})
 
         elif cell_state == 'PDL1p':
             cell_state_count = 0
@@ -280,12 +267,23 @@ class TumorProcess(Process):
                 'PDL1': PDL1,
                 'MHCI': MHCI})
 
-        elif new_cell_state == 'PDL1n':
-            # degrade IFNg  # rates are determined above
-            IFNg_degrade = self.parameters['Max_IFNg_internalization'] * timestep
-            update['boundary'].update({
-                'exchange': {'IFNg': -int(IFNg_degrade)}})
+            # degrade locally available IFNg in the environment
+            IFNg_degrade = min(int(self.parameters['Max_IFNg_internalization'] \
+                                   / self.parameters['reduction_IFNg_internalization'] * timestep), int(available_IFNg))
 
+            update['boundary'].update({
+                'exchange': {'IFNg': -IFNg_degrade}})
+            update['internal'].update({
+                'IFNg': IFNg_degrade})
+
+        elif new_cell_state == 'PDL1n':
+            #degrade locally available IFNg in the environment
+            IFNg_degrade = min(int(self.parameters['Max_IFNg_internalization'] * timestep), int(available_IFNg))
+
+            update['boundary'].update({
+                'exchange': {'IFNg': -IFNg_degrade}})
+            update['internal'].update({
+                'IFNg': IFNg_degrade})
 
 
         return update

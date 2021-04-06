@@ -47,7 +47,7 @@ def get_tcells(number=1, state_per=0.8):
         'TCR_timer': random.uniform(0, 5400),
         'velocity_timer': random.uniform(0, 240),
         'velocity': 10.0 * units.um/units.min,
-        'diameter': 5 * units.um,
+        'diameter': 7.5 * units.um,
     } for n in range(number)}
 
 
@@ -56,7 +56,7 @@ def get_tumors(number=1, state_per=0.5):
         '{}_{}'.format(TUMOR_ID, n): {
             'type': 'tumor',
             'cell_state': 'PDL1n' if random.uniform(0, 1) < state_per else 'PDL1p',
-            'diameter': 10 * units.um,
+            'diameter': 15 * units.um,
         } for n in range(number)}
 
 
