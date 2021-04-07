@@ -32,7 +32,7 @@ from tumor_tcell.composites.death_logger import DeathLogger
 # global parameters
 TIMESTEP = 60
 NBINS = [20, 20]
-DEPTH = 7  # um
+DEPTH = 15  # um
 BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
@@ -67,8 +67,8 @@ def random_location(bounds):
 
 
 # make defaults
-N_TUMORS = 150
-N_TCELLS = 10
+N_TUMORS = 120
+N_TCELLS = 9
 DEFAULT_TUMORS = get_tumors(number=N_TUMORS)
 DEFAULT_TCELLS = get_tcells(number=N_TCELLS)
 
@@ -81,7 +81,7 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     tumors=DEFAULT_TUMORS,
     tcells=DEFAULT_TCELLS,
-    total_time=50000,
+    total_time=70000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,

@@ -68,15 +68,14 @@ class TCellProcess(Process):
 
         # production rates
         'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
-
         'PD1p_IFNg_production': 1.62e3/3600,  # molecule counts/cell/second
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell
 
         # division rate (Petrovas 2007, Vodnala 2019)
-        'PD1n_growth_28hr': 0.5,  # 100% division in 28 hours
-        'PD1p_growth_28hr': 0.10,  # 20% division in 28 hours
+        'PD1n_growth_28hr': 0.75,  # 100% division in 28 hours
+        'PD1p_growth_28hr': 0.20,  # 20% division in 28 hours
 
         # migration
         'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
