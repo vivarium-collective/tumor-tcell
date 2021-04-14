@@ -74,8 +74,9 @@ class TCellProcess(Process):
         'ligand_threshold': 1e4,  # molecules/neighbor cell
 
         # division rate (Petrovas 2007, Vodnala 2019)
-        'PD1n_growth_28hr': 0.75,  # 100% division in 28 hours
+        'PD1n_growth_28hr': 0.90,  # 90% division in 28 hours
         'PD1p_growth_28hr': 0.20,  # 20% division in 28 hours
+        'PD1n_divide_threshold': 5, #threshold for division TODO - find lit value currently based on data
 
         # migration
         'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
@@ -146,7 +147,7 @@ class TCellProcess(Process):
                 'PD1n_divide_count': {
                     '_default': 0,
                     #'_emit': False, #true for monitoring behavior in process
-                    '_divider': 'zero',
+                    #'_divider': 'zero',
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
@@ -172,7 +173,8 @@ class TCellProcess(Process):
                 'total_cytotoxic_packets': {
                     '_default': 0,
                     #'_emit': True, #true for monitoring behavior in process
-                    '_updater': 'accumulate'
+                    '_updater': 'accumulate',
+                    '_divider': 'split',
                 },
                 'TCR_timer': {
                     '_default': 0,
@@ -194,7 +196,7 @@ class TCellProcess(Process):
                 },
                 'diameter': {
                     '_default': self.parameters['diameter'],
-                    '_divider': 'set',
+                    #'_divider': 'set',
                 },
                 'velocity': {
                     '_default': self.parameters['PD1n_migration'],
@@ -206,6 +208,7 @@ class TCellProcess(Process):
                         '_default': 0,  # counts
                         #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'accumulate',
+                        '_divider': 'split',
                     }},
                 'external': {
                     'IFNg': {
@@ -257,6 +260,7 @@ class TCellProcess(Process):
         velocity_timer = states['internal']['velocity_timer']
         TCR = states['neighbors']['present']['TCR']
         refractory_count = states['internal']['refractory_count']
+        PD1n_divide_counts = states['globals']['PD1n_divide_count']
 
         # death
         if cell_state == 'PD1n':
@@ -356,7 +360,8 @@ class TCellProcess(Process):
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PD1n':
-            if refractory_count > self.parameters['refractory_count_threshold']:
+            if refractory_count > self.parameters['refractory_count_threshold'] or\
+                    PD1n_divide_counts > self.parameters['PD1n_divide_threshold']:
                 #print('PD1n become PD1p!')
                 new_cell_state = 'PD1p'
                 cell_state_count = 1

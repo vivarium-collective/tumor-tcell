@@ -211,17 +211,17 @@ def full_experiment():
         # tumors=get_tumors(number=3500),
         # tcells=get_tcells(number=30),
         # total_time=259200,
-        tumors=get_tumors(number=1000),
-        tcells=get_tcells(number=10),
-        total_time=259200,
+        tumors=get_tumors(number=1200),
+        tcells=get_tcells(number=12),
+        total_time=25920,
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
         n_bins=[75, 75],
-        halt_threshold=6000,
+        halt_threshold=4000,
         emitter='database',
-        # parallel=True,
+        #parallel=True,
     )
 
 
@@ -232,7 +232,9 @@ def medium_experiment():
         tcells=get_tcells(number=3),
         total_time=50000,
         bounds=MEDIUM_BOUNDS,
-        n_bins=[3, 3])
+        n_bins=[3, 3],
+        emitter='database',
+    )
 
 
 SMALL_BOUNDS = [20*units.um, 20*units.um]

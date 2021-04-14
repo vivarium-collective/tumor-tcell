@@ -36,6 +36,16 @@ PI = math.pi
 
 
 # helper functions
+def daughter_locations(mother_location, mother_values):
+    mother_diameter = mother_values['diameter']
+    mother_x = mother_location[0]
+    mother_y = mother_location[1]
+    locations = []
+    for daughter in range(2):
+        location = [mother_x + random.gauss(0, 0.1)*mother_diameter, mother_y + random.gauss(0, 0.1)*mother_diameter]
+        locations.append(location)
+    return locations
+
 def sphere_volume_from_diameter(diameter):
     radius = diameter / 2
     volume = 4 / 3 * (PI * radius**3)
@@ -143,7 +153,12 @@ class Neighbors(Process):
                         '_default': [
                             0.5 * bound for bound in self.parameters['bounds']],
                         '_updater': 'set',
-                        '_divider': 'set'},
+                        '_divider': {
+                            'divider': daughter_locations,
+                            'topology': {
+                                'diameter': ('diameter',)
+                            },
+                        }},
                     'diameter': {
                         '_emit': True,
                         '_default': 1.0 * self.length_unit,

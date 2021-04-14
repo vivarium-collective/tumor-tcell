@@ -60,6 +60,9 @@ class TumorProcess(Process):
         #volume to convert counts to available IFNg molecules able to be internalized based on the diffusion
         # coefficient and timestep of 60s
         'external_IFNg_available_volume': 8.24*10 ** -8, #* units.mL, # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
+        #TODO - make this more general from timestep/diameter
+        #TODO - Use a global IFNg MW (also use in local fields)
+        #TODO - synchronize expected concentration units with local fields
         'Avagadro_num': 6.022*10 ** 14, #* units.count / units.nmol, #convert back from ng
         'IFNg_MW': 17000, #* units.ng / units.nmol,
         'IFNg_threshold': 15000, #calculated from home data of incubating 1 ng/mL for 20 mL and 20x10^6 cells and half-life
@@ -119,6 +122,7 @@ class TumorProcess(Process):
                 'IFNg': {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'split',
                     '_updater': 'accumulate'
                 },
                 'cell_state_count': {
@@ -182,6 +186,7 @@ class TumorProcess(Process):
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'accumulate',
+                        '_divider': 'split',
                     } #from T cells
                 }
             }
