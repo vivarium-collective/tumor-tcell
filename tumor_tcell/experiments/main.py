@@ -213,7 +213,7 @@ def full_experiment():
         # total_time=259200,
         tumors=get_tumors(number=1200),
         tcells=get_tcells(number=12),
-        total_time=25920,
+        total_time=259200,
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,

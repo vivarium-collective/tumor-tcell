@@ -1,7 +1,8 @@
 import argparse
 import os
-from vivarium.core.emitter import data_from_database,DatabaseEmitter
 import pickle
+from vivarium.core.emitter import data_from_database,DatabaseEmitter
+from vivarium.library.units import units, remove_units
 
 
 OUT_DIR = 'out/analysis/'
@@ -31,6 +32,13 @@ def access():
 def run_analysis(data, experiment_id='tumor_tcell'):
     experiment_out_dir = OUT_DIR + str(experiment_id)
     os.makedirs(experiment_out_dir, exist_ok=True)
+
+    for i in data.keys():
+        del data[i]['_id']
+        del data[i]['experiment_id']
+
+    data = remove_units(data)
+
     data_export = open(experiment_out_dir+'/data_export.pkl', 'wb')
     pickle.dump(data, data_export)
     data_export.close()
