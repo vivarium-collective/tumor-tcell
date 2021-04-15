@@ -178,12 +178,12 @@ class TCellProcess(Process):
                 },
                 'TCR_timer': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'accumulate',
                 },  # affects TCR expression
                 'velocity_timer': {
                     '_default': 0,
-                    '_emit': True,
+                    #'_emit': True,
                     '_updater': 'accumulate',
                 },  # affects dwell time at tumor
             },
