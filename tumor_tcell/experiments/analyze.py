@@ -1,8 +1,12 @@
 import argparse
 import os
 import pickle
-from vivarium.core.emitter import data_from_database,DatabaseEmitter
-from vivarium.library.units import units, remove_units
+from vivarium.core.emitter import (
+    data_from_database,
+    DatabaseEmitter,
+    remove_units, deserialize_value
+)
+#from vivarium.library.units import units, remove_units
 
 
 OUT_DIR = 'out/analysis/'
@@ -37,6 +41,7 @@ def run_analysis(data, experiment_id='tumor_tcell'):
         del data[i]['_id']
         del data[i]['experiment_id']
 
+    data = deserialize_value(data)
     data = remove_units(data)
 
     data_export = open(experiment_out_dir+'/data_export.pkl', 'wb')
