@@ -60,7 +60,13 @@ def get_tumors(number=1, state_per=0.5):
         } for n in range(number)}
 
 
-def random_location(bounds):
+def random_location(bounds, distance_from_center=None):
+    if distance_from_center:
+        center_x = bounds[0]/2
+        center_y = bounds[1]/2
+        return [
+            random.uniform(center_x-distance_from_center, center_x+distance_from_center),
+            random.uniform(center_y-distance_from_center, center_y+distance_from_center)]
     return [
         random.uniform(0, bounds[0]),
         random.uniform(0, bounds[1])]
@@ -88,6 +94,7 @@ def tumor_tcell_abm(
     emit_step=None,
     emitter='timeseries',
     parallel=False,
+    tumors_distance=None,
 ):
     initial_env_config = {'uniform': 0.0}
     jitter_force = 0
@@ -158,7 +165,8 @@ def tumor_tcell_abm(
             'internal': {
                 'cell_state': state.get('cell_state', None)},
             'boundary': {
-                'location': state.get('location', random_location(bounds)),
+                'location': state.get('location', random_location(
+                    bounds, distance_from_center=tumors_distance)),
                 'diameter': state.get('diameter', 20 * units.um),
                 'velocity': state.get('velocity', 0.0 * units.um/units.min)},
             'neighbors': {
@@ -205,7 +213,7 @@ def tumor_tcell_abm(
     return data
 
 
-FULL_BOUNDS = [750*units.um, 750*units.um]
+FULL_BOUNDS = [1200*units.um, 1200*units.um]
 def full_experiment():
     return tumor_tcell_abm(
         # tumors=get_tumors(number=3500),
@@ -218,14 +226,15 @@ def full_experiment():
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
-        n_bins=[75, 75],
-        halt_threshold=4000,
+        n_bins=[120, 120], #10 um bin size
+        halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
         emitter='database',
+        tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
         #parallel=True,
     )
 
 
-MEDIUM_BOUNDS = [30*units.um, 30*units.um]
+MEDIUM_BOUNDS = [90*units.um, 90*units.um]
 def medium_experiment():
     return tumor_tcell_abm(
         tumors=get_tumors(number=3),
@@ -234,6 +243,7 @@ def medium_experiment():
         bounds=MEDIUM_BOUNDS,
         n_bins=[3, 3],
         emitter='database',
+        tumors_distance=15 * units.um,
     )
 
 

@@ -158,7 +158,8 @@ class Neighbors(Process):
                             'topology': {
                                 'diameter': ('diameter',)
                             },
-                        }},
+                        }
+                    },
                     'diameter': {
                         '_emit': True,
                         '_default': 1.0 * self.length_unit,

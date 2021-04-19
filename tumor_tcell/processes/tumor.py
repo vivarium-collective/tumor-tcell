@@ -172,7 +172,6 @@ class TumorProcess(Process):
                 'accept': {
                     'PD1': {
                         '_default': 0,
-                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'set',
                     },
                     'TCR': {
@@ -305,27 +304,27 @@ def get_timeline(
         (interval * 0 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 0.0,
             ('boundary', 'external', 'IFNg'): 0.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 0.0,
+            ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
             ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 2000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 0.0,
+            ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 3000.0,
             ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 4000.0,
             ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 7000.0,
@@ -335,17 +334,17 @@ def get_timeline(
         (interval * 6 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 10000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 15000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 16000.0,
             ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
-            ('neighbors', 'accept', 'PD1'): 5e4,
+            ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),
     ]
@@ -387,9 +386,50 @@ def test_batch_tumor(
     timeline=None,
     out_dir='out'):
 
+    override_schema = {
+       '_schema': {
+          'internal': {
+              'cell_state_count': {
+                  '_emit': True
+              },
+              'cell_state': {
+                  '_emit': False
+              },
+
+          },
+          'globals': {
+                'death': {
+                   '_emit': True
+               }
+          },
+          'globals': {
+               'death': {
+                   '_emit': False
+               }
+          },
+          'neighbors': {
+               'present': {
+                   'PDL1': {
+                       '_emit': True
+                   },
+                   'MHCI': {
+                       '_emit': True
+                   },
+               },
+              'accept': {
+                  'TCR': {
+                      '_emit': False
+                  },
+                },
+          },
+       }
+    }
+
+
+
     combined_raw_data = {}
     for single_idx in range(batch_size):
-        Tumor_process = TumorProcess({})
+        Tumor_process = TumorProcess(override_schema)
         if timeline is not None:
             sim_settings = {
                 'timeline': {
