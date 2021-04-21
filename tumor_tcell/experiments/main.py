@@ -95,6 +95,7 @@ def tumor_tcell_abm(
     emitter='timeseries',
     parallel=False,
     tumors_distance=None,
+    tcell_distance=None,
 ):
     initial_env_config = {'uniform': 0.0}
     jitter_force = 0
@@ -147,7 +148,8 @@ def tumor_tcell_abm(
     initial_t_cells = {
         agent_id: {
             'boundary': {
-                'location': state.get('location', random_location(bounds)),
+                'location': state.get('location', random_location(
+                    bounds, distance_from_center=tcell_distance)),
                 'diameter': state.get('diameter', 10 * units.um),
                 'velocity': state.get('velocity', 0.0 * units.um/units.min)},
             'internal': {
@@ -230,6 +232,7 @@ def full_experiment():
         halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
+        tcell_distance=200*units.um, #in or out of the tumor
         #parallel=True,
     )
 
@@ -243,7 +246,8 @@ def medium_experiment():
         bounds=MEDIUM_BOUNDS,
         n_bins=[3, 3],
         emitter='database',
-        tumors_distance=15 * units.um,
+        tumors_distance=25 * units.um,
+        tcell_distance=10 * units.um,
     )
 
 
