@@ -172,12 +172,10 @@ class TumorProcess(Process):
                 'accept': {
                     'PD1': {
                         '_default': 0,
-                        '_updater': 'set',
                     },
                     'TCR': {
                         '_default': 0,
                         '_emit': True,
-                        '_updater': 'set',
                     }
                 },
                 'receive': {

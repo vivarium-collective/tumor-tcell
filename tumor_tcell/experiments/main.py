@@ -13,6 +13,7 @@ $ python tumor_tcell/experiments/main.py [experiment_name]
 import random
 import time as clock
 from tqdm import tqdm
+import math
 
 # vivarium-core imports
 from vivarium.core.experiment import Experiment, timestamp
@@ -37,7 +38,7 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-
+PI = math.pi
 
 def get_tcells(number=1, state_per=0.8):
     return {
@@ -64,9 +65,11 @@ def random_location(bounds, distance_from_center=None):
     if distance_from_center:
         center_x = bounds[0]/2
         center_y = bounds[1]/2
-        return [
-            random.uniform(center_x-distance_from_center, center_x+distance_from_center),
-            random.uniform(center_y-distance_from_center, center_y+distance_from_center)]
+        angle = random.uniform(0, 2 * PI)
+        distance = distance_from_center * math.sqrt(random.random())
+        dy = math.sin(angle)*distance
+        dx = math.cos(angle)*distance
+        return [center_x+dx, center_y+dy]
     return [
         random.uniform(0, bounds[0]),
         random.uniform(0, bounds[1])]
@@ -232,7 +235,7 @@ def full_experiment():
         halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
-        tcell_distance=200*units.um, #in or out of the tumor
+        tcell_distance=None, #200*units.um, #in or out of the tumor
         #parallel=True,
     )
 

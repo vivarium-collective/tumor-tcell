@@ -162,11 +162,9 @@ class Neighbors(Process):
                     },
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0 * self.length_unit,
-                        '_updater': 'set'},
+                        '_default': 1.0 * self.length_unit,},
                     'mass': {
-                        '_default': 1.0 * self.mass_unit,
-                        '_updater': 'set'},
+                        '_default': 1.0 * self.mass_unit},
                     'velocity': {
                         '_default': 0.0 * self.velocity_unit,
                     }
