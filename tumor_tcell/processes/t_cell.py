@@ -25,14 +25,14 @@ CONCENTRATION_UNIT = 1
 def assymetric_division(mother_value, states):
     return [mother_value+1, mother_value]
 
+def set_velocity_default(mother_value, states):
+    return [10.0 * units.um/units.min, 10.0 * units.um/units.min]
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
     ''' transition probability as function of time '''
     rate = -math.log(1 - probability_parameter)
     timestep_fraction = timestep / timescale
     return 1 - math.exp(-rate * timestep_fraction)
-
-
 
 class TCellProcess(Process):
     """T-cell process with 2 states
@@ -89,7 +89,8 @@ class TCellProcess(Process):
         'PD1p_migration': 5.0 * units.um/units.min,   # um/minute (Boissonnas 2007)
         #'PD1p_migration_MHCIp_tumor': 1.0 * units.um/units.min,   # um/minute (Boissonnas 2007) - expected behavior
         'PD1p_migration_MHCIp_tumor_dwell_time': 10.0*60,  # minutes converted to seconds (Thibaut 2020)
-        'migration_refractory_time': 30.0 * 60,  # 5 minutes of refractory plus 25 minutes of dwell (Thibaut 2020)
+        'migration_refractory_time': 30.0 * 60,  # 5 minutes of refractory where does not interact with tumor
+        # plus 25 minutes of dwell (Thibaut 2020)
 
         # killing
             # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
@@ -207,6 +208,10 @@ class TCellProcess(Process):
                 'velocity': {
                     '_default': self.parameters['PD1n_migration'],
                     '_updater': 'set',
+                    '_divider': {
+                        'divider': set_velocity_default,
+                        'topology': {}
+                                 },
                     '_emit': True,
                 },
                 'exchange': {
@@ -238,12 +243,10 @@ class TCellProcess(Process):
                 'accept': {
                     'PDL1': {
                         '_default': 0,
-                        '_updater': 'set',
                         #'_emit': False, #true for monitoring behavior in process
                     },
                     'MHCI': {
                         '_default': 0,
-                        '_updater': 'set',
                         #'_emit': False, #true for monitoring behavior in process
                     }
                 },
@@ -428,7 +431,14 @@ class TCellProcess(Process):
             # Reset the velocity timer after refractory period
             if velocity_timer >= self.parameters['migration_refractory_time']:
                 update['internal'].update({
-                    'velocity_timer': -self.parameters['migration_refractory_time']})
+                    'velocity_timer': {
+                        '_updater': 'set',
+                        '_value': 0
+                    }
+                })
+                update['boundary'].update({
+                    'velocity': self.parameters['PD1n_migration']
+                })
             elif velocity_timer > self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1n_migration']})
@@ -487,7 +497,14 @@ class TCellProcess(Process):
             # Reset the velocity timer after refractory period
             if velocity_timer >= self.parameters['migration_refractory_time']:
                 update['internal'].update({
-                    'velocity_timer': -self.parameters['migration_refractory_time']})
+                    'velocity_timer': {
+                        '_updater': 'set',
+                        '_value': 0
+                    }
+                })
+                update['boundary'].update({
+                    'velocity': self.parameters['PD1p_migration']
+                })
             elif velocity_timer > self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1p_migration']})
@@ -497,7 +514,6 @@ class TCellProcess(Process):
             elif velocity_timer == 0:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1p_migration']})
-
 
         #keep cytotoxic transfer to max limit between tumor and T cells and remove from T cell total when transfer
         #max rate is 400 packets/minute
