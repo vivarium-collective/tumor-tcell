@@ -46,7 +46,7 @@ def get_tcells(number=1, state_per=0.8):
         'type': 'tcell',
         'cell_state': 'PD1n' if random.uniform(0, 1) < state_per else 'PD1p',
         'TCR_timer': random.uniform(0, 5400),
-        'velocity_timer': random.uniform(0, 240),
+        'velocity_timer': 0,
         'velocity': 10.0 * units.um/units.min,
         'diameter': 7.5 * units.um,
     } for n in range(number)}
@@ -153,8 +153,8 @@ def tumor_tcell_abm(
             'boundary': {
                 'location': state.get('location', random_location(
                     bounds, distance_from_center=tcell_distance)),
-                'diameter': state.get('diameter', 10 * units.um),
-                'velocity': state.get('velocity', 0.0 * units.um/units.min)},
+                'diameter': state.get('diameter', 7.5 * units.um),
+                'velocity': state.get('velocity', 10.0 * units.um/units.min)},
             'internal': {
                 'cell_state': state.get('cell_state', None),
                 'velocity_timer': state.get('velocity_timer', 0),
@@ -172,7 +172,7 @@ def tumor_tcell_abm(
             'boundary': {
                 'location': state.get('location', random_location(
                     bounds, distance_from_center=tumors_distance)),
-                'diameter': state.get('diameter', 20 * units.um),
+                'diameter': state.get('diameter', 15 * units.um),
                 'velocity': state.get('velocity', 0.0 * units.um/units.min)},
             'neighbors': {
                 'present': {
@@ -235,7 +235,7 @@ def full_experiment():
         halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
-        tcell_distance=None, #200*units.um, #in or out of the tumor
+        tcell_distance=None, #200*units.um, #in or out (None) of the tumor
         #parallel=True,
     )
 
