@@ -388,7 +388,7 @@ def test_batch_tumor(
        '_schema': {
           'internal': {
               'cell_state_count': {
-                  '_emit': True
+                  '_emit': False
               },
               'cell_state': {
                   '_emit': False
