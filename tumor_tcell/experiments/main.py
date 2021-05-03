@@ -40,7 +40,7 @@ TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
 PI = math.pi
 
-def get_tcells(number=1, state_per=0.8):
+def get_tcells(number=1, state_per=0.2):
     return {
     '{}_{}'.format(TCELL_ID, n): {
         'type': 'tcell',
@@ -88,8 +88,12 @@ def tumor_tcell_abm(
     n_bins=NBINS,
     depth=DEPTH,
     field_molecules=['IFNg'],
-    tumors=DEFAULT_TUMORS,
-    tcells=DEFAULT_TCELLS,
+    n_tumors=120,
+    n_tcells=9,
+    tumors=None,
+    tcells=None,
+    tumors_state_PDL1n=0.5,
+    tcells_state_PD1n=0.8,
     total_time=70000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
@@ -133,6 +137,13 @@ def tumor_tcell_abm(
     composite_model = logger_composer.generate()
     environment = environment_composer.generate()
     composite_model.merge(composite=environment)
+
+    #Make initial cells
+    if not tcells:
+        tcells=get_tcells(number=n_tcells, state_per=tcells_state_PD1n)
+
+    if not tumors:
+        tumors=get_tumors(number=n_tumors, state_per=tumors_state_PDL1n)
 
     # add tcells to the composite
     for agent_id in tcells.keys():
@@ -219,13 +230,20 @@ def tumor_tcell_abm(
 
 
 FULL_BOUNDS = [1200*units.um, 1200*units.um]
-def full_experiment():
+def full_experiment(
+        tcells_state_PD1n,
+        tumors_state_PDL1n,):
+
     return tumor_tcell_abm(
         # tumors=get_tumors(number=3500),
         # tcells=get_tcells(number=30),
         # total_time=259200,
-        tumors=get_tumors(number=1200),
-        tcells=get_tcells(number=12),
+        #tumors=get_tumors(number=1200),
+        #tcells=get_tcells(number=12),
+        n_tcells=12,
+        n_tumors=1200,
+        tcells_state_PD1n=tcells_state_PD1n,
+        tumors_state_PDL1n=tumors_state_PDL1n,
         total_time=259200,
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
@@ -235,8 +253,15 @@ def full_experiment():
         halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
-        tcell_distance=None, #200*units.um, #in or out (None) of the tumor
+        tcell_distance=None,#200*units.um, #in or out (None) of the tumor
         #parallel=True,
+    )
+
+#Change experimental PD1 and PDL1 levels for full experiment
+def full_experiment_2():
+    return full_experiment(
+        tcells_state_PD1n=0.2,
+        tumors_state_PDL1n=0.5,
     )
 
 
@@ -339,6 +364,7 @@ experiments_library = {
     '2': small_experiment,
     '3': medium_experiment,
     '4': full_experiment,
+    '5': full_experiment_2,
 }
 plots_library = {
     '1': plots_suite,
@@ -365,6 +391,11 @@ workflow_library = {
     '4': {
         'name': 'full_experiment',
         'experiment': '4',
+        'plots': ['4'],
+    },
+    '5': {
+        'name': 'full_experiment_2',
+        'experiment': '5',
         'plots': ['4'],
     },
 }
