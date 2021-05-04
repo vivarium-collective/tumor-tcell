@@ -24,7 +24,7 @@ class LocalField(Deriver):
     }
 
     def __init__(self, parameters=None):
-        super(LocalField, self).__init__(parameters)
+        super().__init__(parameters)
 
     def ports_schema(self):
          return {

@@ -108,14 +108,10 @@ class TCellProcess(Process):
 
         #Cytotoxic packet transfer rate for a minute timeperiod
         'cytotoxic_transfer_rate': 400,  #number of packets/min that can be transferred to tumor cells
-
-        # settings
-        'self_path': tuple(),
     }
 
     def __init__(self, parameters=None):
-        super(TCellProcess, self).__init__(parameters)
-        self.self_path = self.parameters['self_path']
+        super().__init__(parameters)
 
     def initial_state(self, config=None):
         if random.uniform(0, 1) < self.parameters['initial_PD1n']:
