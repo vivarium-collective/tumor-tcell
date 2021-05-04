@@ -71,14 +71,10 @@ class TumorProcess(Process):
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4, #TODO ref
         'PDL1p_MHCI_equilibrium': 5e4, #TODO ref
-
-        # settings
-        'self_path': tuple(),
     }
 
     def __init__(self, parameters=None):
-        super(TumorProcess, self).__init__(parameters)
-        self.self_path = self.parameters['self_path']
+        super().__init__(parameters)
 
     def initial_state(self, config=None):
         if random.uniform(0, 1) < self.parameters['initial_PDL1n']:

@@ -62,7 +62,7 @@ class Fields(Process):
     }
 
     def __init__(self, parameters=None):
-        super(Fields, self).__init__(parameters)
+        super().__init__(parameters)
 
         # initial state
         self.molecule_ids = self.parameters['molecules']

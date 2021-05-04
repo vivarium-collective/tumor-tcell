@@ -68,7 +68,7 @@ class TCellAgent(Composer):
     }
 
     def __init__(self, config):
-        super(TCellAgent, self).__init__(config)
+        super().__init__(config)
         self.processes_initialized = False
 
     def initial_state(self, config=None):
