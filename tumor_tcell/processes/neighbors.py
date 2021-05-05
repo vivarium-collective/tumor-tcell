@@ -410,8 +410,10 @@ def test_growth_division(config=default_gd_config, settings={}):
         ('cells',), {
             'boundary': {
                 'mass': {
+                    '_updater': 'set',
                     '_divider': 'split'},
                 'diameter': {
+                    '_updater': 'set',
                     '_divider': 'split'},
                 }})
     experiment.state.apply_subschemas()
@@ -487,7 +489,7 @@ def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors')
         'division_volume': sphere_volume_from_diameter(10 * DEFAULT_LENGTH_UNIT),
         'progress_bar': False,
         'display_info': False,
-        'total_time': 500}
+        'total_time': 100}
     gd_config = {
         'animate': True,
         'jitter_force': 1e-4,
