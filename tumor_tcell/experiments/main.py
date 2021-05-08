@@ -253,15 +253,15 @@ def full_experiment(
         halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
-        tcell_distance=None,#200*units.um, #in or out (None) of the tumor
+        tcell_distance=200*units.um, #in or out (None) of the tumor
         #parallel=True,
     )
 
 #Change experimental PD1 and PDL1 levels for full experiment
 def full_experiment_2():
     return full_experiment(
-        tcells_state_PD1n=0.2,
-        tumors_state_PDL1n=0.5,
+        tcells_state_PD1n=0.2, #first is 0.8, then 0.2, then 0.8
+        tumors_state_PDL1n=0.2, #0.5 originally, first and second 0.8, then 0.2
     )
 
 

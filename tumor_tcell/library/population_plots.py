@@ -81,4 +81,4 @@ def death_plot(death_data, out_dir=None, save_name=None):
     pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     if save_name is not None:
-        pl.savefig(out_dir + '/' + save_name + '_total.png', format='png', bbox_inches='tight', dpi=300)
+        pl.savefig(out_dir + '/' + save_name + '_death.png', format='png', bbox_inches='tight', dpi=300)
