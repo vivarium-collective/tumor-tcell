@@ -104,7 +104,8 @@ def tumor_tcell_abm(
     tumors_distance=None,
     tcell_distance=None,
 ):
-    initial_env_config = {'uniform': 0.0}
+    initial_env_config = {
+        'diffusion_field': {'uniform': 0.0}}
     jitter_force = 0
     t_cell_config = {
         'tcell': {'_parallel': parallel},
