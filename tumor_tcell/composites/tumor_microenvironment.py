@@ -6,6 +6,7 @@ Tumor microenvironment
 
 import os
 import random
+import numpy as np
 
 from vivarium.core.process import Composer
 from vivarium.core.composition import (
@@ -20,7 +21,7 @@ from tumor_tcell.processes.neighbors import Neighbors
 from tumor_tcell.processes.fields import Fields
 
 # plots
-from tumor_tcell.plots.snapshots import plot_snapshots
+from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
 
 NAME = 'tumor_microenvironment'
 DEFAULT_BOUNDS = [50 * units.um, 50 * units.um]
@@ -34,18 +35,17 @@ class TumorMicroEnvironment(Composer):
     name = NAME
     defaults = {
         'neighbors_multibody': {
+            'name': 'neighbors_multibody',
             'bounds': DEFAULT_BOUNDS
         },
-        'diffusion_field': {},
+        'diffusion_field': {
+            'name': 'diffusion_field',
+        },
         '_schema': {},
     }
 
     def __init__(self, config=None):
         super().__init__(config)
-
-    def initial_state(self, config=None):
-        diffusion_field = Fields(self.config['diffusion_field'])
-        return diffusion_field.initial_state(config)
 
     def generate_processes(self, config):
 
@@ -101,7 +101,7 @@ def make_neighbors_config(
     if depth:
         config['diffusion_field']['depth'] = depth
     if diffusion:
-        config['diffusion_field']['diffusion'] = diffusion
+        config['diffusion_field']['default_diffusion_rate'] = diffusion
     if concentrations:
         config['diffusion_field']['gradient'] = {
             'type': 'uniform',
@@ -149,17 +149,29 @@ def agent_body_config(config):
     return agent_config
 
 def test_microenvironment(
-        config=None,
         n_agents=1,
+        bounds=[25 * units.um, 25 * units.um],
+        n_bins=[25, 25],
+        jitter_force=1e-6,
+        diffusion=1e-1,
         end_time=10
 ):
-    if config is None:
-        config = make_neighbors_config()
+
     # configure the compartment
+    config = make_neighbors_config(
+        bounds=bounds,
+        n_bins=n_bins,
+        jitter_force=jitter_force,
+        diffusion=diffusion)
     compartment = TumorMicroEnvironment(config)
 
     # set initial agent state
-    initial_state = compartment.initial_state({'gradient': 'random'})
+    # initial_state = compartment.initial_state({'diffusion_field': {'random': 1}})
+    initial_field = np.zeros((n_bins[0], n_bins[1]))
+    initial_field[:, -1] = 100
+    initial_state = {
+        'fields': {'IFNg': initial_field},
+        'agents': {}}
     if n_agents:
         agent_ids = [str(agent_id) for agent_id in range(n_agents)]
         body_config = {'agent_ids': agent_ids}
@@ -178,7 +190,7 @@ def test_microenvironment(
 
     # run experiment
     experiment.update(end_time)
-    data = experiment.emitter.get_data()
+    data = experiment.emitter.get_data_deserialized()
 
     # assert that the agent remains in the simulation until the end
     assert len(data[end_time]['agents']) == n_agents
@@ -190,25 +202,29 @@ def main():
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    bounds = [25 * units.um, 25 * units.um]
-    config = make_neighbors_config(bounds=bounds)
-    data = test_microenvironment(
-        config=config,
-        n_agents=1,
-        end_time=40)
+    # configure
+    bounds = [10 * units.um, 10 * units.um]
+    n_bins = [10, 10]
 
-    # make snapshot plot
-    agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
-    plot_data = {
-        'agents': agents,
-        'fields': fields,
-        'config': {'bounds': remove_units(bounds)}}
-    plot_config = {
-        'out_dir': out_dir,
-        'agent_shape': 'circle',
-        'filename': 'snapshots'}
-    plot_snapshots(plot_data, plot_config)
+    # run the simulation
+    data = test_microenvironment(
+        bounds=bounds,
+        n_bins=n_bins,
+        jitter_force=1e-4,
+        diffusion=1e-9,
+        n_agents=1,
+        end_time=6)
+
+    # snapshot plot
+    agents, fields = format_snapshot_data(data)
+    plot_snapshots(
+        agents=remove_units(agents),
+        fields=fields,
+        bounds=remove_units(bounds),
+        n_snapshots=5,
+        out_dir=out_dir,
+        filename='snapshots'
+    )
 
 
 if __name__ == '__main__':

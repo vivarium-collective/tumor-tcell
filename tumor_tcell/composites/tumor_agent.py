@@ -64,7 +64,7 @@ class TumorAgent(Composer):
     }
 
     def __init__(self, config):
-        super(TumorAgent, self).__init__(config)
+        super().__init__(config)
         self.processes_initialized = False
 
     def initial_state(self, config=None):

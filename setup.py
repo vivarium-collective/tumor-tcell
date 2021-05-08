@@ -33,4 +33,5 @@ setup(
         'tqdm',
         'pymunk',
         'pandas',
+        'seaborn',
     ])
