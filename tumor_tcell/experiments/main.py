@@ -261,8 +261,8 @@ def full_experiment(
 #Change experimental PD1 and PDL1 levels for full experiment
 def full_experiment_2():
     return full_experiment(
-        tcells_state_PD1n=0.2, #first is 0.8, then 0.2, then 0.8
-        tumors_state_PDL1n=0.2, #0.5 originally, first and second 0.8, then 0.2
+        tcells_state_PD1n=0.2, #0.2 and 0.8
+        tumors_state_PDL1n=0.2, #0.5 originally
     )
 
 
