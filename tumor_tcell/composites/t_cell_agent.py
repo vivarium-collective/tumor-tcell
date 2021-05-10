@@ -8,13 +8,14 @@ import os
 
 # core imports
 from vivarium.core.process import Composer
-from vivarium.core.composition import simulate_composer
+from vivarium.core.experiment import Experiment
 from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # processes
 from vivarium.processes.meta_division import MetaDivision
+from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.remove import Remove
-from tumor_tcell.processes.t_cell import TCellProcess
+from tumor_tcell.processes.t_cell import TCellProcess, TIMESTEP
 from tumor_tcell.processes.local_field import LocalField
 
 # directories/libraries
@@ -70,10 +71,6 @@ class TCellAgent(Composer):
     def __init__(self, config):
         super().__init__(config)
         self.processes_initialized = False
-
-    def initial_state(self, config=None):
-        process = TCellProcess()
-        return process.initial_state(config)
 
     def initialize_processes(self, config):
         self.tcell_process = TCellProcess(config['tcell'])
@@ -139,25 +136,48 @@ class TCellAgent(Composer):
 
 
 # tests
-def test_tcell_agent(total_time=1000):
-    agent_id = '0'
-    parameters = {'agent_id': agent_id}
+
+
+def test_tcell_agent(
+        total_time=1000,
+        agent_id='0',
+        timeline=None):
+    parameters = {
+        'agent_id': agent_id}
     composer = TCellAgent(parameters)
+    composite = composer.generate(path=('agents', agent_id))
+
+    if timeline:
+        timeline_process = TimelineProcess({'timeline': timeline, 'time_step': TIMESTEP})
+        composite.merge(composite=timeline_process.generate())
 
     # settings for simulation and plot
-    initial = composer.initial_state()
-    initial['internal']['cell_state'] = 'PD1p'  # set an initial state
-    settings = {
-        'initial_state': initial,
-        'outer_path': ('agents', agent_id),
-        'return_raw_data': True,
-        'timestep': 10,
-        'total_time': total_time}
-    output = simulate_composer(composer, settings)
+    initial = composite.initial_state()
+    initial['agents'][agent_id]['internal']['cell_state'] = 'PD1p'  # set an initial state
+
+    # make the experiment
+    experiment = Experiment({
+        'processes': composite['processes'],
+        'topology': composite['topology'],
+        'initial_state': initial
+    })
+    experiment.update(total_time)
+
+    output = experiment.emitter.get_data()
     return output
 
 def run_compartment(out_dir='out'):
-    data = test_tcell_agent(total_time=100000)
+    agent_id = '0'
+    embedded_timeline = [
+        (500, {
+            ('agents', agent_id, 'neighbors', 'accept', 'PDL1'): 5e5,
+            ('agents', agent_id, 'neighbors', 'accept', 'MHCI'): 5e5,
+        }),
+    ]
+    data = test_tcell_agent(
+        total_time=100000,
+        agent_id=agent_id,
+        timeline=embedded_timeline)
     plot_settings = {}
     plot_agents_multigen(data, plot_settings, out_dir)
 
