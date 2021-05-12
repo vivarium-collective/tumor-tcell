@@ -7,14 +7,15 @@ T-cell Agent
 import os
 
 # core imports
-from vivarium.core.process import Composer
-from vivarium.core.composition import simulate_composer
+from vivarium.core.process import Composer, Composite
+from vivarium.core.experiment import Experiment
 from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # processes
 from vivarium.processes.meta_division import MetaDivision
+from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.remove import Remove
-from tumor_tcell.processes.t_cell import TCellProcess
+from tumor_tcell.processes.t_cell import TCellProcess, TIMESTEP
 from tumor_tcell.processes.local_field import LocalField
 
 # directories/libraries
@@ -70,10 +71,6 @@ class TCellAgent(Composer):
     def __init__(self, config):
         super().__init__(config)
         self.processes_initialized = False
-
-    def initial_state(self, config=None):
-        process = TCellProcess()
-        return process.initial_state(config)
 
     def initialize_processes(self, config):
         self.tcell_process = TCellProcess(config['tcell'])
@@ -139,26 +136,91 @@ class TCellAgent(Composer):
 
 
 # tests
-def test_tcell_agent(total_time=1000):
-    agent_id = '0'
-    parameters = {'agent_id': agent_id}
-    composer = TCellAgent(parameters)
+def test_tcell_agent(
+        total_time=1000,
+        agent_ids=['0'],
+        agent_timeline=None
+):
+    composite = Composite()
+    for agent_id in agent_ids:
+        parameters = {
+            'agent_id': agent_id,
+            '_schema': {
+                't_cell': {
+                    'internal': {
+                        'cell_state': {'_emit': False},
+                        'velocity_timer': {'_emit': False}},
+                    'neighbors': {
+                        'present': {
+                            'TCR': {'_emit': False}},
+                        'transfer': {
+                            'cytotoxic_packets': {'_emit': False}}},
+                    'boundary': {
+                        'velocity': {'_emit': False},
+                        'external': {
+                            'IFNg': {'_emit': False}}},
+                    'globals': {
+                        'PD1n_divide_count': {'_emit': True},
+                        'PD1p_divide_count': {'_emit': True}}}}}
+
+        composer = TCellAgent(parameters)
+        agent = composer.generate(path=('agents', agent_id))
+        composite.merge(composite=agent)
+
+    if agent_timeline:
+        timeline = []
+        for agent_id in agent_ids:
+            individual_timeline = []
+            for (t, perturb) in agent_timeline:
+                agent_perturb = {}
+                for path, magnitude in perturb.items():
+                    agent_path = ('agents', agent_id) + path
+                    agent_perturb[agent_path] = magnitude
+                agent_event = (t, agent_perturb)
+                individual_timeline.append(agent_event)
+            timeline.extend(individual_timeline)
+            
+        timeline_process = TimelineProcess({'timeline': timeline, 'time_step': TIMESTEP})
+        composite.merge(composite=timeline_process.generate())
 
     # settings for simulation and plot
-    initial = composer.initial_state()
-    initial['internal']['cell_state'] = 'PD1p'  # set an initial state
-    settings = {
-        'initial_state': initial,
-        'outer_path': ('agents', agent_id),
-        'return_raw_data': True,
-        'timestep': 10,
-        'total_time': total_time}
-    output = simulate_composer(composer, settings)
+    initial = composite.initial_state()
+    initial['agents'][agent_id]['internal']['cell_state'] = 'PD1p'  # set an initial state
+
+    # make the experiment
+    experiment = Experiment({
+        'processes': composite['processes'],
+        'topology': composite['topology'],
+        'initial_state': initial})
+    experiment.update(total_time)
+
+    output = experiment.emitter.get_data()
+
+    # convert time to hours, and add agents key back in if all agents have died
+    times = list(output.keys())
+    for t in times:
+        if 'agents' not in output[t]:
+            output[t]['agents'] = {}
+        hr = t/3600
+        output[hr] = output.pop(t)
+
     return output
 
 def run_compartment(out_dir='out'):
-    data = test_tcell_agent(total_time=100000)
-    plot_settings = {}
+    agent_ids = ['0', '1']
+    agent_timeline = [
+        (500, {
+            ('neighbors', 'accept', 'PDL1'): 5e5,
+            ('neighbors', 'accept', 'MHCI'): 5e5,
+        }),
+    ]
+    data = test_tcell_agent(
+        total_time=100000,
+        agent_ids=agent_ids,
+        agent_timeline=agent_timeline)
+    plot_settings = {
+        'time_display': '(hr)'
+    }
     plot_agents_multigen(data, plot_settings, out_dir)
 
 

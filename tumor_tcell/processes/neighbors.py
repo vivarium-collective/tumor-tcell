@@ -36,8 +36,8 @@ PI = math.pi
 
 
 # helper functions
-def daughter_locations(mother_location, mother_values):
-    mother_diameter = mother_values['diameter']
+def daughter_locations(mother_location, state):
+    mother_diameter = state['diameter']
     mother_x = mother_location[0]
     mother_y = mother_location[1]
     locations = []
