@@ -141,19 +141,6 @@ def test_tcell_agent(
         agent_ids=['0'],
         agent_timeline=None
 ):
-
-    timeline = []
-    for agent_id in agent_ids:
-        individual_timeline = []
-        for (t, perturb) in agent_timeline:
-            agent_perturb = {}
-            for path, magnitude in perturb.items():
-                agent_path = ('agents', agent_id) + path
-                agent_perturb[agent_path] = magnitude
-            agent_event = (t, agent_perturb)
-            individual_timeline.append(agent_event)
-        timeline.extend(individual_timeline)
-
     composite = Composite()
     for agent_id in agent_ids:
         parameters = {
@@ -180,7 +167,19 @@ def test_tcell_agent(
         agent = composer.generate(path=('agents', agent_id))
         composite.merge(composite=agent)
 
-    if timeline:
+    if agent_timeline:
+        timeline = []
+        for agent_id in agent_ids:
+            individual_timeline = []
+            for (t, perturb) in agent_timeline:
+                agent_perturb = {}
+                for path, magnitude in perturb.items():
+                    agent_path = ('agents', agent_id) + path
+                    agent_perturb[agent_path] = magnitude
+                agent_event = (t, agent_perturb)
+                individual_timeline.append(agent_event)
+            timeline.extend(individual_timeline)
+            
         timeline_process = TimelineProcess({'timeline': timeline, 'time_step': TIMESTEP})
         composite.merge(composite=timeline_process.generate())
 
