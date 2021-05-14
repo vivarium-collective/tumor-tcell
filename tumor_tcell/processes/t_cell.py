@@ -22,10 +22,10 @@ NAME = 'T_cell'
 TIMESTEP = 60  # seconds
 CONCENTRATION_UNIT = 1
 
-def assymetric_division(mother_value, states):
+def assymetric_division(mother_value, **args):
     return [mother_value+1, mother_value]
 
-def set_velocity_default(mother_value, states):
+def set_velocity_default(mother_value, **args):
     return [10.0 * units.um/units.min, 10.0 * units.um/units.min]
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -143,19 +143,16 @@ class TCellProcess(Process):
                     '_updater': 'set'},
                 'divide': {
                     '_default': False,
-                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'set'},
                 'PD1n_divide_count': {
                     '_default': 0,
-                    #'_emit': False, #true for monitoring behavior in process
                     '_divider': {
                         'divider': assymetric_division,
-                        'topology': {}
+                        'config': {}
                     },
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
-                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'}
             },
             'internal': {
@@ -166,12 +163,10 @@ class TCellProcess(Process):
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    #'_emit': False, #true for monitoring behavior in process
                     '_updater': 'accumulate'
                 },
                 'refractory_count': {
                     '_default': 0,
-                    #'_emit': True, #true for monitoring behavior in process
                     '_updater': 'accumulate'
                 },
                 'total_cytotoxic_packets': {
@@ -207,14 +202,13 @@ class TCellProcess(Process):
                     '_updater': 'set',
                     '_divider': {
                         'divider': set_velocity_default,
-                        'topology': {}
-                                 },
+                        # 'topology': {}
+                         },
                     '_emit': True,
                 },
                 'exchange': {
                     'IFNg': {
                         '_default': 0,  # counts
-                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'accumulate',
                         '_divider': 'split',
                     }},
@@ -597,71 +591,41 @@ def test_single_t_cell(
     plot_simulation_output(timeseries, plot_settings, out_dir, NAME + '_single')
 
 
+
+
 def test_batch_t_cell(
     total_time=43200,
     time_step=TIMESTEP,
     batch_size=2,
     timeline=None,
-    out_dir='out'):
+    out_dir='out'
+):
 
-    override_schema = {
+    tcell_override = {
         '_schema': {
             'globals': {
-                'death': {
-                    '_emit': False
-                }
-            },
-             'internal': {
-                'cell_state_count': {
-                    '_emit': False
-                },
-                 'cell_state': {
-                     '_emit': False
-                 },
-                'refractory_count': {
-                    '_emit': True
-                },
-                 'total_cytotoxic_packets': {
-                     '_emit': True
-                 },
-                 'TCR_timer': {
-                     '_emit': True
-                 },
-                 'velocity_timer': {
-                     '_emit': False
-                 },
-            },
+                'death': {'_emit': False}},
+            'internal': {
+                'cell_state_count': {'_emit': False},
+                'cell_state': {'_emit': False},
+                'refractory_count': {'_emit': True},
+                'total_cytotoxic_packets': {'_emit': True},
+                'TCR_timer': {'_emit': True},
+                'velocity_timer': {'_emit': False}},
             'neighbors': {
                 'present': {
-                    'PD1': {
-                        '_emit': True
-                    },
-                },
+                    'PD1': {'_emit': True}},
                 'accept': {
-                    'PDL1': {
-                        '_emit': True
-                    },
-                    'MHCI': {
-                        '_emit': True
-                    },
-                },
-            },
+                    'PDL1': {'_emit': True},
+                    'MHCI': {'_emit': True}}},
             'boundary': {
-                'velocity': {
-                    '_emit': False
-                },
+                'velocity': {'_emit': False},
                 'external': {
-                    'IFNg': {
-                        '_emit': False
-                    },
-                }
-            },
-        }
-    }
+                    'IFNg': {'_emit': False}}}}}
 
     combined_raw_data = {}
     for single_idx in range(batch_size):
-        t_cell_process = TCellProcess(override_schema)
+        t_cell_process = TCellProcess(tcell_override)
         if timeline is not None:
             sim_settings = {
                 'timeline': {
