@@ -200,6 +200,9 @@ def tumor_tcell_abm(
     # make the experiment
     experiment_id = (f"tumor_tcell_{timestamp()}")
     experiment_config = {
+        'description': f"n_tcells: {n_tcells} \n"
+                       f"n_tumors: {n_tumors} \n"
+                       f"",
         'processes': composite_model.processes,
         'topology': composite_model.topology,
         'initial_state': initial_state,
@@ -227,6 +230,11 @@ def tumor_tcell_abm(
 
     # return time
     data = experiment.emitter.get_data_deserialized()
+    #Convert seconds to hours
+    times = list(data.keys())
+    for time in times:
+        hour = time/3600
+        data[hour] = data.pop(time)
     return data
 
 
@@ -241,7 +249,7 @@ def full_experiment(
         # total_time=259200,
         #tumors=get_tumors(number=1200),
         #tcells=get_tcells(number=12),
-        n_tcells=12,
+        n_tcells=12, #change back to 12
         n_tumors=1200,
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
@@ -262,7 +270,7 @@ def full_experiment(
 def full_experiment_2():
     return full_experiment(
         tcells_state_PD1n=0.2, #0.2 and 0.8
-        tumors_state_PDL1n=0.2, #0.5 originally
+        tumors_state_PDL1n=0.5, #0.5 originally
     )
 
 
