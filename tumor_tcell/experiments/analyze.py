@@ -31,9 +31,9 @@ def access():
     data, sim_config = data_from_database(
         experiment_id, db)
 
-    return data, experiment_id
+    return data, experiment_id, sim_config
 
-def run_analysis(data, experiment_id='tumor_tcell'):
+def run_analysis(data, experiment_id='tumor_tcell', sim_config={}):
     experiment_out_dir = OUT_DIR + str(experiment_id)
     os.makedirs(experiment_out_dir, exist_ok=True)
 
@@ -50,5 +50,5 @@ def run_analysis(data, experiment_id='tumor_tcell'):
     print('saved '+str(data_export))
 
 if __name__ == '__main__':
-    data, experiment_id = access()
-    run_analysis(data, experiment_id)
+    data, experiment_id, sim_config = access()
+    run_analysis(data, experiment_id, sim_config)
