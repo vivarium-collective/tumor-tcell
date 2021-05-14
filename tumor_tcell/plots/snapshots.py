@@ -296,13 +296,11 @@ def plot_snapshots(
         agents={},
         fields={},
         n_snapshots=8,
-        agent_shape='circle',
-        agent_colors=None,
-        tag_colors=None,
         skip_fields=[],
         include_fields=None,
         out_dir=None,
         filename=None,
+        **kwargs,
 ):
     '''Plot snapshots of the simulation over time
 
@@ -358,17 +356,15 @@ def plot_snapshots(
 
     return make_snapshots_figure(
         agents=agents,
-        agent_colors=agent_colors,
-        tag_colors=tag_colors,
         fields=fields,
         field_range=field_range,
         n_snapshots=n_snapshots,
         time_indices=time_indices,
         snapshot_times=snapshot_times,
         bounds=bounds,
-        agent_shape=agent_shape,
         out_dir=out_dir,
         filename=filename,
+        **kwargs,
     )
 
 
@@ -395,6 +391,7 @@ def make_snapshots_figure(
     field_range=None,
     agent_colors=None,
     tag_colors=None,
+    time_display='s',
     dead_color=[0, 0, 0],
     default_font_size=36,
     field_label_size=20,
@@ -445,7 +442,7 @@ def make_snapshots_figure(
                 ax = init_axes(
                     fig, edge_length_x, edge_length_y, grid, row_idx,
                     col_idx, time, field_id, field_label_size,
-                    title_size=default_font_size,
+                    title_size=default_font_size, time_display=time_display,
                 )
                 ax.tick_params(
                     axis='both', which='both', bottom=False, top=False,
@@ -948,11 +945,11 @@ def plot_temporal_trajectory(agent_timeseries, config, out_dir='out', filename='
 
 def init_axes(
     fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time,
-    molecule, ylabel_size=20, title_size=12,
+    molecule, ylabel_size=20, title_size=12, time_display='s'
 ):
     ax = fig.add_subplot(grid[row_idx, col_idx])
     if row_idx == 0:
-        plot_title = 'time: {:.4f} s'.format(float(time))
+        plot_title = 'time: {:.2f} {:s}'.format(float(time), time_display)
         plt.title(plot_title, y=1.08, fontsize=title_size)
     if col_idx == 0:
         ax.set_ylabel(
