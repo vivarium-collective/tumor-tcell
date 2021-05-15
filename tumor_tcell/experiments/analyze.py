@@ -47,6 +47,13 @@ def run_analysis(data, experiment_id='tumor_tcell', sim_config={}):
     data_export = open(experiment_out_dir+'/data_export.pkl', 'wb')
     pickle.dump(data, data_export)
     data_export.close()
+
+    sim_description = sim_config['description']
+
+    config_export = open(experiment_out_dir + '/config_export.pkl', 'wb')
+    pickle.dump(sim_description, config_export)
+    config_export.close()
+
     print('saved '+str(data_export))
 
 if __name__ == '__main__':
