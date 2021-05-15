@@ -202,7 +202,16 @@ def tumor_tcell_abm(
     experiment_config = {
         'description': f"n_tcells: {n_tcells} \n"
                        f"n_tumors: {n_tumors} \n"
-                       f"",
+                       f"tumors_state_PDL1n: {tumors_state_PDL1n} \n"
+                       f"tcells_state_PD1n:{tcells_state_PD1n} \n"
+                       f"total_time:{total_time} \n"
+                       f"time_step:{time_step} \n"
+                       f"sim_step:{sim_step} \n"
+                       f"bounds:{bounds} \n"
+                       f"n_bins:{n_bins} \n"
+                       f"halt_threshold:{halt_threshold} \n"
+                       f"tumors_distance:{tumors_distance} \n"
+                       f"tcell_distance: {tcell_distance} \n",
         'processes': composite_model.processes,
         'topology': composite_model.topology,
         'initial_state': initial_state,
@@ -269,7 +278,7 @@ def full_experiment(
 #Change experimental PD1 and PDL1 levels for full experiment
 def full_experiment_2():
     return full_experiment(
-        tcells_state_PD1n=0.2, #0.2 and 0.8
+        tcells_state_PD1n=0.8, #0.2 and 0.8
         tumors_state_PDL1n=0.5, #0.5 originally
     )
 
