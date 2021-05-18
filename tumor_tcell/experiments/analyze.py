@@ -44,6 +44,12 @@ def run_analysis(data, experiment_id='tumor_tcell', sim_config={}):
     data = deserialize_value(data)
     data = remove_units(data)
 
+    # Convert seconds to hours
+    times = list(data.keys())
+    for time in times:
+        hour = time / 3600
+        data[hour] = data.pop(time)
+
     data_export = open(experiment_out_dir+'/data_export.pkl', 'wb')
     pickle.dump(data, data_export)
     data_export.close()

@@ -112,6 +112,7 @@ def data_to_dataframes(data):
 
     # Only get the final log of the death than contains all the death information
     df_last_death = df_death_sub.loc[df_death_sub.index.levels[0][-1]]
+    df_last_death['time'] = df_last_death['time'] / 3600
 
     # Subset only T cells from all agents
     df_tcell_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tcell'), :]
@@ -146,6 +147,5 @@ def data_to_dataframes(data):
     # get total death count over time
     total_col = [col for col in df_tumor_death.columns if 'total' in col]
     df_tumor_death['total_death'] = df_tumor_death[total_col].sum(axis=1)
-
 
     return  df_tumor_death, df_tcell_death, tumor_plot, tcell_plot
