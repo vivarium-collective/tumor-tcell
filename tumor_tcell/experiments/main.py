@@ -259,10 +259,10 @@ def full_experiment(
         #tumors=get_tumors(number=1200),
         #tcells=get_tcells(number=12),
         n_tcells=12, #change back to 12
-        n_tumors=1200,
+        n_tumors=1200, #change back to 1200
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
-        total_time=259200,
+        total_time=259200, #change back to 259200
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
@@ -278,7 +278,7 @@ def full_experiment(
 #Change experimental PD1 and PDL1 levels for full experiment
 def full_experiment_2():
     return full_experiment(
-        tcells_state_PD1n=0.8, #0.2 and 0.8
+        tcells_state_PD1n=0.2, #0.2 and 0.8
         tumors_state_PDL1n=0.5, #0.5 originally
     )
 
@@ -347,6 +347,7 @@ def plots_suite(
 
     # make multigen plot for tcells and tumors
     plot_settings = {
+        'time_display': '(hr)',
         'skip_paths': [
             ('boundary', 'diameter'),
             ('boundary', 'location')]}
@@ -371,7 +372,8 @@ def plots_suite(
         tag_colors=tag_colors,
         n_snapshots=8,
         out_dir=out_dir,
-        filename='snapshots')
+        filename='snapshots.pdf',
+        time_display='hr')
 
     return fig1, fig2, fig3
 
