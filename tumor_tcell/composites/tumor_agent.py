@@ -7,14 +7,15 @@ Tumor Agent
 import os
 
 # core imports
-from vivarium.core.process import Composer
-from vivarium.core.composition import simulate_composer
+from vivarium.core.process import Composer, Composite
+from vivarium.core.experiment import Experiment
 from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # processes
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.remove import Remove
-from tumor_tcell.processes.tumor import TumorProcess
+from vivarium.processes.timeline import TimelineProcess
+from tumor_tcell.processes.tumor import TumorProcess, TIMESTEP
 from tumor_tcell.processes.local_field import LocalField
 
 # directories/libraries
@@ -135,24 +136,71 @@ class TumorAgent(Composer):
 
 
 # tests
-def test_tumor_agent(total_time=1000):
-    agent_id = '0'
-    parameters = {'agent_id': agent_id}
-    compartment = TumorAgent(parameters)
+def test_tumor_agent(
+        total_time=1000,
+        agent_ids=['0'],
+        agent_timeline=None
+):
+    composite = Composite()
+    for agent_id in agent_ids:
+        parameters = {
+            'agent_id': agent_id,
+            '_schema': {}}
+
+        composer = TumorAgent(parameters)
+        agent = composer.generate(path=('agents', agent_id))
+        composite.merge(composite=agent)
+
+    if agent_timeline:
+        timeline = []
+        for agent_id in agent_ids:
+            individual_timeline = []
+            for (t, perturb) in agent_timeline:
+                agent_perturb = {}
+                for path, magnitude in perturb.items():
+                    agent_path = ('agents', agent_id) + path
+                    agent_perturb[agent_path] = magnitude
+                agent_event = (t, agent_perturb)
+                individual_timeline.append(agent_event)
+            timeline.extend(individual_timeline)
+
+        timeline_process = TimelineProcess({'timeline': timeline, 'time_step': TIMESTEP})
+        composite.merge(composite=timeline_process.generate())
 
     # settings for simulation and plot
-    settings = {
-        'initial_state': compartment.initial_state(),
-        'outer_path': ('agents', agent_id),
-        'return_raw_data': True,
-        'timestep': 10,
-        'total_time': total_time}
-    output = simulate_composer(compartment, settings)
+    initial = composite.initial_state()
+    initial['agents'][agent_id]['internal']['cell_state'] = 'PD1p'  # set an initial state
+
+    # make the experiment
+    experiment = Experiment({
+        'processes': composite['processes'],
+        'topology': composite['topology'],
+        'initial_state': initial})
+    experiment.update(total_time)
+
+    output = experiment.emitter.get_data()
+
+    # convert time to hours, and add agents key back in if all agents have died
+    times = list(output.keys())
+    for t in times:
+        if 'agents' not in output[t]:
+            output[t]['agents'] = {}
+        hr = t / 3600
+        output[hr] = output.pop(t)
+
     return output
 
-def run_compartment(out_dir='out'):
-    data = test_tumor_agent(total_time=10000)
-    plot_settings = {}
+
+def run_agent(out_dir='out'):
+    agent_ids = ['0', '1']
+    agent_timeline = []
+    data = test_tumor_agent(
+        total_time=100000,
+        agent_ids=agent_ids,
+        agent_timeline=agent_timeline)
+    plot_settings = {
+        'time_display': '(hr)'
+    }
     plot_agents_multigen(data, plot_settings, out_dir)
 
 
@@ -160,4 +208,4 @@ if __name__ == '__main__':
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    run_compartment(out_dir=out_dir)
+    run_agent(out_dir=out_dir)
