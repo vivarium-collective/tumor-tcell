@@ -139,7 +139,8 @@ class TCellAgent(Composer):
 def test_tcell_agent(
         total_time=1000,
         agent_ids=['0'],
-        agent_timeline=None
+        agent_timeline=None,
+        initial_agent_state='PD1n',
 ):
     composite = Composite()
     for agent_id in agent_ids:
@@ -185,7 +186,8 @@ def test_tcell_agent(
 
     # settings for simulation and plot
     initial = composite.initial_state()
-    initial['agents'][agent_id]['internal']['cell_state'] = 'PD1p'  # set an initial state
+    for agent_id in agent_ids:
+        initial['agents'][agent_id]['internal']['cell_state'] = initial_agent_state  # set an initial state
 
     # make the experiment
     experiment = Experiment({
