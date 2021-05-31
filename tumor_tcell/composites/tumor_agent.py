@@ -139,13 +139,28 @@ class TumorAgent(Composer):
 def test_tumor_agent(
         total_time=1000,
         agent_ids=['0'],
-        agent_timeline=None
+        agent_timeline=None,
+        initial_agent_state='PDL1n',
 ):
     composite = Composite()
     for agent_id in agent_ids:
         parameters = {
             'agent_id': agent_id,
-            '_schema': {}}
+            '_schema': {
+                'tumor': {
+                    'internal': {
+                        'cell_state': {'_emit': False},
+                        'IFNg': {'_emit': False}},
+                    'neighbors': {
+                        'accept': {
+                            'TCR': {'_emit': False}},
+                        'receive': {
+                            'cytotoxic_packets': {'_emit': False}}},
+                    'boundary': {
+                        'external': {
+                            'IFNg': {'_emit': False}}},
+                    'globals': {
+                        'PDL1n_divide_count': {'_emit': True}}}}}
 
         composer = TumorAgent(parameters)
         agent = composer.generate(path=('agents', agent_id))
@@ -169,7 +184,8 @@ def test_tumor_agent(
 
     # settings for simulation and plot
     initial = composite.initial_state()
-    initial['agents'][agent_id]['internal']['cell_state'] = 'PD1p'  # set an initial state
+    for agent_id in agent_ids:
+        initial['agents'][agent_id]['internal']['cell_state'] = initial_agent_state  # set an initial state
 
     # make the experiment
     experiment = Experiment({
