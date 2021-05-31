@@ -206,7 +206,7 @@ def test_tcell_agent(
 
     return output
 
-def run_compartment(out_dir='out'):
+def run_agent(out_dir='out'):
     agent_ids = ['0', '1']
     agent_timeline = [
         (500, {
@@ -228,4 +228,4 @@ if __name__ == '__main__':
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    run_compartment(out_dir=out_dir)
+    run_agent(out_dir=out_dir)
