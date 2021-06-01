@@ -81,6 +81,15 @@ def random_location(bounds, distance_from_center=None):
         random.uniform(0, bounds[1])]
 
 
+def convert_to_hours(data):
+    """Convert seconds to hours"""
+    times = list(data.keys())
+    for time in times:
+        hour = time/3600
+        data[hour] = data.pop(time)
+    return data
+
+
 # make defaults
 N_TUMORS = 120
 N_TCELLS = 9
@@ -88,7 +97,7 @@ DEFAULT_TUMORS = get_tumors(number=N_TUMORS)
 DEFAULT_TCELLS = get_tcells(number=N_TCELLS)
 
 
-# simulation # 1
+# The main simulation function
 def tumor_tcell_abm(
     bounds=BOUNDS,
     n_bins=NBINS,
@@ -110,6 +119,30 @@ def tumor_tcell_abm(
     tumors_distance=None,
     tcell_distance=None,
 ):
+    """ Tumor-Tcell simulation function
+
+    :param bounds:
+    :param n_bins:
+    :param depth:
+    :param field_molecules:
+    :param n_tumors:
+    :param n_tcells:
+    :param tumors:
+    :param tcells:
+    :param tumors_state_PDL1n:
+    :param tcells_state_PD1n:
+    :param total_time:
+    :param sim_step:
+    :param halt_threshold:
+    :param time_step:
+    :param emit_step:
+    :param emitter:
+    :param parallel:
+    :param tumors_distance:
+    :param tcell_distance:
+    :return:
+        Simulation output data (dict)
+    """
     initial_env_config = {
         'diffusion_field': {'uniform': 0.0}}
     jitter_force = 0
@@ -245,11 +278,7 @@ def tumor_tcell_abm(
 
     # return time
     data = experiment.emitter.get_data_deserialized()
-    #Convert seconds to hours
-    times = list(data.keys())
-    for time in times:
-        hour = time/3600
-        data[hour] = data.pop(time)
+    data = convert_to_hours(data)
     return data
 
 
