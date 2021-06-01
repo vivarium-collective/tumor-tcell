@@ -29,7 +29,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'vivarium-core>=0.2.9',
-        'vivarium-multibody==0.0.6',
+        'vivarium-multibody==0.0.12',
         'tqdm',
         'pymunk',
         'pandas',
