@@ -22,6 +22,7 @@ from vivarium.core.control import Control
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
+from vivarium_multibody.plots.snapshots_video import make_video
 from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, get_agent_colors
 
 # tumor-tcell imports
@@ -378,6 +379,11 @@ def plots_suite(
     return fig1, fig2, fig3
 
 
+def make_snapshot_video():
+
+    import ipdb; ipdb.set_trace()
+    pass
+
 # libraries of experiments and plots for easy access by Control
 experiments_library = {
     '1': tumor_tcell_abm,
@@ -391,6 +397,7 @@ plots_library = {
     '2': plots_suite_small_bounds,
     '3': plots_suite_medium_bounds,
     '4': plots_suite_full_bounds,
+    '5': make_snapshot_video,
 }
 workflow_library = {
     '1': {
@@ -401,7 +408,7 @@ workflow_library = {
     '2': {
         'name': 'small_experiment',
         'experiment': '2',
-        'plots': ['2'],
+        'plots': ['2', '5'],
     },
     '3': {
         'name': 'medium_experiment',
