@@ -32,6 +32,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 from tumor_tcell.composites.death_logger import DeathLogger
 
 # global parameters
+PI = math.pi
 TIMESTEP = 60
 NBINS = [20, 20]
 DEPTH = 15  # um
@@ -39,7 +40,11 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-PI = math.pi
+
+# parameters for toy experiments
+SMALL_BOUNDS = [20*units.um, 20*units.um]
+MEDIUM_BOUNDS = [90*units.um, 90*units.um]
+
 
 def get_tcells(number=1, state_per=0.2):
     return {
@@ -254,11 +259,6 @@ def full_experiment(
         tumors_state_PDL1n,):
 
     return tumor_tcell_abm(
-        # tumors=get_tumors(number=3500),
-        # tcells=get_tcells(number=30),
-        # total_time=259200,
-        #tumors=get_tumors(number=1200),
-        #tcells=get_tcells(number=12),
         n_tcells=12, #change back to 12
         n_tumors=1200, #change back to 1200
         tcells_state_PD1n=tcells_state_PD1n,
@@ -284,48 +284,11 @@ def full_experiment_2():
     )
 
 
-MEDIUM_BOUNDS = [90*units.um, 90*units.um]
-def medium_experiment():
-    return tumor_tcell_abm(
-        tumors=get_tumors(number=3),
-        tcells=get_tcells(number=3),
-        total_time=50000,
-        bounds=MEDIUM_BOUNDS,
-        n_bins=[3, 3],
-        emitter='database',
-        tumors_distance=25 * units.um,
-        tcell_distance=10 * units.um,
-    )
-
-
-SMALL_BOUNDS = [20*units.um, 20*units.um]
-def small_experiment():
-    return tumor_tcell_abm(
-        tumors=get_tumors(number=1),
-        tcells=get_tcells(number=1),
-        total_time=100000,
-        bounds=SMALL_BOUNDS,
-        n_bins=[1, 1])
-
-
-def plots_suite_small_bounds(
-        data, out_dir=None, bounds=SMALL_BOUNDS):
-    return plots_suite(data, out_dir, bounds)
-
-
-def plots_suite_medium_bounds(
-        data, out_dir=None, bounds=MEDIUM_BOUNDS):
-    return plots_suite(data, out_dir, bounds)
-
-
-def plots_suite_full_bounds(
-        data, out_dir=None, bounds=FULL_BOUNDS):
-    return plots_suite(data, out_dir, bounds)
-
-
 def plots_suite(
-        data, out_dir=None, bounds=BOUNDS):
-
+        data,
+        out_dir=None,
+        bounds=BOUNDS
+):
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
     tumor_data = {}
@@ -379,25 +342,23 @@ def plots_suite(
     return fig1, fig2, fig3
 
 
-def make_snapshot_video():
+def make_snapshot_video(data, bounds, out_dir=None):
+    make_video(
+        data,
+        bounds)
 
     import ipdb; ipdb.set_trace()
-    pass
+
 
 # libraries of experiments and plots for easy access by Control
 experiments_library = {
     '1': tumor_tcell_abm,
-    '2': small_experiment,
-    '3': medium_experiment,
     '4': full_experiment,
     '5': full_experiment_2,
 }
 plots_library = {
     '1': plots_suite,
-    '2': plots_suite_small_bounds,
-    '3': plots_suite_medium_bounds,
-    '4': plots_suite_full_bounds,
-    '5': make_snapshot_video,
+    'video': make_snapshot_video,
 }
 workflow_library = {
     '1': {
@@ -407,23 +368,64 @@ workflow_library = {
     },
     '2': {
         'name': 'small_experiment',
-        'experiment': '2',
-        'plots': ['2', '5'],
+        'experiment': {
+            'experiment_id': '1',
+            'bounds': SMALL_BOUNDS,
+            'n_tumors': 1,
+            'n_tcells': 1,
+            'total_time': 1000,
+            'n_bins': [1, 1]
+        },
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': SMALL_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': SMALL_BOUNDS,
+            },
+        ],
     },
     '3': {
         'name': 'medium_experiment',
-        'experiment': '3',
-        'plots': ['3'],
+        'experiment': {
+            'experiment_id': '1',
+            'bounds': MEDIUM_BOUNDS,
+            'n_tumors': 3,
+            'n_tcells': 3,
+            'total_time': 50000,
+            'n_bins': [3, 3],
+            'emitter': 'database',
+            'tumors_distance': 25 * units.um,
+            'tcell_distance': 10 * units.um,
+        },
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': MEDIUM_BOUNDS
+            },
+        ],
     },
     '4': {
         'name': 'full_experiment',
         'experiment': '4',
-        'plots': ['4'],
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': FULL_BOUNDS
+            },
+        ],
     },
     '5': {
         'name': 'full_experiment_2',
         'experiment': '5',
-        'plots': ['4'],
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': FULL_BOUNDS
+            },
+        ],
     },
 }
 
