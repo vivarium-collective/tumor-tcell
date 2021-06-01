@@ -371,12 +371,16 @@ def plots_suite(
     return fig1, fig2, fig3
 
 
-def make_snapshot_video(data, bounds, out_dir=None):
+def make_snapshot_video(data, bounds, step=10, out_dir=None):
     make_video(
-        data,
-        bounds)
+        data=remove_units(data),
+        bounds=remove_units(bounds),
+        agent_shape='circle',
+        step=step,
+        out_dir=out_dir,
+        filename='tumor_tcell_video'
+    )
 
-    import ipdb; ipdb.set_trace()
 
 
 # libraries of experiments and plots for easy access by Control
