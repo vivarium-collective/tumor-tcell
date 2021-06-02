@@ -322,6 +322,8 @@ def plots_suite(
     tcell_data = {}
     tumor_data = {}
     for time, time_data in data.items():
+        if 'agents' not in time_data:
+            continue
         all_agents_data = time_data['agents']
         tcell_data[time] = {
             'agents': {
@@ -371,7 +373,7 @@ def plots_suite(
     return fig1, fig2, fig3
 
 
-def make_snapshot_video(data, bounds, step=10, out_dir=None):
+def make_snapshot_video(data, bounds, step=1, out_dir=None):
     make_video(
         data=remove_units(data),
         bounds=remove_units(bounds),
@@ -406,7 +408,7 @@ workflow_library = {
             'bounds': SMALL_BOUNDS,
             'n_tumors': 1,
             'n_tcells': 1,
-            'total_time': 1000,
+            'total_time': 10000,
             'n_bins': [1, 1]
         },
         'plots': [
@@ -429,7 +431,7 @@ workflow_library = {
             'n_tcells': 3,
             'total_time': 50000,
             'n_bins': [3, 3],
-            'emitter': 'database',
+            # 'emitter': 'database',
             'tumors_distance': 25 * units.um,
             'tcell_distance': 10 * units.um,
         },
@@ -437,6 +439,11 @@ workflow_library = {
             {
                 'plot_id': '1',
                 'bounds': MEDIUM_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': MEDIUM_BOUNDS,
+                'step': 10  # make frame every n saved steps
             },
         ],
     },
