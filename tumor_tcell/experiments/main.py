@@ -189,7 +189,7 @@ def tumor_tcell_abm(
             'neighbors': {
                 'present': {
                     'PDL1': state.get('PDL1', None),
-                    'MHCI': state.get('MHCI', None)}
+                    'MHCI': state.get('MHCI', 1000)}
             }} for agent_id, state in tumors.items()}
 
     initial_state = {
@@ -247,7 +247,7 @@ def tumor_tcell_abm(
     return data
 
 
-FULL_BOUNDS = [1200*units.um, 1200*units.um]
+FULL_BOUNDS = [1500*units.um, 1500*units.um] #Usually 1200 by 1200
 def full_experiment(
         tcells_state_PD1n,
         tumors_state_PDL1n,):
@@ -262,13 +262,13 @@ def full_experiment(
         n_tumors=1200, #change back to 1200
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
-        total_time=259200, #change back to 259200
+        total_time=1209600, #change back to 259200
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
-        n_bins=[120, 120], #10 um bin size
-        halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
+        n_bins=[150, 150], #10 um bin size, usually 120 by 120
+        halt_threshold=8000, #sqrt(halt_threshold)*15 <bounds, normally 4800
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
         tcell_distance=200*units.um, #in or out (None) of the tumor
@@ -278,7 +278,7 @@ def full_experiment(
 #Change experimental PD1 and PDL1 levels for full experiment
 def full_experiment_2():
     return full_experiment(
-        tcells_state_PD1n=0.2, #0.2 and 0.8
+        tcells_state_PD1n=0.8, #0.2 and 0.8
         tumors_state_PDL1n=0.5, #0.5 originally
     )
 

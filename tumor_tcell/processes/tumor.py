@@ -106,7 +106,6 @@ class TumorProcess(Process):
                 'PDL1n_divide_count': {
                     '_default': 0,
                     #'_emit': False, #true for monitoring behavior in process
-                    '_divider': 'zero',
                     '_updater': 'accumulate'}
             },
             'internal': {
