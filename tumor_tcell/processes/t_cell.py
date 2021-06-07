@@ -104,7 +104,7 @@ class TCellProcess(Process):
 
         # 4 fold reduction in production in T cells in contact with MHCI- tumor
         # (Bohm, 1998), (Merritt, 2003)
-        'MHCIn_reduction_production': 300,
+        'MHCIn_reduction_production': 400,
 
         #Cytotoxic packet transfer rate for a minute timeperiod
         'cytotoxic_transfer_rate': 400,  #number of packets/min that can be transferred to tumor cells
