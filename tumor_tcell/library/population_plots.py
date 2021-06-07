@@ -190,3 +190,36 @@ def population_group_plot(cell_plot_list, cell_states, out_dir=None, save_name=N
         pl.savefig(out_dir + '/' + save_name + '_total_subtype.png', transparent=True, format='png',
                    bbox_inches='tight', dpi=300)
 
+def cytotoxicity_group_plot(cell_plot_list, N_TUMORS, out_dir=None, save_name=None):
+    SMALL_SIZE = 18
+    MEDIUM_SIZE = 22
+    BIGGER_SIZE = 24
+
+    pl.rc('font', size=SMALL_SIZE)  # controls default text sizes
+    pl.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+    pl.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+    pl.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    pl.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    pl.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+    pl.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+    # Calculate % Cytotoxicity
+    experiment_plot_list = []
+    for experiment in cell_plot_list:
+        total_cell = experiment.groupby(['time', 'experiment_name'])['cell'].nunique().reset_index()
+        experiment_plot_list.append(total_cell)
+    experiment_plot = pd.concat(experiment_plot_list)
+    experiment_plot['cytotoxicity'] = (N_TUMORS - experiment_plot['cell']) / N_TUMORS * 100
+
+    # Create plot
+    pl.figure(figsize=(8, 4))
+    ttl_1 = sns.lineplot(data=experiment_plot, x="time", y='cytotoxicity', hue='experiment_name')
+    pl.title("Total " + save_name)
+    pl.legend(title="Experiment")
+    pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+    if save_name is not None:
+        pl.savefig(out_dir + '/' + save_name + '_cytotoxicity.png', transparent=True, format='png',
+                   bbox_inches='tight', dpi=300)
+
+    return experiment_plot

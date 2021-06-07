@@ -296,6 +296,7 @@ def plot_snapshots(
         agents={},
         fields={},
         n_snapshots=8,
+        final_time=None,
         skip_fields=[],
         include_fields=None,
         out_dir=None,
@@ -351,7 +352,14 @@ def plot_snapshots(
     field_range = get_field_range(fields, time_vec, include_fields, skip_fields)
 
     # get time data
-    time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
+    if final_time:
+        for t_idx, t in enumerate(time_vec):
+            if t >= final_time:
+                final_time_index = t_idx
+                time_indices = np.round(np.linspace(0, final_time_index, n_snapshots)).astype(int)
+                continue
+    else:
+        time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
     snapshot_times = [time_vec[i] for i in time_indices]
 
     return make_snapshots_figure(
@@ -388,9 +396,11 @@ def make_snapshots_figure(
     time_indices,
     snapshot_times,
     plot_width=12,
+    field_colormap='YlOrRd',
     field_range=None,
     agent_colors=None,
     tag_colors=None,
+    field_conc_unit='ng/mL',
     time_display='s',
     dead_color=[0, 0, 0],
     default_font_size=36,
@@ -457,7 +467,7 @@ def make_snapshots_figure(
                                 extent=[0, edge_length_x, 0, edge_length_y],
                                 vmin=vmin,
                                 vmax=vmax,
-                                cmap='BuPu')
+                                cmap=field_colormap)
 
                 if agents:
                     agents_now = agents[time]
@@ -478,7 +488,7 @@ def make_snapshots_figure(
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
                     if row_idx == 0:
-                        ax.set_title('Concentration (mmol/L)', y=1.08)
+                        ax.set_title(f'{field_conc_unit}', y=1.08)
                     ax.axis('off')
                     if vmin == vmax:
                         continue
@@ -949,7 +959,7 @@ def init_axes(
 ):
     ax = fig.add_subplot(grid[row_idx, col_idx])
     if row_idx == 0:
-        plot_title = 'time: {:.2f} {:s}'.format(float(time), time_display)
+        plot_title = '{:.2f} {:s}'.format(float(time), time_display)
         plt.title(plot_title, y=1.08, fontsize=title_size)
     if col_idx == 0:
         ax.set_ylabel(
