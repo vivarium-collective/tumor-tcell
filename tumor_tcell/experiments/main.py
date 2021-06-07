@@ -46,23 +46,36 @@ SMALL_BOUNDS = [20*units.um, 20*units.um]
 MEDIUM_BOUNDS = [90*units.um, 90*units.um]
 
 
-def get_tcells(number=1, state_per=0.2):
-    return {
-    '{}_{}'.format(TCELL_ID, n): {
-        'type': 'tcell',
-        'cell_state': 'PD1n' if random.uniform(0, 1) < state_per else 'PD1p',
-        'TCR_timer': random.uniform(0, 5400),
-        'velocity_timer': 0,
-        'velocity': 10.0 * units.um/units.min,
-        'diameter': 7.5 * units.um,
-    } for n in range(number)}
+def get_tcells(number=1, relative_pd1n=0.2, total_pd1n=None):
+    if total_pd1n:
+        assert isinstance(total_pd1n, int)
+        return {
+        '{}_{}'.format(TCELL_ID, n): {
+            'type': 'tcell',
+            'cell_state': 'PD1n' if n <= total_pd1n else 'PD1p',
+            'TCR_timer': random.uniform(0, 5400),
+            'velocity_timer': 0,
+            'velocity': 10.0 * units.um/units.min,
+            'diameter': 7.5 * units.um,
+        } for n in range(number)}
+    else:
+        assert relative_pd1n <= 1.0
+        return {
+        '{}_{}'.format(TCELL_ID, n): {
+            'type': 'tcell',
+            'cell_state': 'PD1n' if random.uniform(0, 1) < relative_pd1n else 'PD1p',
+            'TCR_timer': random.uniform(0, 5400),
+            'velocity_timer': 0,
+            'velocity': 10.0 * units.um/units.min,
+            'diameter': 7.5 * units.um,
+        } for n in range(number)}
 
 
-def get_tumors(number=1, state_per=0.5):
+def get_tumors(number=1, relative_pdl1n=0.5):
     return {
         '{}_{}'.format(TUMOR_ID, n): {
             'type': 'tumor',
-            'cell_state': 'PDL1n' if random.uniform(0, 1) < state_per else 'PDL1p',
+            'cell_state': 'PDL1n' if random.uniform(0, 1) < relative_pdl1n else 'PDL1p',
             'diameter': 15 * units.um,
         } for n in range(number)}
 
@@ -109,6 +122,7 @@ def tumor_tcell_abm(
     tcells=None,
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=0.8,
+    tcells_total_PD1n=None,
     total_time=70000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
@@ -180,10 +194,15 @@ def tumor_tcell_abm(
 
     #Make initial cells
     if not tcells:
-        tcells=get_tcells(number=n_tcells, state_per=tcells_state_PD1n)
+        tcells = get_tcells(
+            number=n_tcells,
+            relative_pd1n=tcells_state_PD1n,
+            total_pd1n=tcells_total_PD1n)
 
     if not tumors:
-        tumors=get_tumors(number=n_tumors, state_per=tumors_state_PDL1n)
+        tumors = get_tumors(
+            number=n_tumors,
+            relative_pdl1n=tumors_state_PDL1n)
 
     # add tcells to the composite
     for agent_id in tcells.keys():
@@ -228,7 +247,7 @@ def tumor_tcell_abm(
             'neighbors': {
                 'present': {
                     'PDL1': state.get('PDL1', None),
-                    'MHCI': state.get('MHCI', None)}
+                    'MHCI': state.get('MHCI', 1000)}
             }} for agent_id, state in tumors.items()}
 
     initial_state = {
@@ -282,23 +301,28 @@ def tumor_tcell_abm(
     return data
 
 
-FULL_BOUNDS = [1200*units.um, 1200*units.um]
+FULL_BOUNDS = [1500*units.um, 1500*units.um] #Usually 1200 by 1200
 def full_experiment(
-        tcells_state_PD1n,
-        tumors_state_PDL1n,):
+        n_tcells=12,
+        n_tumors=1200,
+        tcells_state_PD1n=None,
+        tumors_state_PDL1n=None,
+        tcells_total_PD1n=None,
+):
 
     return tumor_tcell_abm(
-        n_tcells=12, #change back to 12
-        n_tumors=1200, #change back to 1200
+        n_tcells=n_tcells,
+        n_tumors=n_tumors,
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
-        total_time=259200, #change back to 259200
+        tcells_total_PD1n=tcells_total_PD1n,
+        total_time=1209600, #change back to 259200
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
-        n_bins=[120, 120], #10 um bin size
-        halt_threshold=4800, #sqrt(halt_threshold)*15 <bounds
+        n_bins=[150, 150], #10 um bin size, usually 120 by 120
+        halt_threshold=8000, #sqrt(halt_threshold)*15 <bounds, normally 4800
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
         tcell_distance=200*units.um, #in or out (None) of the tumor
@@ -308,16 +332,21 @@ def full_experiment(
 #Change experimental PD1 and PDL1 levels for full experiment
 def full_experiment_2():
     return full_experiment(
-        tcells_state_PD1n=0.2, #0.2 and 0.8
+        n_tcells=12,
+        tcells_state_PD1n=0.8, #0.2 and 0.8
         tumors_state_PDL1n=0.5, #0.5 originally
+        tcells_total_PD1n=4,
     )
 
 
 def plots_suite(
         data,
         out_dir=None,
-        bounds=BOUNDS
+        bounds=BOUNDS,
+        n_snapshots=8,
+        final_time=None,
 ):
+
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
     tumor_data = {}
@@ -365,9 +394,12 @@ def plots_suite(
         agents=remove_units(agents),
         fields=fields,
         tag_colors=tag_colors,
-        n_snapshots=8,
+        n_snapshots=n_snapshots,
+        final_time=final_time,
         out_dir=out_dir,
         filename='snapshots.pdf',
+        default_font_size=48,
+        field_label_size=48,
         time_display='hr')
 
     return fig1, fig2, fig3
