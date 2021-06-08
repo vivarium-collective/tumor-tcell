@@ -420,6 +420,7 @@ def make_snapshot_video(
         tag_colors=TAG_COLORS,
         step=step,
         out_dir=out_dir,
+        time_display='hr',
         filename='tumor_tcell_video'
     )
 
@@ -440,7 +441,7 @@ workflow_library = {
         'name': 'tumor_tcell_experiment',
         'experiment': {
             'experiment_id': '1',
-            'total_time': 20000,
+            'total_time': 40000,
         },
         'plots': [
             {
@@ -450,7 +451,7 @@ workflow_library = {
             {
                 'plot_id': 'video',
                 'bounds': BOUNDS,
-                'step': 30,
+                'step': 20,
             },
         ],
     },
