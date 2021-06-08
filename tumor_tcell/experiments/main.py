@@ -22,7 +22,7 @@ from vivarium.core.control import Control
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
-from vivarium_multibody.plots.snapshots_video import make_video
+from tumor_tcell.plots.video import make_video
 from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, get_agent_colors
 
 # tumor-tcell imports
@@ -44,6 +44,13 @@ TCELL_ID = 'tcell'
 # parameters for toy experiments
 SMALL_BOUNDS = [20*units.um, 20*units.um]
 MEDIUM_BOUNDS = [90*units.um, 90*units.um]
+
+# plotting
+TAG_COLORS = {
+    ('internal', 'cell_state', 'PDL1p'): 'skyblue',
+    ('internal', 'cell_state', 'PDL1n'): 'indianred',
+    ('internal', 'cell_state', 'PD1p'): 'limegreen',
+    ('internal', 'cell_state', 'PD1n'): 'darkorange', }
 
 
 def get_tcells(number=1, relative_pd1n=0.2, total_pd1n=None):
@@ -383,17 +390,12 @@ def plots_suite(
     agents, fields = format_snapshot_data(data)
 
     # set tag colors.
-    tag_colors = {
-        ('internal', 'cell_state', 'PDL1p'): 'skyblue',
-        ('internal', 'cell_state', 'PDL1n'): 'indianred',
-        ('internal', 'cell_state', 'PD1p'): 'limegreen',
-        ('internal', 'cell_state', 'PD1n'): 'darkorange',}
 
     fig3 = plot_snapshots(
         bounds=remove_units(bounds),
         agents=remove_units(agents),
         fields=fields,
-        tag_colors=tag_colors,
+        tag_colors=TAG_COLORS,
         n_snapshots=n_snapshots,
         final_time=final_time,
         out_dir=out_dir,
@@ -405,11 +407,17 @@ def plots_suite(
     return fig1, fig2, fig3
 
 
-def make_snapshot_video(data, bounds, step=1, out_dir=None):
+def make_snapshot_video(
+        data,
+        bounds,
+        step=1,   # make frame every n saved steps
+        out_dir=None
+):
     make_video(
         data=remove_units(data),
         bounds=remove_units(bounds),
         agent_shape='circle',
+        tag_colors=TAG_COLORS,
         step=step,
         out_dir=out_dir,
         filename='tumor_tcell_video'
@@ -430,8 +438,21 @@ plots_library = {
 workflow_library = {
     '1': {
         'name': 'tumor_tcell_experiment',
-        'experiment': '1',
-        'plots': ['1'],
+        'experiment': {
+            'experiment_id': '1',
+            'total_time': 20000,
+        },
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': BOUNDS,
+                'step': 30,
+            },
+        ],
     },
     '2': {
         'name': 'small_experiment',
@@ -475,7 +496,7 @@ workflow_library = {
             {
                 'plot_id': 'video',
                 'bounds': MEDIUM_BOUNDS,
-                'step': 10  # make frame every n saved steps
+                'step': 10,
             },
         ],
     },
@@ -487,6 +508,11 @@ workflow_library = {
                 'plot_id': '1',
                 'bounds': FULL_BOUNDS
             },
+            {
+                'plot_id': 'video',
+                'bounds': FULL_BOUNDS,
+                'step': 30
+            },
         ],
     },
     '5': {
@@ -496,6 +522,11 @@ workflow_library = {
             {
                 'plot_id': '1',
                 'bounds': FULL_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': FULL_BOUNDS,
+                'step': 30
             },
         ],
     },

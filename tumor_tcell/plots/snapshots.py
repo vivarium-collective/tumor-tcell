@@ -400,6 +400,7 @@ def make_snapshots_figure(
     field_range=None,
     agent_colors=None,
     tag_colors=None,
+    legend_size=20,
     field_conc_unit='ng/mL',
     time_display='s',
     dead_color=[0, 0, 0],
@@ -488,13 +489,13 @@ def make_snapshots_figure(
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
                     if row_idx == 0:
-                        ax.set_title(f'{field_conc_unit}', y=1.08)
+                        ax.set_title(f'{field_conc_unit}', x=0.0, y=1.04)
                     ax.axis('off')
                     if vmin == vmax:
                         continue
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("left", size="5%", pad=0.0)
-                    fig.colorbar(im, cax=cax, format='%.6f')
+                    fig.colorbar(im, cax=cax, format='%.2f')
                     ax.axis('off')
 
                     if tag_colors:
@@ -502,7 +503,7 @@ def make_snapshots_figure(
                             Line2D([0], [0], marker='o', color='w', label=path[-1],
                                    markerfacecolor=color, markersize=30)
                             for path, color in tag_colors.items()]
-                        ax.legend(handles=legend_patches, loc='center right')
+                        ax.legend(handles=legend_patches, loc='center', prop={'size': legend_size})
 
         else:
             row_idx = 0
