@@ -494,7 +494,7 @@ def make_snapshots_figure(
                         continue
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("left", size="5%", pad=0.0)
-                    fig.colorbar(im, cax=cax, format='%.6f')
+                    fig.colorbar(im, cax=cax, format='%.1f')
                     ax.axis('off')
 
                     if tag_colors:
@@ -706,7 +706,7 @@ def plot_tags(data, plot_config):
                     ],
                 )
                 mappable = matplotlib.cm.ScalarMappable(norm, cmap)
-                fig.colorbar(mappable, cax=cax, format='%.6f')
+                fig.colorbar(mappable, cax=cax, format='%.1f')
 
     plt.rcParams.update({'font.size': original_fontsize})
     if out_dir:
@@ -959,7 +959,7 @@ def init_axes(
 ):
     ax = fig.add_subplot(grid[row_idx, col_idx])
     if row_idx == 0:
-        plot_title = '{:.2f} {:s}'.format(float(time), time_display)
+        plot_title = '{:.1f} {:s}'.format(float(time), time_display)
         plt.title(plot_title, y=1.08, fontsize=title_size)
     if col_idx == 0:
         ax.set_ylabel(

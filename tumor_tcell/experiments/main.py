@@ -46,7 +46,7 @@ def get_tcells(number=1, relative_pd1n=0.2, total_pd1n=None):
         return {
         '{}_{}'.format(TCELL_ID, n): {
             'type': 'tcell',
-            'cell_state': 'PD1n' if n <= total_pd1n else 'PD1p',
+            'cell_state': 'PD1n' if n < total_pd1n else 'PD1p',
             'TCR_timer': random.uniform(0, 5400),
             'velocity_timer': 0,
             'velocity': 10.0 * units.um/units.min,
@@ -223,6 +223,7 @@ def tumor_tcell_abm(
                        f"n_tumors: {n_tumors} \n"
                        f"tumors_state_PDL1n: {tumors_state_PDL1n} \n"
                        f"tcells_state_PD1n:{tcells_state_PD1n} \n"
+                       f"tcells_total_PD1n:{tcells_total_PD1n} \n"
                        f"total_time:{total_time} \n"
                        f"time_step:{time_step} \n"
                        f"sim_step:{sim_step} \n"
@@ -281,7 +282,7 @@ def full_experiment(
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
         tcells_total_PD1n=tcells_total_PD1n,
-        total_time=1209600, #change back to 259200
+        total_time=259200, #change back to 259200
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
@@ -300,7 +301,7 @@ def full_experiment_2():
         n_tcells=12,
         tcells_state_PD1n=0.8, #0.2 and 0.8
         tumors_state_PDL1n=0.5, #0.5 originally
-        tcells_total_PD1n=4,
+        tcells_total_PD1n=9,
     )
 
 
