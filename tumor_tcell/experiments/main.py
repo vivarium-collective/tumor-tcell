@@ -22,6 +22,7 @@ from vivarium.core.control import Control
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
+from tumor_tcell.plots.video import make_video
 from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, get_agent_colors
 
 # tumor-tcell imports
@@ -31,6 +32,7 @@ from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 from tumor_tcell.composites.death_logger import DeathLogger
 
 # global parameters
+PI = math.pi
 TIMESTEP = 60
 NBINS = [20, 20]
 DEPTH = 15  # um
@@ -38,7 +40,18 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
-PI = math.pi
+
+# parameters for toy experiments
+SMALL_BOUNDS = [20*units.um, 20*units.um]
+MEDIUM_BOUNDS = [90*units.um, 90*units.um]
+
+# plotting
+TAG_COLORS = {
+    ('internal', 'cell_state', 'PDL1p'): 'skyblue',
+    ('internal', 'cell_state', 'PDL1n'): 'indianred',
+    ('internal', 'cell_state', 'PD1p'): 'limegreen',
+    ('internal', 'cell_state', 'PD1n'): 'darkorange', }
+
 
 def get_tcells(number=1, relative_pd1n=0.2, total_pd1n=None):
     if total_pd1n:
@@ -88,6 +101,15 @@ def random_location(bounds, distance_from_center=None):
         random.uniform(0, bounds[1])]
 
 
+def convert_to_hours(data):
+    """Convert seconds to hours"""
+    times = list(data.keys())
+    for time in times:
+        hour = time/3600
+        data[hour] = data.pop(time)
+    return data
+
+
 # make defaults
 N_TUMORS = 120
 N_TCELLS = 9
@@ -95,7 +117,7 @@ DEFAULT_TUMORS = get_tumors(number=N_TUMORS)
 DEFAULT_TCELLS = get_tcells(number=N_TCELLS)
 
 
-# simulation # 1
+# The main simulation function
 def tumor_tcell_abm(
     bounds=BOUNDS,
     n_bins=NBINS,
@@ -118,6 +140,30 @@ def tumor_tcell_abm(
     tumors_distance=None,
     tcell_distance=None,
 ):
+    """ Tumor-Tcell simulation function
+
+    :param bounds:
+    :param n_bins:
+    :param depth:
+    :param field_molecules:
+    :param n_tumors:
+    :param n_tcells:
+    :param tumors:
+    :param tcells:
+    :param tumors_state_PDL1n:
+    :param tcells_state_PD1n:
+    :param total_time:
+    :param sim_step:
+    :param halt_threshold:
+    :param time_step:
+    :param emit_step:
+    :param emitter:
+    :param parallel:
+    :param tumors_distance:
+    :param tcell_distance:
+    :return:
+        Simulation output data (dict)
+    """
     initial_env_config = {
         'diffusion_field': {'uniform': 0.0}}
     jitter_force = 0
@@ -259,11 +305,7 @@ def tumor_tcell_abm(
 
     # return time
     data = experiment.emitter.get_data_deserialized()
-    #Convert seconds to hours
-    times = list(data.keys())
-    for time in times:
-        hour = time/3600
-        data[hour] = data.pop(time)
+    data = convert_to_hours(data)
     return data
 
 
@@ -305,45 +347,6 @@ def full_experiment_2():
     )
 
 
-MEDIUM_BOUNDS = [90*units.um, 90*units.um]
-def medium_experiment():
-    return tumor_tcell_abm(
-        tumors=get_tumors(number=3),
-        tcells=get_tcells(number=3),
-        total_time=50000,
-        bounds=MEDIUM_BOUNDS,
-        n_bins=[3, 3],
-        emitter='database',
-        tumors_distance=25 * units.um,
-        tcell_distance=10 * units.um,
-    )
-
-
-SMALL_BOUNDS = [20*units.um, 20*units.um]
-def small_experiment():
-    return tumor_tcell_abm(
-        tumors=get_tumors(number=1),
-        tcells=get_tcells(number=1),
-        total_time=100000,
-        bounds=SMALL_BOUNDS,
-        n_bins=[1, 1])
-
-
-def plots_suite_small_bounds(
-        data, out_dir=None, bounds=SMALL_BOUNDS):
-    return plots_suite(data, out_dir, bounds)
-
-
-def plots_suite_medium_bounds(
-        data, out_dir=None, bounds=MEDIUM_BOUNDS):
-    return plots_suite(data, out_dir, bounds)
-
-
-def plots_suite_full_bounds(
-        data, out_dir=None, bounds=FULL_BOUNDS):
-    return plots_suite(data, out_dir, bounds)
-
-
 def plots_suite(
         data,
         out_dir=None,
@@ -356,6 +359,8 @@ def plots_suite(
     tcell_data = {}
     tumor_data = {}
     for time, time_data in data.items():
+        if 'agents' not in time_data:
+            continue
         all_agents_data = time_data['agents']
         tcell_data[time] = {
             'agents': {
@@ -386,17 +391,12 @@ def plots_suite(
     agents, fields = format_snapshot_data(data)
 
     # set tag colors.
-    tag_colors = {
-        ('internal', 'cell_state', 'PDL1p'): 'skyblue',
-        ('internal', 'cell_state', 'PDL1n'): 'indianred',
-        ('internal', 'cell_state', 'PD1p'): 'limegreen',
-        ('internal', 'cell_state', 'PD1n'): 'darkorange',}
 
     fig3 = plot_snapshots(
         bounds=remove_units(bounds),
         agents=remove_units(agents),
         fields=fields,
-        tag_colors=tag_colors,
+        tag_colors=TAG_COLORS,
         n_snapshots=n_snapshots,
         final_time=final_time,
         out_dir=out_dir,
@@ -408,45 +408,129 @@ def plots_suite(
     return fig1, fig2, fig3
 
 
+def make_snapshot_video(
+        data,
+        bounds,
+        step=1,   # make frame every n saved steps
+        out_dir=None
+):
+    make_video(
+        data=remove_units(data),
+        bounds=remove_units(bounds),
+        agent_shape='circle',
+        tag_colors=TAG_COLORS,
+        step=step,
+        out_dir=out_dir,
+        time_display='hr',
+        filename='tumor_tcell_video'
+    )
+
+
+
 # libraries of experiments and plots for easy access by Control
 experiments_library = {
     '1': tumor_tcell_abm,
-    '2': small_experiment,
-    '3': medium_experiment,
     '4': full_experiment,
     '5': full_experiment_2,
 }
 plots_library = {
     '1': plots_suite,
-    '2': plots_suite_small_bounds,
-    '3': plots_suite_medium_bounds,
-    '4': plots_suite_full_bounds,
+    'video': make_snapshot_video,
 }
 workflow_library = {
     '1': {
         'name': 'tumor_tcell_experiment',
-        'experiment': '1',
-        'plots': ['1'],
+        'experiment': {
+            'experiment_id': '1',
+            'total_time': 40000,
+        },
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': BOUNDS,
+                'step': 20,
+            },
+        ],
     },
     '2': {
         'name': 'small_experiment',
-        'experiment': '2',
-        'plots': ['2'],
+        'experiment': {
+            'experiment_id': '1',
+            'bounds': SMALL_BOUNDS,
+            'n_tumors': 1,
+            'n_tcells': 1,
+            'total_time': 10000,
+            'n_bins': [1, 1]
+        },
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': SMALL_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': SMALL_BOUNDS,
+            },
+        ],
     },
     '3': {
         'name': 'medium_experiment',
-        'experiment': '3',
-        'plots': ['3'],
+        'experiment': {
+            'experiment_id': '1',
+            'bounds': MEDIUM_BOUNDS,
+            'n_tumors': 3,
+            'n_tcells': 3,
+            'total_time': 50000,
+            'n_bins': [3, 3],
+            # 'emitter': 'database',
+            'tumors_distance': 25 * units.um,
+            'tcell_distance': 10 * units.um,
+        },
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': MEDIUM_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': MEDIUM_BOUNDS,
+                'step': 10,
+            },
+        ],
     },
     '4': {
         'name': 'full_experiment',
         'experiment': '4',
-        'plots': ['4'],
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': FULL_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': FULL_BOUNDS,
+                'step': 30
+            },
+        ],
     },
     '5': {
         'name': 'full_experiment_2',
         'experiment': '5',
-        'plots': ['4'],
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': FULL_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': FULL_BOUNDS,
+                'step': 30
+            },
+        ],
     },
 }
 
