@@ -31,6 +31,7 @@ setup(
         'vivarium-core>=0.2.16',
         'vivarium-multibody==0.0.12',
         'tqdm',
+        'opencv-python',
         'pymunk',
         'pandas',
         'seaborn',
