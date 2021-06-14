@@ -100,6 +100,10 @@ def random_location(bounds, distance_from_center=None):
         random.uniform(0, bounds[0]),
         random.uniform(0, bounds[1])]
 
+def lymph_node_location(bounds, location=[[0.95,1],[0.95,1]]):
+    return [
+        random.uniform(bounds[0]*location[0][0], bounds[0]*location[0][1]),
+        random.uniform(bounds[0]*location[1][0], bounds[0]*location[1][1])]
 
 def convert_to_hours(data):
     """Convert seconds to hours"""
@@ -139,6 +143,7 @@ def tumor_tcell_abm(
     parallel=False,
     tumors_distance=None,
     tcell_distance=None,
+    lymph_nodes=False,
 ):
     """ Tumor-Tcell simulation function
 
@@ -229,9 +234,12 @@ def tumor_tcell_abm(
         agent_id: {
             'boundary': {
                 'location': state.get('location', random_location(
-                    bounds, distance_from_center=tcell_distance)),
+                    bounds, distance_from_center=tcell_distance) if not lymph_nodes else lymph_node_location(bounds)),
                 'diameter': state.get('diameter', 7.5 * units.um),
                 'velocity': state.get('velocity', 10.0 * units.um/units.min)},
+            'globals': {
+                'LN_no_migration': lymph_nodes,
+            },
             'internal': {
                 'cell_state': state.get('cell_state', None),
                 'velocity_timer': state.get('velocity_timer', 0),
@@ -316,6 +324,8 @@ def full_experiment(
         tcells_state_PD1n=None,
         tumors_state_PDL1n=None,
         tcells_total_PD1n=None,
+        lymph_nodes=False,
+        total_time=259200,
 ):
 
     return tumor_tcell_abm(
@@ -324,7 +334,7 @@ def full_experiment(
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
         tcells_total_PD1n=tcells_total_PD1n,
-        total_time=259200, #change back to 259200
+        total_time=total_time,
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
@@ -335,6 +345,7 @@ def full_experiment(
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
         tcell_distance=200*units.um, #in or out (None) of the tumor
         #parallel=True,
+        lymph_nodes=lymph_nodes,
     )
 
 #Change experimental PD1 and PDL1 levels for full experiment
@@ -345,6 +356,17 @@ def full_experiment_2():
         tumors_state_PDL1n=0.5, #0.5 originally
         tcells_total_PD1n=9,
     )
+
+def lymph_node_experiment():
+    return full_experiment(
+        n_tcells=12,
+        tcells_state_PD1n=0.8, #0.2 and 0.8
+        tumors_state_PDL1n=0.5, #0.5 originally
+        tcells_total_PD1n=9,
+        lymph_nodes=True,
+        total_time=300,
+    )
+
 
 
 def plots_suite(
@@ -411,9 +433,13 @@ def plots_suite(
 def make_snapshot_video(
         data,
         bounds,
-        step=1,   # make frame every n saved steps
+        #step=1,   # make frame every n saved steps
+        n_steps=100,
         out_dir=None
 ):
+    n_times = len(data.keys())
+    step = int(n_times/n_steps)
+
     make_video(
         data=remove_units(data),
         bounds=remove_units(bounds),
@@ -432,6 +458,7 @@ experiments_library = {
     '1': tumor_tcell_abm,
     '4': full_experiment,
     '5': full_experiment_2,
+    '6': lymph_node_experiment,
 }
 plots_library = {
     '1': plots_suite,
@@ -452,7 +479,7 @@ workflow_library = {
             {
                 'plot_id': 'video',
                 'bounds': BOUNDS,
-                'step': 20,
+                'n_steps': 100,
             },
         ],
     },
@@ -498,7 +525,7 @@ workflow_library = {
             {
                 'plot_id': 'video',
                 'bounds': MEDIUM_BOUNDS,
-                'step': 10,
+                'n_steps': 100,
             },
         ],
     },
@@ -513,7 +540,7 @@ workflow_library = {
             {
                 'plot_id': 'video',
                 'bounds': FULL_BOUNDS,
-                'step': 30
+                'n_steps': 100
             },
         ],
     },
@@ -528,7 +555,22 @@ workflow_library = {
             {
                 'plot_id': 'video',
                 'bounds': FULL_BOUNDS,
-                'step': 30
+                'n_steps': 100
+            },
+        ],
+    },
+    '6': {
+        'name': 'lymph_node_experiment',
+        'experiment': '6',
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': FULL_BOUNDS
+            },
+            {
+                'plot_id': 'video',
+                'bounds': FULL_BOUNDS,
+                'n_steps': 100
             },
         ],
     },

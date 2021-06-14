@@ -22,6 +22,12 @@ NAME = 'T_cell'
 TIMESTEP = 60  # seconds
 CONCENTRATION_UNIT = 1
 
+def LN_division(mother_value, **args):
+    if mother_value:
+        return [True, False]
+    else:
+        return [False, False]
+
 def assymetric_division(mother_value, **args):
     return [mother_value+1, mother_value]
 
@@ -153,7 +159,12 @@ class TCellProcess(Process):
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
-                    '_updater': 'accumulate'}
+                    '_updater': 'accumulate'},
+                'LN_no_migration': {
+                    '_default': False,
+                    '_divider': {
+                        'divider': LN_division,
+                        'config': {}}},
             },
             'internal': {
                 'cell_state': {
@@ -417,8 +428,12 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
+            if states['globals']['LN_no_migration']:
+                update['boundary'].update({
+                    'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+
             # Reset the velocity timer after refractory period
-            if velocity_timer >= self.parameters['PD1n_migration_refractory_time']:
+            elif velocity_timer >= self.parameters['PD1n_migration_refractory_time']:
                 update['internal'].update({
                     'velocity_timer': {
                         '_updater': 'set',
@@ -478,8 +493,12 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
+            if states['globals']['LN_no_migration']:
+                update['boundary'].update({
+                    'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+
             # Reset the velocity timer after refractory period
-            if velocity_timer >= self.parameters['PD1p_migration_refractory_time']:
+            elif velocity_timer >= self.parameters['PD1p_migration_refractory_time']:
                 update['internal'].update({
                     'velocity_timer': {
                         '_updater': 'set',
