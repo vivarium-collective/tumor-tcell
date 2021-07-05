@@ -190,7 +190,7 @@ def population_group_plot(cell_plot_list, cell_states, out_dir=None, save_name=N
         pl.savefig(out_dir + '/' + save_name + '_total_subtype.png', transparent=True, format='png',
                    bbox_inches='tight', dpi=300)
 
-def cytotoxicity_group_plot(cell_plot_list, N_TUMORS, out_dir=None, save_name=None):
+def cytotoxicity_group_plot(cell_plot_list, exp_1, cntrl_1, exp_2, cntrl_2, out_dir=None, save_name=None):
     SMALL_SIZE = 18
     MEDIUM_SIZE = 22
     BIGGER_SIZE = 24
@@ -203,17 +203,40 @@ def cytotoxicity_group_plot(cell_plot_list, N_TUMORS, out_dir=None, save_name=No
     pl.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
     pl.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-    # Calculate % Cytotoxicity
+    # Combine data for comparisons
     experiment_plot_list = []
     for experiment in cell_plot_list:
         total_cell = experiment.groupby(['time', 'experiment_name'])['cell'].nunique().reset_index()
         experiment_plot_list.append(total_cell)
     experiment_plot = pd.concat(experiment_plot_list)
-    experiment_plot['cytotoxicity'] = (N_TUMORS - experiment_plot['cell']) / N_TUMORS * 100
+
+    # Reshape the data for calculating cytotoxicity with controls
+    tt = experiment_plot.pivot(index='time', columns='experiment_name', values='cell').reset_index()
+    exp_1 = exp_1
+    cntrl_1 = cntrl_1
+    exp_2 = exp_2
+    cntrl_2 = cntrl_2
+    col_1 = ['time', exp_1, cntrl_1]
+    col_2 = ['time', exp_2, cntrl_2]
+    tt_1 = tt[col_1]
+    tt_2 = tt[col_2]
+
+    # calculate cytotoxicity with controls
+    tt_1['cytotoxicity'] = (tt_1[cntrl_1] - tt_1[exp_1]) / tt_1[cntrl_1] * 100
+    tt_2['cytotoxicity'] = (tt_2[cntrl_2] - tt_2[exp_2]) / tt_2[cntrl_2] * 100
+
+    # reshape data for plotting together
+    tm_1 = pd.melt(tt_1, id_vars='time', value_vars='cytotoxicity')
+    tm_1['experiment_name'] = exp_1
+    tm_1.rename(columns={'value': 'cytotoxicity'}, inplace=True)
+    tm_2 = pd.melt(tt_2, id_vars='time', value_vars='cytotoxicity')
+    tm_2['experiment_name'] = exp_2
+    tm_2.rename(columns={'value': 'cytotoxicity'}, inplace=True)
+    cytotoxic_plot = pd.concat([tm_1, tm_2])
 
     # Create plot
     pl.figure(figsize=(8, 4))
-    ttl_1 = sns.lineplot(data=experiment_plot, x="time", y='cytotoxicity', hue='experiment_name')
+    ttl_1 = sns.lineplot(data=cytotoxic_plot, x="time", y='cytotoxicity', hue='experiment_name')
     pl.title("Total " + save_name)
     pl.legend(title="Experiment")
     pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)

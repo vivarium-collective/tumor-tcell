@@ -317,7 +317,7 @@ def tumor_tcell_abm(
     return data
 
 
-FULL_BOUNDS = [1500*units.um, 1500*units.um] #Usually 1200 by 1200
+FULL_BOUNDS = [1200*units.um, 1200*units.um] #Usually 1200 by 1200
 def full_experiment(
         n_tcells=12,
         n_tumors=1200,
@@ -339,11 +339,11 @@ def full_experiment(
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
-        n_bins=[150, 150], #10 um bin size, usually 120 by 120
-        halt_threshold=8000, #sqrt(halt_threshold)*15 <bounds, normally 4800
+        n_bins=[120, 120], #10 um bin size, usually 120 by 120
+        halt_threshold=5000, #sqrt(halt_threshold)*15 <bounds, normally 4800
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
-        tcell_distance=200*units.um, #in or out (None) of the tumor
+        tcell_distance=None, #200*units.um, #in or out (None) of the tumor
         #parallel=True,
         lymph_nodes=lymph_nodes,
     )
@@ -360,11 +360,12 @@ def full_experiment_2():
 def lymph_node_experiment():
     return full_experiment(
         n_tcells=12,
+        n_tumors=120,
         tcells_state_PD1n=0.8, #0.2 and 0.8
         tumors_state_PDL1n=0.5, #0.5 originally
         tcells_total_PD1n=9,
         lymph_nodes=True,
-        total_time=300,
+        total_time=600000,
     )
 
 
@@ -434,11 +435,11 @@ def make_snapshot_video(
         data,
         bounds,
         #step=1,   # make frame every n saved steps
-        n_steps=100,
+        n_steps=10,
         out_dir=None
 ):
     n_times = len(data.keys())
-    step = int(n_times/n_steps)
+    step = math.ceil(n_times/n_steps)
 
     make_video(
         data=remove_units(data),
@@ -516,6 +517,7 @@ workflow_library = {
             # 'emitter': 'database',
             'tumors_distance': 25 * units.um,
             'tcell_distance': 10 * units.um,
+            'parallel': True,
         },
         'plots': [
             {
@@ -570,7 +572,7 @@ workflow_library = {
             {
                 'plot_id': 'video',
                 'bounds': FULL_BOUNDS,
-                'n_steps': 100
+                'n_steps': 100,
             },
         ],
     },
