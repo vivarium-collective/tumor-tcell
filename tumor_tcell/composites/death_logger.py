@@ -6,7 +6,7 @@ Death Logger
 Saves the final time and state of all agents
 """
 
-from vivarium.core.process import Composer
+from vivarium.core.composer import Composer
 from vivarium.core.process import Deriver
 from vivarium.library.dict_utils import deep_merge
 from vivarium.processes.clock import Clock

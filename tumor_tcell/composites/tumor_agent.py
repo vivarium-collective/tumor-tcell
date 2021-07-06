@@ -7,8 +7,8 @@ Tumor Agent
 import os
 
 # core imports
-from vivarium.core.process import Composer, Composite
-from vivarium.core.experiment import Experiment
+from vivarium.core.composer import Composer, Composite
+from vivarium.core.engine import Engine
 from vivarium.plots.agents_multigen import plot_agents_multigen
 
 # processes
@@ -188,7 +188,7 @@ def test_tumor_agent(
         initial['agents'][agent_id]['internal']['cell_state'] = initial_agent_state  # set an initial state
 
     # make the experiment
-    experiment = Experiment({
+    experiment = Engine({
         'processes': composite['processes'],
         'topology': composite['topology'],
         'initial_state': initial})

@@ -8,7 +8,7 @@ import os
 import random
 import numpy as np
 
-from vivarium.core.process import Composer
+from vivarium.core.composer import Composer
 from vivarium.core.composition import (
     composer_in_experiment,
     COMPOSITE_OUT_DIR,

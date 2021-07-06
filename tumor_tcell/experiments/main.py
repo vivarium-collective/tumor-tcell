@@ -16,7 +16,7 @@ from tqdm import tqdm
 import math
 
 # vivarium-core imports
-from vivarium.core.experiment import Experiment, timestamp
+from vivarium.core.engine import Engine, timestamp
 from vivarium.library.units import units, remove_units
 from vivarium.core.control import Control
 
@@ -118,18 +118,17 @@ def random_location(
         pos_x = center_x+dx
         pos_y = center_y+dy
 
-    else:
-        if excluded_distance_from_center:
-            in_center = True
-            while in_center:
-                pos_x = random.uniform(0, bounds[0])
-                pos_y = random.uniform(0, bounds[1])
-                distance = (pos_x**2 + pos_y**2)**0.5
-                if distance > excluded_distance_from_center:
-                    in_center = False
-        else:
+    elif excluded_distance_from_center:
+        in_center = True
+        while in_center:
             pos_x = random.uniform(0, bounds[0])
             pos_y = random.uniform(0, bounds[1])
+            distance = (pos_x**2 + pos_y**2)**0.5
+            if distance > excluded_distance_from_center:
+                in_center = False
+    else:
+        pos_x = random.uniform(0, bounds[0])
+        pos_y = random.uniform(0, bounds[1])
 
     return [pos_x, pos_y]
 
@@ -340,7 +339,7 @@ def tumor_tcell_abm(
         'emit_step': emit_step,
         'emitter': {'type': emitter}}
     print(f'Initializing experiment {experiment_id}')
-    experiment = Experiment(experiment_config)
+    experiment = Engine(experiment_config)
 
     # run simulation and terminate upon reaching total_time or halt_threshold
     clock_start = clock.time()
