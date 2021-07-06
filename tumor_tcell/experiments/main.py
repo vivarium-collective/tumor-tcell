@@ -87,18 +87,53 @@ def get_tumors(number=1, relative_pdl1n=0.5):
         } for n in range(number)}
 
 
-def random_location(bounds, distance_from_center=None):
-    if distance_from_center:
+def random_location(
+        bounds,
+        center=None,
+        distance_from_center=None,
+        excluded_distance_from_center=None
+):
+    if distance_from_center and excluded_distance_from_center:
+        assert distance_from_center > excluded_distance_from_center, \
+            'distance_from_center must be greater than excluded_distance_from_center'
+
+    # get the center
+    if center:
+        center_x = center[0]
+        center_y = center[1]
+    else:
         center_x = bounds[0]/2
         center_y = bounds[1]/2
+
+    if distance_from_center:
+        if excluded_distance_from_center:
+            ring_size = distance_from_center - excluded_distance_from_center
+            distance = excluded_distance_from_center + ring_size * math.sqrt(random.random())
+        else:
+            distance = distance_from_center * math.sqrt(random.random())
+
         angle = random.uniform(0, 2 * PI)
-        distance = distance_from_center * math.sqrt(random.random())
         dy = math.sin(angle)*distance
         dx = math.cos(angle)*distance
-        return [center_x+dx, center_y+dy]
-    return [
-        random.uniform(0, bounds[0]),
-        random.uniform(0, bounds[1])]
+        pos_x = center_x+dx
+        pos_y = center_y+dy
+
+    else:
+        if excluded_distance_from_center:
+            in_center = True
+            while in_center:
+                pos_x = random.uniform(0, bounds[0])
+                pos_y = random.uniform(0, bounds[1])
+                distance = (pos_x**2 + pos_y**2)**0.5
+                if distance > excluded_distance_from_center:
+                    in_center = False
+        else:
+            pos_x = random.uniform(0, bounds[0])
+            pos_y = random.uniform(0, bounds[1])
+
+    return [pos_x, pos_y]
+
+
 
 def lymph_node_location(bounds, location=[[0.95,1],[0.95,1]]):
     return [
@@ -142,7 +177,11 @@ def tumor_tcell_abm(
     emitter='timeseries',
     parallel=False,
     tumors_distance=None,
-    tcell_distance=None,
+    tcells_distance=None,
+    tumors_excluded_distance=None,
+    tcells_excluded_distance=None,
+    tumors_center=None,
+    tcell_center=None,
     lymph_nodes=False,
 ):
     """ Tumor-Tcell simulation function
@@ -165,7 +204,7 @@ def tumor_tcell_abm(
     :param emitter:
     :param parallel:
     :param tumors_distance:
-    :param tcell_distance:
+    :param tcells_distance:
     :return:
         Simulation output data (dict)
     """
@@ -234,7 +273,11 @@ def tumor_tcell_abm(
         agent_id: {
             'boundary': {
                 'location': state.get('location', random_location(
-                    bounds, distance_from_center=tcell_distance) if not lymph_nodes else lymph_node_location(bounds)),
+                    bounds,
+                    center=tcell_center,
+                    distance_from_center=tcells_distance,
+                    excluded_distance_from_center=tcells_excluded_distance,
+                ) if not lymph_nodes else lymph_node_location(bounds)),
                 'diameter': state.get('diameter', 7.5 * units.um),
                 'velocity': state.get('velocity', 10.0 * units.um/units.min)},
             'globals': {
@@ -256,7 +299,10 @@ def tumor_tcell_abm(
                 'cell_state': state.get('cell_state', None)},
             'boundary': {
                 'location': state.get('location', random_location(
-                    bounds, distance_from_center=tumors_distance)),
+                    bounds,
+                    center=tumors_center,
+                    distance_from_center=tumors_distance,
+                    excluded_distance_from_center=tumors_excluded_distance)),
                 'diameter': state.get('diameter', 15 * units.um),
                 'velocity': state.get('velocity', 0.0 * units.um/units.min)},
             'neighbors': {
@@ -285,7 +331,7 @@ def tumor_tcell_abm(
                        f"n_bins:{n_bins} \n"
                        f"halt_threshold:{halt_threshold} \n"
                        f"tumors_distance:{tumors_distance} \n"
-                       f"tcell_distance: {tcell_distance} \n",
+                       f"tcells_distance: {tcells_distance} \n",
         'processes': composite_model.processes,
         'topology': composite_model.topology,
         'initial_state': initial_state,
@@ -343,7 +389,7 @@ def full_experiment(
         halt_threshold=5000, #sqrt(halt_threshold)*15 <bounds, normally 4800
         emitter='database',
         tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
-        tcell_distance=None, #200*units.um, #in or out (None) of the tumor
+        tcells_distance=None, #200*units.um, #in or out (None) of the tumor
         #parallel=True,
         lymph_nodes=lymph_nodes,
     )
@@ -516,7 +562,7 @@ workflow_library = {
             'n_bins': [3, 3],
             # 'emitter': 'database',
             'tumors_distance': 25 * units.um,
-            'tcell_distance': 10 * units.um,
+            'tcells_distance': 10 * units.um,
             'parallel': True,
         },
         'plots': [
