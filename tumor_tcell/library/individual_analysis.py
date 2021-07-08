@@ -22,7 +22,7 @@ from tumor_tcell.library.population_plots import population_plot
 from tumor_tcell.library.population_plots import division_plot
 from tumor_tcell.library.population_plots import death_plot
 
-def individual_analysis(analysis_dir, experiment_id, bounds):
+def individual_analysis(analysis_dir, experiment_id, bounds, tcells=True):
     # Read in the data from parent directory
     experiment_dir = analysis_dir + experiment_id
     os.chdir(experiment_dir)
@@ -45,24 +45,40 @@ def individual_analysis(analysis_dir, experiment_id, bounds):
     fig1, fig2, fig3 = plots_suite(data, out_dir=figures_out_dir, bounds=[b * units.um for b in bounds])
     make_snapshot_video(data, bounds=[b * units.um for b in bounds], n_steps=100, out_dir=figures_out_dir)
 
-    #Population analysis
-    df_tumor_death, df_tcell_death, tumor_plot, tcell_plot = data_to_dataframes(data)
-    divide_time_T = division_analysis(tcell_plot)
-    divide_time_tumor = division_analysis(tumor_plot)
-    division_plot(divide_data=divide_time_T, out_dir=figures_out_dir, save_name='Tcells')
-    division_plot(divide_data=divide_time_tumor, out_dir=figures_out_dir, save_name='Tumors')
-    population_plot(population_data=tumor_plot, cell_states=['PDL1n', 'PDL1p'], out_dir=figures_out_dir,save_name='Tumors')
-    population_plot(population_data=tcell_plot, cell_states=['PD1n', 'PD1p'], out_dir=figures_out_dir,save_name='Tcells')
-    death_plot(death_data=df_tumor_death, out_dir=figures_out_dir, save_name='Tumors')
-    death_plot(death_data=df_tcell_death, out_dir=figures_out_dir, save_name='Tcells')
+    if tcells:
+        #Population analysis
+        df_tumor_death, df_tcell_death, tumor_plot, tcell_plot = data_to_dataframes(data)
+        divide_time_T = division_analysis(tcell_plot)
+        divide_time_tumor = division_analysis(tumor_plot)
+        division_plot(divide_data=divide_time_T, out_dir=figures_out_dir, save_name='Tcells')
+        division_plot(divide_data=divide_time_tumor, out_dir=figures_out_dir, save_name='Tumors')
+        population_plot(population_data=tumor_plot, cell_states=['PDL1n', 'PDL1p'], out_dir=figures_out_dir,save_name='Tumors')
+        population_plot(population_data=tcell_plot, cell_states=['PD1n', 'PD1p'], out_dir=figures_out_dir,save_name='Tcells')
+        death_plot(death_data=df_tumor_death, out_dir=figures_out_dir, save_name='Tumors')
+        death_plot(death_data=df_tcell_death, out_dir=figures_out_dir, save_name='Tcells')
 
-    #Export the dataframes for analysis comparison to other experiments and not need to process again
-    df_tumor_death['experiment_id'] = experiment_id
-    df_tcell_death['experiment_id'] = experiment_id
-    tumor_plot['experiment_id'] = experiment_id
-    tcell_plot['experiment_id'] = experiment_id
+        #Export the dataframes for analysis comparison to other experiments and not need to process again
+        df_tumor_death['experiment_id'] = experiment_id
+        df_tcell_death['experiment_id'] = experiment_id
+        tumor_plot['experiment_id'] = experiment_id
+        tcell_plot['experiment_id'] = experiment_id
 
-    df_tumor_death.to_csv('tumor_death.csv')
-    df_tcell_death.to_csv('tcell_death.csv')
-    tumor_plot.to_csv('tumor_plot.csv')
-    tcell_plot.to_csv('tcell_plot.csv')
+        df_tumor_death.to_csv('tumor_death.csv')
+        df_tcell_death.to_csv('tcell_death.csv')
+        tumor_plot.to_csv('tumor_plot.csv')
+        tcell_plot.to_csv('tcell_plot.csv')
+    else:
+        # Population analysis
+        df_tumor_death, tumor_plot = control_data_to_dataframes(data)
+        divide_time_tumor = division_analysis(tumor_plot)
+        division_plot(divide_data=divide_time_tumor, out_dir=figures_out_dir, save_name='Tumors')
+        population_plot(population_data=tumor_plot, cell_states=['PDL1n', 'PDL1p'], out_dir=figures_out_dir,
+                        save_name='Tumors')
+        death_plot(death_data=df_tumor_death, out_dir=figures_out_dir, save_name='Tumors')
+
+        # Export the dataframes for analysis comparison to other experiments and not need to process again
+        df_tumor_death['experiment_id'] = experiment_id
+        tumor_plot['experiment_id'] = experiment_id
+
+        df_tumor_death.to_csv('tumor_death.csv')
+        tumor_plot.to_csv('tumor_plot.csv')
