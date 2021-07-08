@@ -367,7 +367,7 @@ def full_experiment(
         n_tcells=12,
         n_tumors=1200,
         tcells_state_PD1n=None,
-        tumors_state_PDL1n=None,
+        tumors_state_PDL1n=0.5,
         tcells_total_PD1n=None,
         lymph_nodes=False,
         total_time=259200,

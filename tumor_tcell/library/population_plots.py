@@ -1,6 +1,8 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as pl
+import os
+import numpy as np
 
 def division_plot(divide_data, out_dir = None, save_name = None):
 
@@ -245,4 +247,71 @@ def cytotoxicity_group_plot(cell_plot_list, exp_1, cntrl_1, exp_2, cntrl_2, out_
         pl.savefig(out_dir + '/' + save_name + '_cytotoxicity.png', transparent=True, format='png',
                    bbox_inches='tight', dpi=300)
 
-    return experiment_plot
+    return cytotoxic_plot
+
+def cytotoxicity_rep_plot(num_rep, save_name):
+    #settings for the plotting
+    SMALL_SIZE = 18
+    MEDIUM_SIZE = 22
+    BIGGER_SIZE = 24
+
+    pl.rc('font', size=SMALL_SIZE)  # controls default text sizes
+    pl.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+    pl.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+    pl.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    pl.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    pl.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+    pl.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+    # Get csv saved in experiment id library
+    analysis_dir = '/mnt/c/Users/akoya-stanford/Python_Code/tumor-tcell/out/killing_experiments/'
+    save_dir = analysis_dir + 'Multiple_killing_analysis/'
+
+    analysis_out_dir = save_dir + save_name + '_n55_rep'  #####################
+    os.makedirs(analysis_out_dir, exist_ok=True)
+
+    experiment_list = []
+    for n in range(1, num_rep + 1, 1):
+        s = 'MHCI_Reduction_' + save_name + '_ncells_55_exp' + str(n)
+        experiment_list.append(s)
+
+    # Create a list of dataframes for concatenation
+    high_cytotoxicity_list = []
+
+    # read in dataframes
+    for experiment in experiment_list:
+        experiment_id = experiment
+        experiment_dir = analysis_dir + experiment_id + '/' + 'killing_PDL1_50_PDL1_0/'
+        os.chdir(experiment_dir)
+
+        df_cytotoxicity = pd.read_csv(experiment + '_cytotoxicity.csv', index_col=0)
+        df_cytotoxicity['replicate'] = experiment
+        high_cytotoxicity_list.append(df_cytotoxicity)
+
+    # concantenate columns and calculate mean and sem
+    df = pd.concat(high_cytotoxicity_list)
+    dfb = df.groupby(['time', 'experiment_name']).agg({'cytotoxicity': ['mean', 'sem']})
+    dfb.columns = dfb.columns.droplevel(0)
+    dfb = dfb.rename_axis(None, axis=1)
+    dfb.reset_index(inplace=True)
+
+    pl.figure(figsize=(8, 4))
+    for experiment in dfb.experiment_name.unique():
+        df_plot = dfb[dfb.experiment_name == experiment]
+
+        # create vectors to use for SEM plotting
+        M_new_vec = np.array(df_plot['mean'])
+        Sigma_new_vec = np.array(df_plot['sem'])
+        lower_bound = M_new_vec - Sigma_new_vec
+        upper_bound = M_new_vec + Sigma_new_vec
+
+        # Create plot
+        ttl_1 = sns.lineplot(data=df_plot, x="time", y='mean')
+        pl.title("Total " + save_name)
+        pl.ylabel('cytotoxicity')
+        pl.fill_between(df_plot['time'], lower_bound, upper_bound, alpha=.3)
+
+    #save the plot
+    if save_name is not None:
+        pl.savefig(analysis_out_dir + '/' + save_name + '_cytotoxicity.png', transparent=True, format='png',
+                   bbox_inches='tight', dpi=300)
