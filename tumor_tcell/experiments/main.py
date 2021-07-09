@@ -362,7 +362,7 @@ def tumor_tcell_abm(
     return data
 
 
-FULL_BOUNDS = [1200*units.um, 1200*units.um] #Usually 1200 by 1200
+FULL_BOUNDS = [1600*units.um, 1600*units.um] #Usually 1200 by 1200
 def full_experiment(
         n_tcells=12,
         n_tumors=1200,
@@ -371,6 +371,9 @@ def full_experiment(
         tcells_total_PD1n=None,
         lymph_nodes=False,
         total_time=259200,
+        tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
+        tcells_distance=290 * units.um,  # in or out (None) of the tumor
+        tcells_excluded_distance=260 * units.um,  # for creating a ring around tumor
 ):
 
     return tumor_tcell_abm(
@@ -384,11 +387,12 @@ def full_experiment(
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
-        n_bins=[120, 120], #10 um bin size, usually 120 by 120
-        halt_threshold=5000, #sqrt(halt_threshold)*15 <bounds, normally 4800
+        n_bins=[160, 160], #10 um bin size, usually 120 by 120
+        halt_threshold=10000,#5000, #sqrt(halt_threshold)*15 <bounds, normally 5000
         emitter='database',
-        tumors_distance=260*units.um, #sqrt(n_tumors)*15(diameter)/2
-        tcells_distance=None, #200*units.um, #in or out (None) of the tumor
+        tumors_distance=tumors_distance, #sqrt(n_tumors)*15(diameter)/2
+        tcells_distance=tcells_distance, #in or out (None) of the tumor
+        tcells_excluded_distance=tcells_excluded_distance, #for creating a ring around tumor
         #parallel=True,
         lymph_nodes=lymph_nodes,
     )
@@ -397,9 +401,12 @@ def full_experiment(
 def full_experiment_2():
     return full_experiment(
         n_tcells=12,
-        tcells_state_PD1n=0.8, #0.2 and 0.8
+        total_time=1209600,
         tumors_state_PDL1n=0.5, #0.5 originally
         tcells_total_PD1n=9,
+        tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
+        tcells_distance=250 * units.um,  # in or out (None) of the tumor
+        tcells_excluded_distance=None,#260 * units.um,  # for creating a ring around tumor
     )
 
 def lymph_node_experiment():
@@ -599,11 +606,11 @@ workflow_library = {
                 'plot_id': '1',
                 'bounds': FULL_BOUNDS
             },
-            {
-                'plot_id': 'video',
-                'bounds': FULL_BOUNDS,
-                'n_steps': 100
-            },
+            # {
+            #     'plot_id': 'video',
+            #     'bounds': FULL_BOUNDS,
+            #     'n_steps': 100
+            # },
         ],
     },
     '6': {
