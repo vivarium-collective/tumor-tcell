@@ -21,8 +21,8 @@ from tumor_tcell.library.population_plots import population_group_plot
 from tumor_tcell.library.population_plots import cytotoxicity_group_plot
 
 
-def killing_experiment(N_cells, save_name, num_rep=None,bounds=[250 * units.um, 250 * units.um],
-                       total_time=48600,):
+def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
+                       bounds=[250 * units.um, 250 * units.um], total_time=48600,):
     for n in range(1, num_rep + 1, 1):
 
         experiment_name = 'MHCI_Reduction_'+save_name+'_ncells_'+str(N_cells)+'_exp'+str(n)
@@ -35,7 +35,7 @@ def killing_experiment(N_cells, save_name, num_rep=None,bounds=[250 * units.um, 
 
         ##Experiment to compare to killing data 1:1 with 0 PDL1+ tumors
         N_TUMORS = N_cells
-        N_TCELLS = N_cells
+        N_TCELLS = int(N_cells/tumor_t_ratio)
         relative_pd1n = 0.25
         relative_pdl1n = 1
         DEFAULT_TUMORS = get_tumors(number=N_TUMORS, relative_pdl1n=relative_pdl1n)
