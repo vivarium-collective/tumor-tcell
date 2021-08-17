@@ -6,7 +6,7 @@ Tumor/T-cell Experiments
 Experiments can be triggered from the command line:
 
 ```
-$ python tumor_tcell/experiments/main.py [experiment_name]
+$ python tumor_tcell/experiments/main.py [workflow id]
 ```
 """
 
@@ -185,6 +185,9 @@ def tumor_tcell_abm(
 ):
     """ Tumor-Tcell simulation function
 
+    This function simulates tumor t cell interactions in a spatial environment.
+
+    Arguments:
     :param bounds:
     :param n_bins:
     :param depth:
@@ -405,8 +408,8 @@ def full_experiment_2():
         tumors_state_PDL1n=0.5, #0.5 originally
         tcells_total_PD1n=9,
         tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
-        tcells_distance=250 * units.um,  # in or out (None) of the tumor
-        tcells_excluded_distance=None,#260 * units.um,  # for creating a ring around tumor
+        tcells_distance=270 * units.um,  # in or out (None) of the tumor
+        tcells_excluded_distance=260 * units.um,  # for creating a ring around tumor
     )
 
 def lymph_node_experiment():
