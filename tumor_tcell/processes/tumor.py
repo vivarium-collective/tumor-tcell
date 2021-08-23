@@ -1,4 +1,14 @@
-from __future__ import absolute_import, division, print_function
+"""
+=============
+Tumor Process
+=============
+
+The tumor process is focused on two states of a tumor: proliferative with low levels
+of immune molecules (MHCI and PDL1) and quiescent with high levels of immune molecules
+(MHCI and PDL1). Its transition from the proliferative state is dependent on the level
+of interferon gamma it is exposed to coming from the T cells. Both tumor types can be
+killed by recieving cytotoxic packets from the T cells.
+"""
 
 import os
 import sys

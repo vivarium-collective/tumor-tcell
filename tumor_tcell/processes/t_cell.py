@@ -1,14 +1,23 @@
-from __future__ import absolute_import, division, print_function
+"""
+==============
+T Cell Process
+==============
+
+The T cell process is focused on two states of a T cell: PD1- with increased
+secretion of immune molecules (IFNg and cytotoxic packets) and PD1+ with
+decreased secretion of immune molecules (IFNg and cytotoxic packets). These
+immune molecules have impact of the state and death of tumor cells. Its
+transition from the PD1- state is dependent on the length of time it is engaged
+with tumor cells.
+"""
 
 import os
 import sys
-import copy
 import math
 import random
 import argparse
 
 from vivarium.library.units import units
-from vivarium.library.dict_utils import deep_merge
 from vivarium.core.process import Process
 from vivarium.core.composition import simulate_process
 from vivarium.plots.agents_multigen import plot_agents_multigen
@@ -22,7 +31,8 @@ NAME = 'T_cell'
 TIMESTEP = 60  # seconds
 CONCENTRATION_UNIT = 1
 
-def LN_division(mother_value, **args):
+def LN_divsion(mother_value, **args):
+    """Sets ability for cell to divide, """
     if mother_value:
         return [True, False]
     else:
