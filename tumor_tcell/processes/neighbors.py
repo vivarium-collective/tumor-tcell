@@ -16,7 +16,6 @@ import matplotlib.patches as patches
 
 # vivarium imports
 from tumor_tcell.library.pymunk_minimal import PymunkMinimal as Pymunk
-# from tumor_tcell.library.pymunk_multibody import PymunkMultibody as Pymunk
 from vivarium.library.units import units, remove_units
 from vivarium.core.process import Process
 from vivarium.core.composition import process_in_experiment
@@ -235,7 +234,7 @@ class Neighbors(Process):
                 exchange[neighbor_id]['receive'] = add_to_dict(exchange[neighbor_id]['receive'], transfer)
                 exchange[cell_id]['transfer'] = remove_from_dict(exchange[cell_id]['transfer'], transfer)
 
-                #present and accept are not removed but updated for each other
+                # present and accept are not removed but updated for each other
                 present = cells[neighbor_id]['neighbors']['present']
                 exchange[cell_id]['accept'] = add_to_dict(exchange[cell_id]['accept'], present)
 

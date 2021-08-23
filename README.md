@@ -18,6 +18,14 @@ Briefly describe these.
 * Tumor
 * Neighbors
 
+## Composites
+
+Composites are integrated models with multiple initialized processes, and whose inter-connections 
+are specified by a topology. The T-cell and Tumor *agents* include a division 
+process, which waits for the division flag and then carries out division; a death process, which 
+waits for a death flag and then removes the agent; and a local field, which interfaces the external 
+environment to support uptake and secretion for each individual agent.
+
 ## Running the model
 
 ```
