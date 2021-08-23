@@ -2,6 +2,8 @@
 ===========
 Tumor Agent
 ===========
+
+This composite model combines the tumor process with local_field, division, and death.
 """
 
 import os

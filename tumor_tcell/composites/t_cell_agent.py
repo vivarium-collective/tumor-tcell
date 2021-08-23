@@ -2,6 +2,8 @@
 ============
 T-cell Agent
 ============
+
+This composite model combines the t-cell process with local_field, division, and death.
 """
 
 import os

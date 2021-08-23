@@ -31,36 +31,28 @@ NAME = 'T_cell'
 TIMESTEP = 60  # seconds
 CONCENTRATION_UNIT = 1
 
-def LN_divsion(mother_value, **args):
-    """Sets ability for cell to divide, """
+def lymph_node_division(mother_value, **args):
+    """Sets mother cell to true"""
     if mother_value:
         return [True, False]
     else:
         return [False, False]
 
 def assymetric_division(mother_value, **args):
+    """One daughter value's count increases"""
     return [mother_value+1, mother_value]
 
 def set_velocity_default(mother_value, **args):
+    """Resets daughter velocities"""
     return [10.0 * units.um/units.min, 10.0 * units.um/units.min]
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
-    ''' transition probability as function of time '''
+    """ transition probability as function of time """
     rate = -math.log(1 - probability_parameter)
     timestep_fraction = timestep / timescale
     return 1 - math.exp(-rate * timestep_fraction)
 
 class TCellProcess(Process):
-    """T-cell process with 2 states
-
-    States:
-        - PD1p (PD1+)
-        - PD1n (PD1-)
-
-    Expected Behavior
-
-    """
-
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
@@ -173,7 +165,7 @@ class TCellProcess(Process):
                 'LN_no_migration': {
                     '_default': False,
                     '_divider': {
-                        'divider': LN_division,
+                        'divider': lymph_node_division,
                         'config': {}}},
             },
             'internal': {
@@ -192,13 +184,11 @@ class TCellProcess(Process):
                 },
                 'total_cytotoxic_packets': {
                     '_default': 0,
-                    #'_emit': True, #true for monitoring behavior in process
                     '_updater': 'accumulate',
                     '_divider': 'split',
                 },
                 'TCR_timer': {
                     '_default': 0,
-                    #'_emit': True,
                     '_updater': 'accumulate',
                 },  # affects TCR expression
                 'velocity_timer': {
@@ -216,20 +206,18 @@ class TCellProcess(Process):
                 },
                 'diameter': {
                     '_default': self.parameters['diameter'],
-                    #'_divider': 'set',
                 },
                 'velocity': {
                     '_default': self.parameters['PD1n_migration'],
                     '_updater': 'set',
                     '_divider': {
                         'divider': set_velocity_default,
-                        # 'topology': {}
                          },
                     '_emit': True,
                 },
                 'exchange': {
                     'IFNg': {
-                        '_default': 0,  # counts
+                        '_default': 0,
                         '_updater': 'accumulate',
                         '_divider': 'split',
                     }},
@@ -243,7 +231,6 @@ class TCellProcess(Process):
                 'present': {
                     'PD1': {
                         '_default': 0,
-                        #'_emit': False, #true for monitoring behavior in process
                         '_updater': 'set',
                     }, # membrane protein, promotes T-cell death
                     'TCR': {
@@ -255,11 +242,9 @@ class TCellProcess(Process):
                 'accept': {
                     'PDL1': {
                         '_default': 0,
-                        #'_emit': False, #true for monitoring behavior in process
                     },
                     'MHCI': {
                         '_default': 0,
-                        #'_emit': False, #true for monitoring behavior in process
                     }
                 },
                 'transfer': {
@@ -290,7 +275,6 @@ class TCellProcess(Process):
                 50400,  # 14 hours (14*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_death:
-                # print('DEATH PD1- cell!')
                 return {
                     'globals': {
                         'death': 'PD1n_apoptosis'}}
@@ -302,7 +286,6 @@ class TCellProcess(Process):
                     50400,  # 14 hours (14*60*60 seconds)
                     timestep)
                 if random.uniform(0, 1) < prob_death:
-                    # print('DEATH PD1+ cell with PDL1!')
                     return {
                         'globals': {
                             'death': 'PD1p_PDL1_death'}}
@@ -313,7 +296,6 @@ class TCellProcess(Process):
                     50400,  # 14 hours (14*60*60 seconds)
                     timestep)
                 if random.uniform(0, 1) < prob_death:
-                    # print('DEATH PD1+ cell without PDL1!')
                     return {
                         'globals': {
                             'death': 'PD1p_apoptosis'}}
@@ -325,13 +307,10 @@ class TCellProcess(Process):
                 100800,  # 28 hours (28*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
-                # print('DIVIDE PD1- cell!')
-                #PD1n_divide_count = 1
                 return {
                     'globals': {
                         'divide': True,
                     }
-                        #'PD1n_divide_count': PD1n_divide_count}
                 }
 
         elif cell_state == 'PD1p':
@@ -340,7 +319,6 @@ class TCellProcess(Process):
                 100800,  # 28 hours (28*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
-                # print('DIVIDE PD1+ cell!')
                 PD1p_divide_count = 1
                 return {
                     'globals': {
@@ -618,7 +596,6 @@ def test_single_t_cell(
         'remove_zeros': False
     }
     plot_simulation_output(timeseries, plot_settings, out_dir, NAME + '_single')
-
 
 
 

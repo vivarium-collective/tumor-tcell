@@ -23,7 +23,7 @@ from vivarium.core.control import Control
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
 from tumor_tcell.plots.video import make_video
-from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data, get_agent_colors
+from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
 
 # tumor-tcell imports
 from tumor_tcell.composites.tumor_agent import TumorAgent
@@ -53,7 +53,11 @@ TAG_COLORS = {
     ('internal', 'cell_state', 'PD1n'): 'darkorange', }
 
 
-def get_tcells(number=1, relative_pd1n=0.2, total_pd1n=None):
+def get_tcells(
+        number=1,
+        relative_pd1n=0.2,
+        total_pd1n=None
+):
     if total_pd1n:
         assert isinstance(total_pd1n, int)
         return {
@@ -134,7 +138,10 @@ def random_location(
 
 
 
-def lymph_node_location(bounds, location=[[0.95,1],[0.95,1]]):
+def lymph_node_location(
+        bounds,
+        location=[[0.95,1],[0.95,1]]
+):
     return [
         random.uniform(bounds[0]*location[0][0], bounds[0]*location[0][1]),
         random.uniform(bounds[0]*location[1][0], bounds[0]*location[1][1])]
@@ -183,31 +190,32 @@ def tumor_tcell_abm(
     tcell_center=None,
     lymph_nodes=False,
 ):
-    """ Tumor-Tcell simulation function
+    """ Tumor-Tcell simulation
 
     This function simulates tumor t cell interactions in a spatial environment.
 
     Arguments:
-    :param bounds:
-    :param n_bins:
-    :param depth:
-    :param field_molecules:
-    :param n_tumors:
-    :param n_tcells:
-    :param tumors:
-    :param tcells:
-    :param tumors_state_PDL1n:
-    :param tcells_state_PD1n:
-    :param total_time:
-    :param sim_step:
-    :param halt_threshold:
-    :param time_step:
-    :param emit_step:
-    :param emitter:
-    :param parallel:
-    :param tumors_distance:
-    :param tcells_distance:
-    :return:
+    * bounds (list): x and y values for the size of the environment, in microns.
+    * n_bins (list): number of bins in the x and y dimensions.
+    * depth:
+    * field_molecules:
+    * n_tumors:
+    * n_tcells:
+    * tumors:
+    * tcells:
+    * tumors_state_PDL1n:
+    * tcells_state_PD1n:
+    * total_time:
+    * sim_step:
+    * halt_threshold:
+    * time_step:
+    * emit_step:
+    * emitter:
+    * parallel:
+    * tumors_distance:
+    * tcells_distance:
+
+    Return:
         Simulation output data (dict)
     """
     initial_env_config = {
@@ -468,8 +476,7 @@ def plots_suite(
     # extract data
     agents, fields = format_snapshot_data(data)
 
-    # set tag colors.
-
+    # make the plot
     fig3 = plot_snapshots(
         bounds=remove_units(bounds),
         agents=remove_units(agents),
@@ -489,7 +496,6 @@ def plots_suite(
 def make_snapshot_video(
         data,
         bounds,
-        #step=1,   # make frame every n saved steps
         n_steps=10,
         out_dir=None
 ):
