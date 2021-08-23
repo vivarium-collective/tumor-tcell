@@ -192,7 +192,7 @@ def test_tcell_agent(
         initial['agents'][agent_id]['internal']['cell_state'] = initial_agent_state  # set an initial state
 
     # make the experiment
-    experiment = Engine({
+    experiment = Engine(**{
         'processes': composite['processes'],
         'topology': composite['topology'],
         'initial_state': initial})
