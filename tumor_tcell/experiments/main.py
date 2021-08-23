@@ -350,7 +350,7 @@ def tumor_tcell_abm(
         'emit_step': emit_step,
         'emitter': {'type': emitter}}
     print(f'Initializing experiment {experiment_id}')
-    experiment = Engine(experiment_config)
+    experiment = Engine(**experiment_config)
 
     # run simulation and terminate upon reaching total_time or halt_threshold
     clock_start = clock.time()
