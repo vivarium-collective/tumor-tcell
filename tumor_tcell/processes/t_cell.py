@@ -84,10 +84,10 @@ class TCellProcess(Process):
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell
 
-        # division rate (Petrovas 2007, Vodnala 2019)
-        'PD1n_growth_28hr': 0.90,  # 90% division in 28 hours
-        'PD1p_growth_28hr': 0.20,  # 20% division in 28 hours
-        'PD1n_divide_threshold': 5, #threshold for division TODO - find lit value currently based on data
+        # division rate
+        'PD1n_growth_28hr': 0.90,  # 90% division in 28 hours (Petrovas 2007, Vodnala 2019)
+        'PD1p_growth_28hr': 0.20,  # 20% division in 28 hours (Petrovas 2007, Vodnala 2019)
+        'PD1n_divide_threshold': 5,  # counts for triggering division TODO - find lit value currently based on data
 
         # migration
         'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
@@ -98,14 +98,14 @@ class TCellProcess(Process):
         #'PD1p_migration_MHCIp_tumor': 1.0 * units.um/units.min,   # um/minute (Boissonnas 2007) - expected behavior
         'PD1p_migration_MHCIp_tumor_dwell_time': 10.0*60,  # minutes converted to seconds (Thibaut 2020)
         'PD1n_migration_refractory_time': 35.0 * 60,  # 10 minutes of refractory where does not interact with tumor
-        'PD1p_migration_refractory_time': 20.0 * 60,  # 10 minutes of refractory where does not interact with tumo
+        'PD1p_migration_refractory_time': 20.0 * 60,  # 10 minutes of refractory where does not interact with tumor
         # plus 25 minutes of dwell (Thibaut 2020)
 
         # killing
             # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
         # linear production over 4-6 hr up to a total of 102+-20 granules # (Betts, 2004), (Zhang, 2006)
         'cytotoxic_packet_production': 40/60,  # number of packets/min produced in T cells ##converted to packets/seconds
-        'PD1n_cytotoxic_packets_max': 10000,  #max number able to produce
+        'PD1n_cytotoxic_packets_max': 10000,  # max number able to produce
 
         # 1:10 fold reduction of PD1+ T cell cytotoxic production (Zelinskyy, 2005)
         'PD1p_cytotoxic_packets_max': 1000,  # max number able to produce
