@@ -3,7 +3,8 @@
 Death Logger
 ============
 
-Saves the final time and state of all agents
+This composite can be merged with an environmental simulation in order to save
+the final time and state of all agents upon their death.
 """
 
 from vivarium.core.composer import Composer

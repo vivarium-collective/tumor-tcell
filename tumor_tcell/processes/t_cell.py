@@ -9,6 +9,16 @@ decreased secretion of immune molecules (IFNg and cytotoxic packets). These
 immune molecules have impact of the state and death of tumor cells. Its
 transition from the PD1- state is dependent on the length of time it is engaged
 with tumor cells.
+
+This process can be run on its own from the command line. There are three simulation
+options: "single", "batch" and "timeline". Single simulates the process on its own
+one time, batch simulates the process multiple times to demonstrate the stochasticity,
+and timeline simulate the process one time with pre-set perturbations that mimic
+interactions with other cells.
+```
+$ python tumor_tcell/processes/t_cell.py [--single, -s] [--batch, -b] [--timeline, -t]
+```
+
 """
 
 import os
@@ -29,7 +39,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'T_cell'
 TIMESTEP = 60  # seconds
-CONCENTRATION_UNIT = 1
+CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
 
 def lymph_node_division(mother_value, **args):
     """Sets mother cell to true"""
@@ -102,7 +112,7 @@ class TCellProcess(Process):
         # plus 25 minutes of dwell (Thibaut 2020)
 
         # killing
-            # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
+        # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
         # linear production over 4-6 hr up to a total of 102+-20 granules # (Betts, 2004), (Zhang, 2006)
         'cytotoxic_packet_production': 40/60,  # number of packets/min produced in T cells ##converted to packets/seconds
         'PD1n_cytotoxic_packets_max': 10000,  # max number able to produce
@@ -114,7 +124,7 @@ class TCellProcess(Process):
         # (Bohm, 1998), (Merritt, 2003)
         'MHCIn_reduction_production': 400,
 
-        #Cytotoxic packet transfer rate for a minute timeperiod
+        # Cytotoxic packet transfer rate for a minute timeperiod
         'cytotoxic_transfer_rate': 400,  #number of packets/min that can be transferred to tumor cells
     }
 
@@ -232,12 +242,12 @@ class TCellProcess(Process):
                     'PD1': {
                         '_default': 0,
                         '_updater': 'set',
-                    }, # membrane protein, promotes T-cell death
+                    },  # membrane protein, promotes T-cell death
                     'TCR': {
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'set',
-                    } # level of TCR that interacts with MHCI on tumor
+                    }  # level of TCR that interacts with MHCI on tumor
                 },
                 'accept': {
                     'PDL1': {
@@ -325,20 +335,19 @@ class TCellProcess(Process):
                         'divide': True,
                         'PD1p_divide_count': PD1p_divide_count}}
 
-
         ## Build up an update
         update = {
             'internal': {},
             'boundary': {},
             'neighbors': {'present': {}, 'accept': {}, 'transfer': {}}}
 
-        #TCR downregulation after 6 hours of activation
+        # TCR downregulation after 6 hours of activation
         if TCR_timer > self.parameters['activation_time']:
             TCR = self.parameters['TCR_downregulated']
             update['neighbors']['present'].update({
                 'TCR': TCR})
 
-        #update the TCR_timer for each timestep in contact with MHCI or during refractory period regardless
+        # update the TCR_timer for each timestep in contact with MHCI or during refractory period regardless
         if MHCI > self.parameters['ligand_threshold']:
             update['internal'].update({
                 'TCR_timer': timestep})
@@ -346,7 +355,7 @@ class TCellProcess(Process):
             update['internal'].update({
                 'TCR_timer': timestep})
 
-        #After the refractory period is over then
+        # After the refractory period is over then
         if TCR_timer > self.parameters['activation_refractory_time']:
             TCR = self.parameters['TCR_upregulated']
             update['internal'].update({
@@ -389,13 +398,12 @@ class TCellProcess(Process):
             if MHCI >= self.parameters['ligand_threshold'] and TCR >= self.parameters['ligand_threshold']:
 
                 # Max production for both happens for PD1- T cells in contact with MHCI+ tumor
-                #Can max the amount of cytotoxic packets released
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1n_cytotoxic_packets_max']:
                     new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] * timestep
                     update['internal'].update({
                         'total_cytotoxic_packets': new_cytotoxic_packets})
 
-                # produce IFNg  # rates are determined above
+                # produce IFNg
                 IFNg = self.parameters['PD1n_IFNg_production'] * timestep
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
@@ -403,16 +411,15 @@ class TCellProcess(Process):
             elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
-                # (Bohm, 1998), (Merritt, 2003)
-
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1n_cytotoxic_packets_max']:
                     new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / self.parameters[
                         'MHCIn_reduction_production'] * timestep
                     update['internal'].update({
                         'total_cytotoxic_packets': new_cytotoxic_packets})
 
-                # produce IFNg  # rates are determined above
-                IFNg = self.parameters['PD1n_IFNg_production'] / self.parameters['MHCIn_reduction_production'] * timestep
+                # produce IFNg
+                IFNg = self.parameters['PD1n_IFNg_production'] / \
+                       self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
@@ -441,7 +448,6 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'velocity': self.parameters['PD1n_migration']})
 
-
         elif new_cell_state == 'PD1p':
             PD1 = self.parameters['PD1p_PD1_equilibrium']
             update['neighbors']['present'].update({
@@ -460,7 +466,7 @@ class TCellProcess(Process):
                     update['internal'].update({
                         'total_cytotoxic_packets': new_cytotoxic_packets})
 
-                # produce IFNg  # rates are determined above
+                # produce IFNg
                 IFNg = self.parameters['PD1p_IFNg_production'] * timestep
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
@@ -468,14 +474,13 @@ class TCellProcess(Process):
             elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
                 # 4 fold reduction in production in T cells in contact with MHCI- tumor
-                # (Bohm, 1998), (Merritt, 2003)
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1p_cytotoxic_packets_max']:
                     new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / \
                                         self.parameters['MHCIn_reduction_production'] * timestep
                     update['internal'].update({
                         'total_cytotoxic_packets': new_cytotoxic_packets})
 
-                # produce IFNg  # rates are determined above
+                # produce IFNg
                 IFNg = self.parameters['PD1p_IFNg_production'] / \
                        self.parameters['MHCIn_reduction_production'] * timestep
                 update['boundary'].update({
@@ -506,9 +511,7 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'velocity': self.parameters['PD1p_migration']})
 
-        #keep cytotoxic transfer to max limit between tumor and T cells and remove from T cell total when transfer
-        #max rate is 400 packets/minute
-
+        # keep cytotoxic transfer to max limit between tumor and T cells and remove from T cell total when transfer
         max_cytotoxic_transfer = self.parameters['cytotoxic_transfer_rate'] - states['neighbors']['transfer']['cytotoxic_packets']
         cytotoxic_transfer = min(max_cytotoxic_transfer,states['internal']['total_cytotoxic_packets'])
         update['internal'].update({
@@ -519,7 +522,7 @@ class TCellProcess(Process):
         return update
 
 
-
+# test functions
 def get_timeline(
         total_time=200000,
         number_steps=10):
@@ -664,7 +667,7 @@ if __name__ == '__main__':
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    parser = argparse.ArgumentParser(description='ODE expression')
+    parser = argparse.ArgumentParser(description='run t_cell process')
     parser.add_argument('--single', '-s', action='store_true', default=False)
     parser.add_argument('--batch', '-b', action='store_true', default=False)
     parser.add_argument('--timeline', '-t', action='store_true', default=False)
@@ -687,6 +690,5 @@ if __name__ == '__main__':
         timeline = get_timeline()
         test_batch_t_cell(
             batch_size=10,
-            # total_time=300,
             timeline=timeline,
             out_dir=out_dir)

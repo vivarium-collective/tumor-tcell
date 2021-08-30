@@ -197,23 +197,35 @@ def tumor_tcell_abm(
     Arguments:
     * bounds (list): x and y values for the size of the environment, in microns.
     * n_bins (list): number of bins in the x and y dimensions.
-    * depth:
-    * field_molecules:
-    * n_tumors:
-    * n_tcells:
-    * tumors:
-    * tcells:
-    * tumors_state_PDL1n:
-    * tcells_state_PD1n:
-    * total_time:
-    * sim_step:
-    * halt_threshold:
-    * time_step:
-    * emit_step:
-    * emitter:
-    * parallel:
-    * tumors_distance:
-    * tcells_distance:
+    * depth (float): the depth of the microenvironment, in microns.
+    * field_molecules (list): the names of molecules in the external field.
+    * n_tumors (int): initial number of tumors.
+    * n_tcells (int): initial number of t cells.
+    * tumors (dict): specifies precisely the initial tumor state.
+        If not provided, the function `get_tumors` is used to generate an initial state
+        based in n_tumors and tumors_state_PDL1n.
+    * tcells (dict): specifies precisely the initial t cell state.
+        If not provided, the function `get_tcells` is used to generate an initial state
+        based in n_tcells and tcells_state_PD1n or tcells_total_PD1n.
+    * tumors_state_PDL1n (float): probability that initial tumors that are PDL1n
+    * tcells_state_PD1n (float): probability that initial tcells that are PD1n
+    * total_time (float): total simulation time in seconds.
+    * sim_step (float): length of simulation increments which check if halt_threshold has been reached.
+    * halt_threshold (int): if the total number of cells reaches this value, the simulaiton is terminated.
+    * time_step (float): the time step used for the tcell agents, tumor agents, and microenvironment.
+    * emit_step (int): the number of time steps between saving simulation state.
+    * emitter (str): the type of emitter, choose between "timeseries" and "database".
+    * parallel (bool): whether simulations run with parallel processes.
+    * tumors_distance (float): if this is set, is places tumors within this distance from tumors_excluded_distance.
+    * tcells_distance: if this is set, is places tcells within this distance from tcells_excluded_distance.
+    * tumors_excluded_distance (float): if this is set, it excludes tumors within this distance from the center,
+        which together with tumors_distances supports ring-like structures.
+    * tcells_excluded_distance (float): if this is set, it excludes tcells within this distance from the center,
+        which together with tcells_distance supports ring-like structures.
+    * tumors_center (list): [x, y] position for the center of the tumors.
+    * tcell_center (list): [x, y] position for the center of the tcells.
+    * lymph_nodes (bool): sets whether tcells have a lymph node location, and sets behavior of the mother cells
+        to not migrate.
 
     Return:
         Simulation output data (dict)
@@ -246,14 +258,14 @@ def tumor_tcell_abm(
     t_cell_composer = TCellAgent(t_cell_config)
     tumor_composer = TumorAgent(tumor_config)
     environment_composer = TumorMicroEnvironment(environment_config)
-    logger_composer = DeathLogger(logger_config)
+    logger_composer = DeathLogger(logger_config)  # used to save the final time and state of agents
 
     # initialize the composite, and add the environment
     composite_model = logger_composer.generate()
     environment = environment_composer.generate()
     composite_model.merge(composite=environment)
 
-    #Make initial cells
+    # Make initial cells
     if not tcells:
         tcells = get_tcells(
             number=n_tcells,
@@ -373,8 +385,8 @@ def tumor_tcell_abm(
     return data
 
 
-FULL_BOUNDS = [1600*units.um, 1600*units.um] #Usually 1200 by 1200
-def full_experiment(
+FULL_BOUNDS = [1600*units.um, 1600*units.um]
+def large_experiment(
         n_tcells=12,
         n_tumors=1200,
         tcells_state_PD1n=None,
@@ -386,7 +398,10 @@ def full_experiment(
         tcells_distance=290 * units.um,  # in or out (None) of the tumor
         tcells_excluded_distance=260 * units.um,  # for creating a ring around tumor
 ):
-
+    """
+    Configurable large environment that has many tumors and t cells. Calls tumor_tcell_abm
+    with a few key parameters.
+    """
     return tumor_tcell_abm(
         n_tcells=n_tcells,
         n_tumors=n_tumors,
@@ -398,34 +413,41 @@ def full_experiment(
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
-        n_bins=[160, 160], #10 um bin size, usually 120 by 120
-        halt_threshold=10000,#5000, #sqrt(halt_threshold)*15 <bounds, normally 5000
+        n_bins=[160, 160],  # 10 um bin size, usually 120 by 120
+        halt_threshold=10000,  # 5000, #sqrt(halt_threshold)*15 <bounds, normally 5000
         emitter='database',
-        tumors_distance=tumors_distance, #sqrt(n_tumors)*15(diameter)/2
-        tcells_distance=tcells_distance, #in or out (None) of the tumor
-        tcells_excluded_distance=tcells_excluded_distance, #for creating a ring around tumor
-        #parallel=True,
+        tumors_distance=tumors_distance,  # sqrt(n_tumors)*15(diameter)/2
+        tcells_distance=tcells_distance,  # in or out (None) of the tumor
+        tcells_excluded_distance=tcells_excluded_distance,  # for creating a ring around tumor
         lymph_nodes=lymph_nodes,
     )
 
-#Change experimental PD1 and PDL1 levels for full experiment
-def full_experiment_2():
-    return full_experiment(
+# Change experimental PD1 and PDL1 levels for full experiment
+def tumor_microenvironment_experiment():
+    """
+    run a large_experiment with parameters based on in vivo measurements.
+    This can be used to control the location of the initial cells.
+    """
+    return large_experiment(
         n_tcells=12,
         total_time=1209600,
-        tumors_state_PDL1n=0.5, #0.5 originally
+        tumors_state_PDL1n=0.5,
         tcells_total_PD1n=9,
         tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
         tcells_distance=270 * units.um,  # in or out (None) of the tumor
         tcells_excluded_distance=260 * units.um,  # for creating a ring around tumor
     )
 
+
 def lymph_node_experiment():
-    return full_experiment(
+    """
+    WORK IN PROGRESS
+    """
+    return large_experiment(
         n_tcells=12,
         n_tumors=120,
-        tcells_state_PD1n=0.8, #0.2 and 0.8
-        tumors_state_PDL1n=0.5, #0.5 originally
+        tcells_state_PD1n=0.8,
+        tumors_state_PDL1n=0.5,
         tcells_total_PD1n=9,
         lymph_nodes=True,
         total_time=600000,
@@ -440,6 +462,9 @@ def plots_suite(
         n_snapshots=8,
         final_time=None,
 ):
+    """
+    plotting function that saves several figures.
+    """
 
     # separate out tcell and tumor data for multigen plots
     tcell_data = {}
@@ -499,6 +524,9 @@ def make_snapshot_video(
         n_steps=10,
         out_dir=None
 ):
+    """
+    Make a video of a simulation.
+    """
     n_times = len(data.keys())
     step = math.ceil(n_times/n_steps)
 
@@ -518,8 +546,8 @@ def make_snapshot_video(
 # libraries of experiments and plots for easy access by Control
 experiments_library = {
     '1': tumor_tcell_abm,
-    '4': full_experiment,
-    '5': full_experiment_2,
+    '4': large_experiment,
+    '5': tumor_microenvironment_experiment,
     '6': lymph_node_experiment,
 }
 plots_library = {
@@ -593,7 +621,7 @@ workflow_library = {
         ],
     },
     '4': {
-        'name': 'full_experiment',
+        'name': 'large_experiment',
         'experiment': '4',
         'plots': [
             {
@@ -608,7 +636,7 @@ workflow_library = {
         ],
     },
     '5': {
-        'name': 'full_experiment_2',
+        'name': 'tumor_microenvironment_experiment',
         'experiment': '5',
         'plots': [
             {

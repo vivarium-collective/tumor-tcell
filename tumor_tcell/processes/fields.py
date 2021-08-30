@@ -1,8 +1,8 @@
-'''
+"""
 ===============
 Diffusion Field
 ===============
-'''
+"""
 
 import os
 import copy
@@ -33,7 +33,7 @@ LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 AVOGADRO = constants.N_A
 
 LENGTH_UNIT = units.um
-CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
+CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
 
 
 class Fields(Process):

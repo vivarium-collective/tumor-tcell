@@ -1,3 +1,13 @@
+"""
+====================
+Local Fields Deriver
+====================
+
+This deriver helps translate a large 2D environment into an agent's local environment,
+so that it can access the local concentrations without any knowledge of the larger
+environmental state.
+"""
+
 import numpy as np
 
 from vivarium.core.process import Deriver

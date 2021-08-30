@@ -8,6 +8,16 @@ of immune molecules (MHCI and PDL1) and quiescent with high levels of immune mol
 (MHCI and PDL1). Its transition from the proliferative state is dependent on the level
 of interferon gamma it is exposed to coming from the T cells. Both tumor types can be
 killed by recieving cytotoxic packets from the T cells.
+
+This process can be run on its own from the command line. There are three simulation
+options: "single", "batch" and "timeline". Single simulates the process on its own
+one time, batch simulates the process multiple times to demonstrate the stochasticity,
+and timeline simulate the process one time with pre-set perturbations that mimic
+interactions with other cells.
+```
+$ python tumor_tcell/processes/tumor.py [--single, -s] [--batch, -b] [--timeline, -t]
+```
+
 """
 
 import os
@@ -28,7 +38,7 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 NAME = 'Tumor'
 TIMESTEP = 60
-CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
+CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
 
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
@@ -42,7 +52,7 @@ class TumorProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 15 * units.um, # 0.01 * units.mm,
+        'diameter': 15 * units.um,  # 0.01 * units.mm,
         'mass': 8 * units.ng,
         'initial_PDL1n': 0.9,  # most start out this way based on data
 
@@ -154,7 +164,7 @@ class TumorProcess(Process):
                     'PDL1': {
                         '_default': 0,
                         '_updater': 'set',
-                    },  # membrane protein, promotes T cell exhuastion and deactivation with PD1
+                    },  # membrane protein, promotes T cell exhaustion and deactivation with PD1
                     'MHCI': {
                         '_default': 1000,
                         '_updater': 'set',
@@ -274,7 +284,7 @@ class TumorProcess(Process):
         return update
 
 
-
+# test functions
 def get_timeline(
         total_time=129600,
         number_steps=10):
@@ -444,7 +454,7 @@ if __name__ == '__main__':
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    parser = argparse.ArgumentParser(description='tumor cells')
+    parser = argparse.ArgumentParser(description='simulate tumor process')
     parser.add_argument('--single', '-s', action='store_true', default=False)
     parser.add_argument('--batch', '-b', action='store_true', default=False)
     parser.add_argument('--timeline', '-t', action='store_true', default=False)
@@ -467,6 +477,5 @@ if __name__ == '__main__':
         timeline = get_timeline()
         test_batch_tumor(
             batch_size=10,
-            # total_time=300,
             timeline=timeline,
             out_dir=out_dir)
