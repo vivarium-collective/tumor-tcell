@@ -4,6 +4,12 @@ T-cell Agent
 ============
 
 This composite model combines the t-cell process with local_field, division, and death.
+
+This composite can be run on its own from the command line.
+```
+$ python tumor_tcell/composites/t_cell_agent.py
+```
+
 """
 
 import os

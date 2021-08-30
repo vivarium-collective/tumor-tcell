@@ -4,6 +4,12 @@ Tumor Agent
 ===========
 
 This composite model combines the tumor process with local_field, division, and death.
+
+This composite can be run on its own from the command line.
+```
+$ python tumor_tcell/composites/tumor_agent.py
+```
+
 """
 
 import os
