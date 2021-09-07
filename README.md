@@ -2,6 +2,13 @@
 
 Introduction to project
 
+## TODO
+* add references file, and somehow link these references in the processes' `defaults`
+* fields, neighbors processes
+* tumor process -- address TODOs (accessible external volume more general from timestep/diameter)
+* main experiment
+* finish README
+* look over Jupyter notebooks. Convert to Colab before submission -- this requires doing the pip install in the notebook.
 
 ## Installation
 
