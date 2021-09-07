@@ -66,11 +66,11 @@ class TCellProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 7.5 * units.um,  # 0.01 * units.mm,
+        'diameter': 7.5 * units.um,
         'mass': 2 * units.ng,
         'initial_PD1n': 0.8,
         'refractory_count_threshold': 3,  # assuming that cells have been stimulated twice already in culture
-        # and need 5 stimulations to become exhausted
+        # and need 5 stimulations to become exhausted (Zhao, 2020)
 
         #Time before TCR downregulation
         'activation_time': 21600,  # activation enables 6 hours of activation and production of cytokines
@@ -79,53 +79,46 @@ class TCellProcess(Process):
         # after activation period with limited ability to produce cytokines and cytotoxic packets and to
         # interact with MHCI (Salerno, 2017), (Gallegos, 2016)
         'TCR_downregulated': 0, #reduce TCR to 0 if activated more than 6 hours for another 18 hours
-        'TCR_upregulated': 50000,  # reduce TCR to 0 if activated more than 6 hours for another 18 hours
+        'TCR_upregulated': 50000,  # restore TCR after refractory period
 
-        # death rates (Petrovas 2007)
+        # death rates
         'PDL1_critical_number': 1e4,  # threshold number of PDL1 molecules/cell to induce behavior
-        'death_PD1p_14hr': 0.35,  # 0.7 / 14 hrs
-        'death_PD1n_14hr': 0.1,  # 0.2 / 14 hrs
-        'death_PD1p_next_to_PDL1p_14hr': 0.475,  # 0.95 / 14 hrs
+        'death_PD1p_14hr': 0.35,  # 0.7 / 14 hrs (Petrovas 2007)
+        'death_PD1n_14hr': 0.1,  # 0.2 / 14 hrs (Petrovas 2007)
+        'death_PD1p_next_to_PDL1p_14hr': 0.475,  # 0.95 / 14 hrs (Dong 2002, Tang 2015)
 
         # production rates
         'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
-        'PD1p_IFNg_production': 1.62e3/3600,  # molecule counts/cell/second
+        'PD1p_IFNg_production': 1.62e3/3600,  # molecule counts/cell/second (Zelinskyy, 2005)
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p
 
-        'ligand_threshold': 1e4,  # molecules/neighbor cell
+        'ligand_threshold': 1e4,  # molecules/neighbor cell needed to recognize ligands on positive cells
 
         # division rate
         'PD1n_growth_28hr': 0.90,  # 90% division in 28 hours (Petrovas 2007, Vodnala 2019)
         'PD1p_growth_28hr': 0.20,  # 20% division in 28 hours (Petrovas 2007, Vodnala 2019)
-        'PD1n_divide_threshold': 5,  # counts for triggering division TODO - find lit value currently based on data
+        'PD1n_divide_threshold': 5,  # counts for triggering division (Zhao, 2020)
 
         # migration
         'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
-        #'PD1n_migration_MHCIp_tumor': 2.0 * units.um/units.min,  # um/minute (Boissonnas 2007) - expected behavior
-        'migration_MHCIp_tumor_dwell_velocity': 0.0 * units.um/units.min,
+        'migration_MHCIp_tumor_dwell_velocity': 0.0 * units.um/units.min, #(Thibaut 2020)
         'PD1n_migration_MHCIp_tumor_dwell_time': 25.0*60,  # minutes converted to seconds (Thibaut 2020)
         'PD1p_migration': 5.0 * units.um/units.min,   # um/minute (Boissonnas 2007)
-        #'PD1p_migration_MHCIp_tumor': 1.0 * units.um/units.min,   # um/minute (Boissonnas 2007) - expected behavior
         'PD1p_migration_MHCIp_tumor_dwell_time': 10.0*60,  # minutes converted to seconds (Thibaut 2020)
-        'PD1n_migration_refractory_time': 35.0 * 60,  # 10 minutes of refractory where does not interact with tumor
-        'PD1p_migration_refractory_time': 20.0 * 60,  # 10 minutes of refractory where does not interact with tumor
-        # plus 25 minutes of dwell (Thibaut 2020)
+        'PD1n_migration_refractory_time': 35.0 * 60,  # 25 minutes of refractory where not interact with tumor (Thibaut 2020)
+        'PD1p_migration_refractory_time': 20.0 * 60,  # 10 minutes of refractory where not interact with tumor (Thibaut 2020)
 
         # killing
         # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
-        # linear production over 4-6 hr up to a total of 102+-20 granules # (Betts, 2004), (Zhang, 2006)
+        # linear production over 4-6 hr up to a total of 102+-20 granules (Betts, 2004), (Zhang, 2006)
         'cytotoxic_packet_production': 40/60,  # number of packets/min produced in T cells ##converted to packets/seconds
         'PD1n_cytotoxic_packets_max': 10000,  # max number able to produce
-
         # 1:10 fold reduction of PD1+ T cell cytotoxic production (Zelinskyy, 2005)
         'PD1p_cytotoxic_packets_max': 1000,  # max number able to produce
-
-        # 4 fold reduction in production in T cells in contact with MHCI- tumor
-        # (Bohm, 1998), (Merritt, 2003)
+        # 4 fold reduction in production in T cells in contact with MHCI- tumor (Bohm, 1998), (Merritt, 2003)
         'MHCIn_reduction_production': 400,
-
-        # Cytotoxic packet transfer rate for a minute timeperiod
-        'cytotoxic_transfer_rate': 400,  #number of packets/min that can be transferred to tumor cells
+        # Cytotoxic packet transfer rate for a minute time period
+        'cytotoxic_transfer_rate': 400,  #number of packets/min that can be transferred to tumor cells (Betts, 2004), (Zhang, 2006)
     }
 
     def __init__(self, parameters=None):

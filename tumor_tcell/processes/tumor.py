@@ -52,37 +52,35 @@ class TumorProcess(Process):
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
-        'diameter': 15 * units.um,  # 0.01 * units.mm,
+        'diameter': 15 * units.um,
         'mass': 8 * units.ng,
-        'initial_PDL1n': 0.9,  # most start out this way based on data
+        'initial_PDL1n': 0.9,
 
         # death rates
         'death_apoptosis': 0.5,  # negligible compared to growth/killing 0.95 by 5 day (Gong, 2017)
-        'cytotoxic_packet_threshold': 128 * 100,  # need at least 128 packets for death (multiply by 10 for T cells)
+        'cytotoxic_packet_threshold': 128 * 100,  # need at least 128 packets for death (multiply by 100 for T
+        # cells time adjustment) (Betts, 2004), (Zhang, 2006)
 
         # division rate
         'PDL1n_growth': 0.6,  # probability of division 24 hr (Eden, 2011)
-        #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
-
-        # migration
-        #'tumor_migration': 0.25,  # um/minute (Weigelin 2012) #set to 0 for now because smaller than T cells
+        # 'PDL1p -  Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # IFNg Internalization
-        'Max_IFNg_internalization': 21/60,  # number of IFNg 1250 molecules/cell/hr degraded conv to seconds
+        'Max_IFNg_internalization': 21/60,  # number of IFNg 1250 molecules/cell/hr degraded conv to seconds (A. Celada, 1987)
         # volume to convert counts to available IFNg molecules able to be internalized based on the diffusion
         # coefficient and timestep of 60s
-        'external_IFNg_available_volume': 8.24*10 ** -8,  #* units.mL, # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
+        'external_IFNg_available_volume': 8.24*10 ** -8,  # units.mL, # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
         #TODO - make this more general from timestep/diameter
         #TODO - Use a global IFNg MW (also use in local fields)
         #TODO - synchronize expected concentration units with local fields
-        'Avagadro_num': 6.022*10 ** 14,  #* units.count / units.nmol, #convert back from ng
-        'IFNg_MW': 17000,
+        'Avagadro_num': 6.022*10 ** 14,  # units.count / units.nmol, #convert back from ng
+        'IFNg_MW': 17000,  # g/mol
         'IFNg_threshold': 15000,  # calculated from home data of incubating 1 ng/mL for 20 mL and 20x10^6 cells and half-life
         'reduction_IFNg_internalization': 2,  # based on data from (Ersvaer, 2007) & (Darzi, 2017)
 
         # membrane equilibrium amounts
-        'PDL1p_PDL1_equilibrium': 5e4, #TODO ref
-        'PDL1p_MHCI_equilibrium': 5e4, #TODO ref
+        'PDL1p_PDL1_equilibrium': 5e4,
+        'PDL1p_MHCI_equilibrium': 5e4,
     }
 
     def __init__(self, parameters=None):
