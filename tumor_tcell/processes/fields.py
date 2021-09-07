@@ -2,6 +2,8 @@
 ===============
 Diffusion Field
 ===============
+
+Diffuses and decays molecular concentrations in a 2D field.
 """
 
 import os
@@ -33,13 +35,12 @@ LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 AVOGADRO = constants.N_A
 
 LENGTH_UNIT = units.um
-CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
 
 
 class Fields(Process):
-    '''
-    Diffusion in 2-dimensional fields of molecules with agent exchange
-    '''
+    """
+    Diffusion and decay in 2-dimensional fields of molecules with agent exchange
+    """
 
     name = NAME
     defaults = {
@@ -48,13 +49,16 @@ class Fields(Process):
         'initial_state': {},
         'n_bins': [10, 10],
         'bounds': [10 * units.um, 10 * units.um],
-        'depth': 5000.0,  # um
+        'depth': 5000.0 * units.um,
         'default_diffusion_dt': 0.1,
         'default_diffusion_rate': 1e-1,
-        'gradient': {},
+
+        # specific diffusion rates
         'diffusion': {
             'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day #(Liao, 2014)
         },
+
+        # specific decay rates
         'decay': {
             'IFNg': np.log(2)/(4.5*60*60),  # 7 hr half-life converted to exponential decay rate #(Kurzrock, 1985)
         },
@@ -64,16 +68,16 @@ class Fields(Process):
     def __init__(self, parameters=None):
         super().__init__(parameters)
 
-        # initial state
-        self.molecule_ids = self.parameters['molecules']
-
         # parameters
+        self.molecule_ids = self.parameters['molecules']
         self.n_bins = self.parameters['n_bins']
-        self.bounds = [b.to(LENGTH_UNIT).magnitude for b in self.parameters['bounds']]
-        self.depth = self.parameters['depth']
+        # strip bounds of units
+        self.bounds = [
+            b.to(LENGTH_UNIT).magnitude
+            for b in self.parameters['bounds']]
+        self.depth = self.parameters['depth'].to(LENGTH_UNIT).magnitude
 
         # get diffusion rates
-        # TODO (ERAN) -- make molecule-specific diffusion rate dictionary
         diffusion_rate = self.parameters['default_diffusion_rate']
         bins_x = self.n_bins[0]
         bins_y = self.n_bins[1]
@@ -82,19 +86,33 @@ class Fields(Process):
         dx = length_x / bins_x
         dy = length_y / bins_y
         dx2 = dx * dy
+
+        ## general diffusion rate
         self.diffusion_rate = diffusion_rate / dx2
+
+        ## diffusion rates for each individual molecules
         self.molecule_specific_diffusion = {
             mol_id: diff_rate.to(LENGTH_UNIT**2/units.s).magnitude/dx2
             for mol_id, diff_rate in self.parameters['diffusion'].items()}
 
-        # get diffusion timestep
+        ## get diffusion timestep
         diffusion_dt = 0.5 * dx ** 2 * dy ** 2 / (2 * diffusion_rate * (dx ** 2 + dy ** 2))
         self.diffusion_dt = min(diffusion_dt, self.parameters['default_diffusion_dt'])
 
-        # volume, to convert between counts and concentration
+        # get bin volume, to convert between counts and concentration
         self.bin_volume = get_bin_volume(self.n_bins, self.bounds, self.depth)
 
     def initial_state(self, config=None):
+        """get initial state of the fields
+
+        Args:
+            * config (dict): with optional keys "random" or "uniform".
+                * "random" key maps to a maximum value for the field, which gets filled with values between [0, max].
+                * "uniform" key maps to a value that will fill the entire field
+        Returns:
+            * fields (dict) with {mol_id: 2D np.array}
+        """
+
         if config is None:
             config = {}
         if 'random' in config:
@@ -116,18 +134,20 @@ class Fields(Process):
         }
 
     def ports_schema(self):
+        schema = {}
+
+        # cells
         local_concentration_schema = {
             molecule: {
-                '_default': 0.0 * CONCENTRATION_UNIT}
+                '_default': 0.0}
             for molecule in self.parameters['molecules']}
-
-        schema = {}
         schema['cells'] = {
             '*': {
                 'boundary': {
                     'location': {
-                        # '_default': [0.5 * bound for bound in self.bounds],
-                        '_updater': 'set'},
+                        '_default': [
+                            0.5 * bound for bound in self.parameters['bounds']],
+                     },
                     'external': local_concentration_schema
                 }}}
 
@@ -135,7 +155,6 @@ class Fields(Process):
         fields_schema = {
             'fields': {
                 field: {
-                    # '_value': self.initial_state.get(field, self.ones_field()),
                     '_default': self.ones_field(),
                     '_updater': 'nonnegative_accumulate',
                     '_emit': True,
@@ -173,7 +192,6 @@ class Fields(Process):
         cells = states['cells']
 
         # degrade and diffuse
-        # TODO -- use set update, so you don't need to do the copy and get the delta
         fields_new = copy.deepcopy(fields)
         fields_new = self.degrade_fields(fields_new, timestep)
         fields_new = self.diffuse_fields(fields_new, timestep)
@@ -202,7 +220,7 @@ class Fields(Process):
         bin_site = self.get_bin_site(specs['location'])
         local_environment = {}
         for mol_id, field in fields.items():
-            local_environment[mol_id] = field[bin_site] * CONCENTRATION_UNIT
+            local_environment[mol_id] = field[bin_site]
         return local_environment
 
     def set_local_environments(self, cells, fields):
@@ -231,7 +249,7 @@ class Fields(Process):
             self.parameters['n_bins'][1])
 
     def diffuse(self, field, timestep, diffusion_rate):
-        ''' diffuse a single field '''
+        """ diffuse a single field """
         t = 0.0
         dt = min(timestep, self.diffusion_dt)
         while t < timestep:
@@ -240,7 +258,7 @@ class Fields(Process):
         return field
 
     def diffuse_fields(self, fields, timestep):
-        ''' diffuse fields in a fields dictionary '''
+        """ diffuse fields in a fields dictionary """
         for mol_id, field in fields.items():
             diffusion_rate = self.molecule_specific_diffusion.get(mol_id, self.diffusion_rate)
             # run diffusion if molecule field is not uniform
@@ -258,6 +276,7 @@ class Fields(Process):
                 degraded = field * np.exp(-decay_rate * timestep)
                 fields[mol_id] = degraded
         return fields
+
 
 def test_fields(config={}, initial={'random': 5.0}, total_time=30):
     # initialize process
@@ -286,8 +305,7 @@ def plot_fields(data, config, out_dir='out', filename='fields'):
         'filename': filename}
     plot_snapshots(snapshots_data, plot_config)
 
-
-if __name__ == '__main__':
+def main():
     out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
     os.makedirs(out_dir, exist_ok=True)
 
@@ -318,3 +336,7 @@ if __name__ == '__main__':
         diffuse_data,
         remove_units(diffuse_config),
         out_dir, 'test_diffuse')
+
+
+if __name__ == '__main__':
+    main()

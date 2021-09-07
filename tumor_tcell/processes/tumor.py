@@ -63,17 +63,17 @@ class TumorProcess(Process):
 
         # division rate
         'PDL1n_growth': 0.6,  # probability of division 24 hr (Eden, 2011)
-        # 'PDL1p -  Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
+        # PDL1p no growth - Cells arrested, do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # IFNg Internalization
         'Max_IFNg_internalization': 21/60,  # number of IFNg 1250 molecules/cell/hr degraded conv to seconds (A. Celada, 1987)
         # volume to convert counts to available IFNg molecules able to be internalized based on the diffusion
         # coefficient and timestep of 60s
-        'external_IFNg_available_volume': 8.24*10 ** -8,  # units.mL, # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
+        'external_IFNg_available_volume': 8.24*10 ** -8,  # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
         #TODO - make this more general from timestep/diameter
         #TODO - Use a global IFNg MW (also use in local fields)
         #TODO - synchronize expected concentration units with local fields
-        'Avagadro_num': 6.022*10 ** 14,  # units.count / units.nmol, #convert back from ng
+        'Avagadro_num': 6.022*10 ** 14,  # count / nmol, #TODO convert back from ng
         'IFNg_MW': 17000,  # g/mol
         'IFNg_threshold': 15000,  # calculated from home data of incubating 1 ng/mL for 20 mL and 20x10^6 cells and half-life
         'reduction_IFNg_internalization': 2,  # based on data from (Ersvaer, 2007) & (Darzi, 2017)

@@ -78,7 +78,7 @@ class TCellProcess(Process):
         'activation_refractory_time': 43200,  # refractory period of 18 hours (plus original 6 h activation time)
         # after activation period with limited ability to produce cytokines and cytotoxic packets and to
         # interact with MHCI (Salerno, 2017), (Gallegos, 2016)
-        'TCR_downregulated': 0, #reduce TCR to 0 if activated more than 6 hours for another 18 hours
+        'TCR_downregulated': 0, # reduce TCR to 0 if activated more than 6 hours for another 18 hours
         'TCR_upregulated': 50000,  # restore TCR after refractory period
 
         # death rates
