@@ -4,7 +4,8 @@ Introduction to project
 
 ## TODO
 * add references file, and somehow link these references in the processes' `defaults`
-* fields, neighbors processes
+* neighbors processes
+* give neighbors process units in the bounds, to be consistent with fields process.
 * tumor process -- address TODOs (accessible external volume more general from timestep/diameter)
 * main experiment
 * finish README
