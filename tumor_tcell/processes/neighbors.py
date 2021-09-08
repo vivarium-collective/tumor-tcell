@@ -2,6 +2,9 @@
 ================================================
 Multibody physics process with neighbor tracking
 ================================================
+
+TODO -- document how transfer/receive/accept/present work
+TODO -- check that animate works.
 """
 
 import os
@@ -106,7 +109,7 @@ class Neighbors(Process):
         'time_step': 2,
         'cells': {},
         'jitter_force': 1e-6,
-        'bounds': remove_units(DEFAULT_BOUNDS),
+        'bounds': remove_units(DEFAULT_BOUNDS),  # TODO (Eran) -- default should have units...
         'length_unit': DEFAULT_LENGTH_UNIT,
         'mass_unit': DEFAULT_MASS_UNIT,
         'velocity_unit': DEFAULT_VELOCITY_UNIT,
@@ -155,13 +158,13 @@ class Neighbors(Process):
                         '_divider': {
                             'divider': daughter_locations,
                             'topology': {
-                                'diameter': ('diameter',)
+                                'diameter': ('..', 'diameter',)
                             },
                         }
                     },
                     'diameter': {
                         '_emit': True,
-                        '_default': 1.0 * self.length_unit,},
+                        '_default': 1.0 * self.length_unit},
                     'mass': {
                         '_default': 1.0 * self.mass_unit},
                     'velocity': {
@@ -262,12 +265,10 @@ class Neighbors(Process):
             bodies[bodies_id]['boundary']['velocity'] = specs['boundary']['velocity'].to(self.velocity_unit).magnitude
         return bodies
 
-
     def location_add_units(self, bodies):
         for body_id, location in bodies.items():
             bodies[body_id] = [(loc * self.length_unit) for loc in location]
         return bodies
-
 
     def get_neighbors(self, cell_loc, cell_radius, neighbor_loc, neighbor_radius):
         neighbors = {}
@@ -345,8 +346,8 @@ class Neighbors(Process):
             circle = patches.Circle((x, y), radius, linewidth=1, edgecolor='b')
             self.ax.add_patch(circle)
 
-        xl=self.remove_length_units(bounds[0])
-        yl=self.remove_length_units(bounds[1])
+        xl = self.remove_length_units(bounds[0])
+        yl = self.remove_length_units(bounds[1])
         plt.xlim([-xl, 2*xl])
         plt.ylim([-yl, 2*yl])
         plt.draw()
@@ -477,7 +478,8 @@ def test_growth_division(config=default_gd_config, settings={}):
     experiment.end()
     return experiment.emitter.get_data()
 
-def multibody_neighbors_workflow(config={}, out_dir='out', filename='neighbors'):
+def multibody_neighbors_workflow(
+        config={}, out_dir='out', filename='neighbors'):
     n_cells = 2
     cell_ids = [str(cell_id) for cell_id in range(n_cells)]
 
