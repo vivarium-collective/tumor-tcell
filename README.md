@@ -3,12 +3,11 @@
 Introduction to project
 
 ## TODO
-* add references file, and somehow link these references in the processes' `defaults`
-* neighbors processes
-* give neighbors process units in the bounds, to be consistent with fields process.
-* tumor process -- address TODOs (accessible external volume more general from timestep/diameter)
 * main experiment
 * finish README
+* add references file, and somehow link these references in the processes' `defaults`
+* give neighbors process units in the bounds, to be consistent with fields process.
+* tumor process -- address TODOs (accessible external volume more general from timestep/diameter)
 * look over Jupyter notebooks. Convert to Colab before submission -- this requires doing the pip install in the notebook.
 
 ## Installation
