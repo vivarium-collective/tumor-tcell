@@ -39,30 +39,47 @@ LENGTH_UNIT = units.um
 
 class Fields(Process):
     """
-    Diffusion and decay in 2-dimensional fields of molecules with agent exchange
+    Diffusion and decay in 2-dimensional fields of molecules with agent exchange of molecules
+
+    Arguments:
+        parameters(dict): Accepts the following configuration keys:
+
+        * **bounds** (list): size of the environment in micrometers, with ``[x, y]``.
+        * **n_bins** (list): resolution of the environment by number of bins ``[i, j]``.
+        * **depth** (Quantity): depth of the field.
+        * **molecules** (list): the molecules, each will have its own field/
+        * **default_diffusion_dt** (float): the time step with which to run diffusion.
+            Must be less that the process time step.
+        * **default_diffusion_rate** (float): the diffusion rate for all molecules that do not have a specific rate.
+        * **diffusion** (dict): Specific diffusion rates for molecules with {'mol_id': rate}.
+        * **decay** (dict): Specific decay rates for molecules with {'mol_id': rate}.
+            If not provided, molecule does not decay.
+
+    # TODO add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
     """
 
     name = NAME
     defaults = {
-        'time_step': 1,
-        'molecules': ['IFNg'],
-        'initial_state': {},
-        'n_bins': [10, 10],
+        # parameters for the lattice dimensions
         'bounds': [10 * units.um, 10 * units.um],
+        'n_bins': [10, 10],
         'depth': 5000.0 * units.um,
+
+        # molecules
+        'molecules': [],
+
+        # diffusion
         'default_diffusion_dt': 0.1,
         'default_diffusion_rate': 1e-1,
-
         # specific diffusion rates
         'diffusion': {
-            'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day #(Liao, 2014)
+            'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day (Liao, 2014)
         },
 
         # specific decay rates
         'decay': {
             'IFNg': np.log(2)/(4.5*60*60),  # 7 hr half-life converted to exponential decay rate #(Kurzrock, 1985)
         },
-        #If we want to add recycling - 100-1000 molecules/cell/min #(Zhou, 2018)
     }
 
     def __init__(self, parameters=None):
@@ -71,7 +88,6 @@ class Fields(Process):
         # parameters
         self.molecule_ids = self.parameters['molecules']
         self.n_bins = self.parameters['n_bins']
-        # strip bounds of units
         self.bounds = [
             b.to(LENGTH_UNIT).magnitude
             for b in self.parameters['bounds']]
@@ -87,15 +103,15 @@ class Fields(Process):
         dy = length_y / bins_y
         dx2 = dx * dy
 
-        ## general diffusion rate
+        # general diffusion rate
         self.diffusion_rate = diffusion_rate / dx2
 
-        ## diffusion rates for each individual molecules
+        # diffusion rates for each individual molecules
         self.molecule_specific_diffusion = {
             mol_id: diff_rate.to(LENGTH_UNIT**2/units.s).magnitude/dx2
             for mol_id, diff_rate in self.parameters['diffusion'].items()}
 
-        ## get diffusion timestep
+        # get diffusion timestep
         diffusion_dt = 0.5 * dx ** 2 * dy ** 2 / (2 * diffusion_rate * (dx ** 2 + dy ** 2))
         self.diffusion_dt = min(diffusion_dt, self.parameters['default_diffusion_dt'])
 
@@ -311,6 +327,7 @@ def main():
 
     # run decay
     decay_config = {
+        'molecules': ['IFNg'],
         'time_step': 60,
         'n_bins': [10, 10],
         'bounds': [10 * units.um, 10 * units.um]}
@@ -325,6 +342,7 @@ def main():
 
     # run diffuse
     diffuse_config = {
+        'molecules': ['IFNg'],
         'time_step': 60,
         'n_bins': [10, 10],
         'bounds': [10 * units.um, 10 * units.um]}

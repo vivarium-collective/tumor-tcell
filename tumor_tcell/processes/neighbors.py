@@ -3,8 +3,20 @@
 Multibody physics process with neighbor tracking
 ================================================
 
-TODO -- document how transfer/receive/accept/present work
-TODO -- check that animate works.
+Simulates collisions between cell bodies with a physics engine,
+and manages the exchange of a few key molecules.
+
+Each agent is expected to have a 'neighbors' dictionary and a 'boundary' dictionary/
+Exchange works by reading the 'neighbors' dictionary for the following keys:
+    Typically used for soluble signaling molecules.
+    * **transfer**: Giving from neighbor cell through 'receive'.
+    * **receive**: Getting from neighbor cell through 'transfer'.
+    Typically used for membrane-bound signaling molecules.
+    * **accept**: The biological response to the binding action with molecules in 'present'.
+    * **present**: The ligand, which triggers a biological response for cells with matching 'accept' molecules.
+
+*Notes*:
+    * cell_type must be either 'tumor' or 't_cell'
 """
 
 import os
@@ -39,6 +51,7 @@ PI = math.pi
 
 # helper functions
 def daughter_locations(mother_location, state):
+    """Given a mother's location, place daughter cells close"""
     mother_diameter = state['diameter']
     mother_x = mother_location[0]
     mother_y = mother_location[1]
@@ -49,20 +62,16 @@ def daughter_locations(mother_location, state):
     return locations
 
 def sphere_volume_from_diameter(diameter):
+    """Given a diameter for a sphere, return the volume"""
     radius = diameter / 2
     volume = 4 / 3 * (PI * radius**3)
     return volume
 
 def make_random_position(bounds):
+    """Return a random position with the [x, y] bounds"""
     return [
         np.random.uniform(0, bound.magnitude) * bound.units
         for bound in bounds]
-
-def convert_to_unit(value, unit=None):
-    if isinstance(value, list):
-        return [v.to(unit).magnitude for v in value]
-    else:
-        return value.to(unit).magnitude
 
 def add_to_dict(dict, added):
     for k, v in added.items():
@@ -93,8 +102,13 @@ class Neighbors(Process):
     Arguments:
         parameters(dict): Accepts the following configuration keys:
 
-        * **bounds** (:py:class:`list`): size of the environment in
-          micrometers, with ``[x, y]``.
+        * **jitter** (float): random force applied to cells, in pN
+        * **bounds** (list): size of the environment in micrometers, with ``[x, y]``.
+        * **length_unit** (Quantity): standard length unit for the physics engine
+        * **mass_unit** (Quantity): standard mass unit for the physics engine
+        * **velocity_unit** (Quantity): standard velocity unit for the physics engine
+        * **neighbor_distance** (Quantity): distance from an agent's outer membrane at which
+            other agents are considered neighbors
         * ***animate*** (:py:class:`bool`): interactive matplotlib option to
           animate multibody. To run with animation turned on set True, and use
           the TKAgg matplotlib backend:
@@ -106,10 +120,8 @@ class Neighbors(Process):
 
     name = NAME
     defaults = {
-        'time_step': 2,
-        'cells': {},
         'jitter_force': 1e-6,
-        'bounds': remove_units(DEFAULT_BOUNDS),  # TODO (Eran) -- default should have units...
+        'bounds': remove_units(DEFAULT_BOUNDS),
         'length_unit': DEFAULT_LENGTH_UNIT,
         'mass_unit': DEFAULT_MASS_UNIT,
         'velocity_unit': DEFAULT_VELOCITY_UNIT,
@@ -254,6 +266,10 @@ class Neighbors(Process):
         return update
 
     def bodies_remove_units(self, bodies):
+        """Convert units to the standard, and then remove them
+
+        This is required for interfacing the physics engine, which does not track units
+        """
         for bodies_id, specs in bodies.items():
             # convert location
             bodies[bodies_id]['boundary']['location'] = [loc.to(self.length_unit).magnitude for loc in specs['boundary']['location']]
@@ -273,7 +289,6 @@ class Neighbors(Process):
     def get_neighbors(self, cell_loc, cell_radius, neighbor_loc, neighbor_radius):
         neighbors = {}
         for neighbor_id, loc in neighbor_loc.items():
-            # TODO -- find nearest neighbor without all pairwise comparisons
             distance = ((cell_loc[0] - loc[0]) ** 2 + (cell_loc[1] - loc[1]) ** 2) ** 0.5
             neighbor_rad = neighbor_radius[neighbor_id]
             inner_distance = distance - cell_radius - neighbor_rad
@@ -282,9 +297,9 @@ class Neighbors(Process):
         return neighbors
 
     def get_all_neighbors(self, cells, current_positions):
-        '''
+        """
         only count neighbor if they are within 'neighbor_distance' from outer boundary of cell
-        '''
+        """
 
         tcell_positions = {
             cell_id: current_positions[cell_id]
@@ -323,11 +338,8 @@ class Neighbors(Process):
     def remove_length_units(self, value):
         return value.to(self.length_unit).magnitude
 
-    def remove_mass_units(self, value):
-        return value.to(self.mass_unit).magnitude
-
-    ## matplotlib interactive plot
     def animate_frame(self, cells):
+        """matplotlib interactive plot"""
         plt.cla()
         bounds = copy.deepcopy(self.parameters['bounds'])
         for cell_id, data in cells.items():
