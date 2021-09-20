@@ -66,7 +66,7 @@ class Fields(Process):
         'depth': 5000.0 * units.um,
 
         # molecules
-        'molecules': [],
+        'molecules': ['IFNg'],
 
         # diffusion
         'default_diffusion_dt': 0.1,
@@ -294,7 +294,9 @@ class Fields(Process):
         return fields
 
 
-def test_fields(config={}, initial={'random': 5.0}, total_time=30):
+def test_fields(config=None, initial=None, total_time=30):
+    config = config or {'molecules': ['IFNg']}
+    initial = initial or {'random': 5.0}
     # initialize process
     fields = Fields(config)
 
