@@ -1,7 +1,13 @@
 """
 ========================
-Tumor/T-cell Experiments
+Tumor/T cell Experiments
 ========================
+
+`tumor_tcell_abm` is the main function for generating and simulating tumor/T cell simulations in a
+2D microenvironment. The T cells can interact with tumor cells in the following ways:
+ * T cell receptor (TCR on T cells) and Major histocompatibility complex I receptor (MHCI on tumor cells) for activation of T cells, induction of IFNg and cytotoxic packet secretion, and slowing of T cell migration
+ * PD1 receptor (on T cells) and PDL1 receptor (on tumor cells) that can inhibit cell activation and induce apoptosis
+ * T cells secrete IFNg which tumor cells uptake and causes state switch to upregulate MHCI, PDL1, and decrease proliferation
 
 Experiments can be triggered from the command line:
 
@@ -58,6 +64,11 @@ def get_tcells(
         relative_pd1n=0.2,
         total_pd1n=None
 ):
+    """
+    make an initial state for any number of tcell instances,
+    with either PD1 negative (`PD1n`) or PD1 positive (`PD1p`) states determined by the parameter
+    `relative_pd1n` or `total_pd1n`.
+    """
     if total_pd1n:
         assert isinstance(total_pd1n, int)
         return {
@@ -83,6 +94,11 @@ def get_tcells(
 
 
 def get_tumors(number=1, relative_pdl1n=0.5):
+    """
+    make an initial state for any number of tumor instances,
+    with either PD1 negative (`PDL1n`) or PD1 positive (`PDL1p`) states determined by the parameter
+    `relative_pdl1n`
+    """
     return {
         '{}_{}'.format(TUMOR_ID, n): {
             'type': 'tumor',
@@ -97,6 +113,11 @@ def random_location(
         distance_from_center=None,
         excluded_distance_from_center=None
 ):
+    """
+    generate a single random location within `bounds`, and within `distance_from_center`
+    of a provided `center`. `excluded_distance_from_center` is an additional parameter
+    that leaves an empty region around the center point.
+    """
     if distance_from_center and excluded_distance_from_center:
         assert distance_from_center > excluded_distance_from_center, \
             'distance_from_center must be greater than excluded_distance_from_center'
@@ -140,11 +161,12 @@ def random_location(
 
 def lymph_node_location(
         bounds,
-        location=[[0.95,1],[0.95,1]]
+        relative_position=[[0.95,1],[0.95,1]]
 ):
+    """return random location within `relative_position` of the total environment `bounds`"""
     return [
-        random.uniform(bounds[0]*location[0][0], bounds[0]*location[0][1]),
-        random.uniform(bounds[0]*location[1][0], bounds[0]*location[1][1])]
+        random.uniform(bounds[0]*relative_position[0][0], bounds[0]*relative_position[0][1]),
+        random.uniform(bounds[0]*relative_position[1][0], bounds[0]*relative_position[1][1])]
 
 def convert_to_hours(data):
     """Convert seconds to hours"""
@@ -229,22 +251,35 @@ def tumor_tcell_abm(
 
     Return:
         Simulation output data (dict)
+
+    Note:
+        * the `lymph_nodes` option has not been thoroughly tested.
     """
-    initial_env_config = {
-        'diffusion_field': {'uniform': 0.0}}
-    jitter_force = 0
+
+    ############################
+    # Create the configuration #
+    ############################
+
+    # Make the composers - these are used to generate simulation modules that are wired
+    # together to make the full multi-scale simulation.
+    ## T cell composer
     t_cell_config = {
         'tcell': {'_parallel': parallel},
         'time_step': time_step}
+    t_cell_composer = TCellAgent(t_cell_config)
+
+    ## Tumor composer
     tumor_config = {
         'tumor': {'_parallel': parallel},
         'time_step': time_step}
+    tumor_composer = TumorAgent(tumor_config)
+
+    ## Environment composer
     environment_config = {
         'neighbors_multibody': {
             '_parallel': parallel,
             'time_step': time_step,
-            'bounds': bounds,
-            'jitter_force': jitter_force},
+            'bounds': bounds},
         'diffusion_field': {
             '_parallel': parallel,
             'time_step': time_step,
@@ -252,32 +287,34 @@ def tumor_tcell_abm(
             'bounds': bounds,
             'n_bins': n_bins,
             'depth': depth}}
-    logger_config = {'time_step': time_step}
-
-    # make the composers
-    t_cell_composer = TCellAgent(t_cell_config)
-    tumor_composer = TumorAgent(tumor_config)
     environment_composer = TumorMicroEnvironment(environment_config)
-    logger_composer = DeathLogger(logger_config)  # used to save the final time and state of agents
 
-    # initialize the composite, and add the environment
+    ## process for logging the final time and state of agents
+    logger_config = {'time_step': time_step}
+    logger_composer = DeathLogger(logger_config)
+
+
+    #######################################
+    # Initialize the composite simulation #
+    #######################################
+
+    # make individual composites and merge them
     composite_model = logger_composer.generate()
     environment = environment_composer.generate()
     composite_model.merge(composite=environment)
 
-    # Make initial cells
+    # Make the cells
     if not tcells:
         tcells = get_tcells(
             number=n_tcells,
             relative_pd1n=tcells_state_PD1n,
             total_pd1n=tcells_total_PD1n)
-
     if not tumors:
         tumors = get_tumors(
             number=n_tumors,
             relative_pdl1n=tumors_state_PDL1n)
 
-    # add tcells to the composite
+    # add T cells to the composite
     for agent_id in tcells.keys():
         t_cell = t_cell_composer.generate({'agent_id': agent_id})
         composite_model.merge(composite=t_cell, path=('agents', agent_id))
@@ -287,10 +324,17 @@ def tumor_tcell_abm(
         tumor = tumor_composer.generate({'agent_id': agent_id})
         composite_model.merge(composite=tumor, path=('agents', agent_id))
 
-    # make initial environment state
+
+    ###################################
+    # Initialize the simulation state #
+    ####################################
+
+    # make the initial environment state
+    initial_env_config = {
+        'diffusion_field': {'uniform': 0.0}}
     initial_env = composite_model.initial_state(initial_env_config)
 
-    # initialize cell state
+    # initialize cell states
     initial_t_cells = {
         agent_id: {
             'boundary': {
@@ -333,12 +377,17 @@ def tumor_tcell_abm(
                     'MHCI': state.get('MHCI', 1000)}
             }} for agent_id, state in tumors.items()}
 
+    # combine all the initial states together
     initial_state = {
         **initial_env,
         'agents': {
             **initial_t_cells, **initial_tumors}}
 
-    # make the experiment
+
+    ######################
+    # Run the simulation #
+    ######################
+
     experiment_id = (f"tumor_tcell_{timestamp()}")
     experiment_config = {
         'description': f"n_tcells: {n_tcells} \n"
@@ -379,7 +428,7 @@ def tumor_tcell_abm(
     print('Completed in {:.2f} seconds'.format(clock_finish))
     experiment.end()
 
-    # return time
+    # return the data
     data = experiment.emitter.get_data_deserialized()
     data = convert_to_hours(data)
     return data
@@ -454,7 +503,6 @@ def lymph_node_experiment():
     )
 
 
-
 def plots_suite(
         data,
         out_dir=None,
@@ -463,10 +511,15 @@ def plots_suite(
         final_time=None,
 ):
     """
-    plotting function that saves several figures.
+    plotting function that generates and saves several figures.
+
+    Returns:
+        * fig1: t cell multi-generation timeseries plot
+        * fig2: tumor multi-generation timeseries plot
+        * fig3: snapshot plot
     """
 
-    # separate out tcell and tumor data for multigen plots
+    # separate out t cell and tumor data for the multi-generation plots
     tcell_data = {}
     tumor_data = {}
     for time, time_data in data.items():
@@ -484,11 +537,11 @@ def plots_suite(
                 for agent_id, agent_data in all_agents_data.items()
                 if TUMOR_ID in agent_id}}
 
-    # get the final death log
-    times_vector = list(data.keys())
-    death_log = data[times_vector[-1]]['log']
+    # # get the final death log
+    # times_vector = list(data.keys())
+    # death_log = data[times_vector[-1]]['log']
 
-    # make multigen plot for tcells and tumors
+    # make multi-gen plot for t cells and tumors
     plot_settings = {
         'time_display': '(hr)',
         'skip_paths': [
@@ -497,7 +550,7 @@ def plots_suite(
     fig1 = plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
     fig2 = plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
 
-    # snapshots plot
+    # snapshots plot shows cells and chemical fields in space at different times
     # extract data
     agents, fields = format_snapshot_data(data)
 
@@ -541,9 +594,10 @@ def make_snapshot_video(
         filename='tumor_tcell_video'
     )
 
+######################################
+# libraries of experiments and plots #
+######################################
 
-
-# libraries of experiments and plots for easy access by Control
 experiments_library = {
     '1': tumor_tcell_abm,
     '4': large_experiment,
@@ -628,11 +682,6 @@ workflow_library = {
                 'plot_id': '1',
                 'bounds': FULL_BOUNDS
             },
-            {
-                'plot_id': 'video',
-                'bounds': FULL_BOUNDS,
-                'n_steps': 100
-            },
         ],
     },
     '5': {
@@ -643,11 +692,6 @@ workflow_library = {
                 'plot_id': '1',
                 'bounds': FULL_BOUNDS
             },
-            # {
-            #     'plot_id': 'video',
-            #     'bounds': FULL_BOUNDS,
-            #     'n_steps': 100
-            # },
         ],
     },
     '6': {
@@ -667,6 +711,7 @@ workflow_library = {
     },
 }
 
+# run with python tumor_tcell/experiments/main.py [workflow id]
 if __name__ == '__main__':
     Control(
         experiments=experiments_library,

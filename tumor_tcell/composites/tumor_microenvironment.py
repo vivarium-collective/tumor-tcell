@@ -44,7 +44,8 @@ class TumorMicroEnvironment(Composer):
     defaults = {
         'neighbors_multibody': {
             'name': 'neighbors_multibody',
-            'bounds': DEFAULT_BOUNDS
+            'bounds': DEFAULT_BOUNDS,
+            'jitter_force': 0,
         },
         'diffusion_field': {
             'name': 'diffusion_field',
