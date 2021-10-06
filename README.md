@@ -43,15 +43,14 @@ The tumor process is focused on two states of a tumor: proliferative with low le
 (MHCI and PDL1) and quiescent with high levels of immune molecules (MHCI and PDL1). Its transition from the 
 proliferative state is dependent on the level of interferon gamma it is exposed to coming from the T cells. 
 Both tumor types can be killed by recieving cytotoxic packets from the T cells.
-![tumor](jupyter_notebooks/images/2_Tumor_process.png)
-<img src="/jupyter_notebooks/images/2_Tumor_process.png" alt="2_Tumor_process" width="200"/>
+<img src="/jupyter_notebooks/images/2_Tumor_process.png" alt="tumor_process" width="500"/>
 
 ### T cell
 The T cell process is focused on two states of a T cell: PD1- with increased secretion of immune molecules 
 (IFNg and cytotoxic packets) and PD1+ with decreased secretion of immune molecules (IFNg and cytotoxic packets). 
 These immune molecules have impact of the state and death of tumor cells. Its transition from the PD1- state is 
 dependent on the length of time it is engaged with tumor cells. 
-![tcell](jupyter_notebooks/images/1_Tcell_process.png)
+<img src="/jupyter_notebooks/images/1_Tcell_process.png" alt="tcell_process" width="500"/>
 
 ## Composites
 
@@ -75,7 +74,7 @@ In our Multi-scale agent based model, the T cells can interact with tumor cells 
 for activation of T cells, induction of IFNg and cytotoxic packet secretion, and slowing of T cell migration
 * PD1 receptor (on T cells) and PDL1 receptor (on tumor cells) that can inhibit cell activation and induce apoptosis
 * T cells secrete IFNg which tumor cells uptake and causes state switch to upregulate MHCI, PDL1, and decrease proliferation
-![tcell](jupyter_notebooks/images/5_ABM.png)
+<img src="/jupyter_notebooks/images/5_ABM.png" alt="tumor_tcell_experiment" width="500"/>
 
 
 ### Running the model
