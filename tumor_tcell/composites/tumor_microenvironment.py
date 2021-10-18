@@ -6,9 +6,8 @@ Tumor microenvironment
 Composite model that combines neighbors and fields processes to make a lattice environment.
 
 This composite can be run on its own from the command line.
-```
-$ python tumor_tcell/composites/tumor_microenvironment.py
-```
+
+    $ python tumor_tcell/composites/tumor_microenvironment.py
 
 """
 

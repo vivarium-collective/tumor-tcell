@@ -11,9 +11,10 @@ Tumor/T cell Experiments
 
 Experiments can be triggered from the command line:
 
-```
-$ python tumor_tcell/experiments/main.py [workflow id]
-```
+    $ python tumor_tcell/experiments/main.py -w [workflow id]
+
+You can find information on the different workflows by reading the comments included for each entry in `workflow_library`,
+at the bottom of this file.
 """
 
 import random
@@ -684,6 +685,8 @@ workflow_library = {
             },
         ],
     },
+    # Workflow 5 is a large simulation of large_experiment with parameters based on in vivo measurements.
+    # Expected runtime is ~12 hours
     '5': {
         'name': 'tumor_microenvironment_experiment',
         'experiment': '5',
