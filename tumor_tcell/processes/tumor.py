@@ -14,9 +14,8 @@ options: "single", "batch" and "timeline". Single simulates the process on its o
 one time, batch simulates the process multiple times to demonstrate the stochasticity,
 and timeline simulate the process one time with pre-set perturbations that mimic
 interactions with other cells.
-```
-$ python tumor_tcell/processes/tumor.py [--single, -s] [--batch, -b] [--timeline, -t]
-```
+
+    $ python tumor_tcell/processes/tumor.py [--single, -s] [--batch, -b] [--timeline, -t]
 
 """
 
