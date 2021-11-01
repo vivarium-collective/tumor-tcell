@@ -91,7 +91,7 @@ def remove_from_dict(dict, removed):
 
 
 class Neighbors(Process):
-    """ Neighbors process for tracking cell bodies.
+    """Neighbors process for tracking cell bodies.
 
     Simulates collisions between cell bodies with a physics engine.
 
@@ -102,13 +102,13 @@ class Neighbors(Process):
     Arguments:
         parameters(dict): Accepts the following configuration keys:
 
-        * **jitter** (float): random force applied to cells, in pN
-        * **bounds** (list): size of the environment in micrometers, with ``[x, y]``.
-        * **length_unit** (Quantity): standard length unit for the physics engine
-        * **mass_unit** (Quantity): standard mass unit for the physics engine
-        * **velocity_unit** (Quantity): standard velocity unit for the physics engine
+        * **jitter** (float): random force applied to cells, in pN.
+        * **bounds** (list): size of the environment in the units specified by length_unit, with ``[x, y]``.
+        * **length_unit** (Quantity): standard length unit for the physics engine -- this includes the bounds.
+        * **mass_unit** (Quantity): standard mass unit for the physics engine.
+        * **velocity_unit** (Quantity): standard velocity unit for the physics engine.
         * **neighbor_distance** (Quantity): distance from an agent's outer membrane at which
-            other agents are considered neighbors
+            other agents are considered neighbors.
         * ***animate*** (:py:class:`bool`): interactive matplotlib option to
           animate multibody. To run with animation turned on set True, and use
           the TKAgg matplotlib backend:
@@ -382,13 +382,13 @@ def single_cell_config(config):
         location = make_random_position(bounds)
     return {
         'boundary': {
-        'location': location,
-        'velocity': velocity,
-        'volume': volume,
-        'diameter': diameter,
-        'mass': 5 * units.ng,
-        'thrust': 0,
-        'torque': 0}}
+            'location': location,
+            'velocity': velocity,
+            'volume': volume,
+            'diameter': diameter,
+            'mass': 5 * units.ng,
+            'thrust': 0,
+            'torque': 0}}
 
 
 def cell_body_config(config):

@@ -63,6 +63,11 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
     return 1 - math.exp(-rate * timestep_fraction)
 
 class TCellProcess(Process):
+    """TCellProcess
+
+    References:
+        * Salerno, F., Paolini, N. A., Stark, R., von Lindern, M., & Wolkers, M. C. (2017). Distinct PKC-mediated posttranscriptional events set cytokine production kinetics in CD8+ T cells. Proceedings of the National Academy of Sciences, 114(36), 9677-9682.
+    """
     name = NAME
     defaults = {
         'time_step': TIMESTEP,

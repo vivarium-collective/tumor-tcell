@@ -35,6 +35,9 @@ LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 AVOGADRO = constants.N_A
 
 LENGTH_UNIT = units.um
+DIFFUSION_RATES = {
+    'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day (Liao, 2014)
+}
 
 
 class Fields(Process):
@@ -72,9 +75,7 @@ class Fields(Process):
         'default_diffusion_dt': 0.1,
         'default_diffusion_rate': 1e-1,
         # specific diffusion rates
-        'diffusion': {
-            'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day (Liao, 2014)
-        },
+        'diffusion': DIFFUSION_RATES,
 
         # specific decay rates
         'decay': {
