@@ -117,10 +117,7 @@ for activation of T cells, induction of IFNg and cytotoxic packet secretion, and
 
 
 ## TODO
-* README clean up the tutorials/notebooks section
-* document the individual workflows in `main.py`.
-* add references file, and somehow link these references in the processes' `defaults`
-* give neighbors process units in the bounds, to be consistent with fields process.
 * tumor process -- address TODOs (accessible external volume more general from timestep/diameter)
 * look over Jupyter notebooks. Convert to Colab before submission -- this requires doing the pip install in the notebook.
-
+* README clean up the tutorials/notebooks section -- Colab? HTML?
+* add references to t cell and tumor processes, revisit this TODO once the paper references are complete 

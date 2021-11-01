@@ -38,7 +38,7 @@ from tumor_tcell.composites.t_cell_agent import TCellAgent
 from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
 from tumor_tcell.composites.death_logger import DeathLogger
 
-# global parameters
+# default parameters
 PI = math.pi
 TIMESTEP = 60
 NBINS = [20, 20]
@@ -49,7 +49,6 @@ TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
 
 # parameters for toy experiments
-SMALL_BOUNDS = [20*units.um, 20*units.um]
 MEDIUM_BOUNDS = [90*units.um, 90*units.um]
 
 # plotting
@@ -600,16 +599,41 @@ def make_snapshot_video(
 ######################################
 
 experiments_library = {
+    # the main experimental function, which uses the default parameters
     '1': tumor_tcell_abm,
+    # configurable large environment that has many tumors and t cells.
     '4': large_experiment,
+    # a large_experiment with parameters based on in vivo measurements,
+    # in which t cells are initialized in a ring around the tumor.
     '5': tumor_microenvironment_experiment,
+    # a work-in-progress to place some t cells in a lymph node, at a
+    # distance from the tumor.
     '6': lymph_node_experiment,
 }
 plots_library = {
+    # plots a timeseries across multiple generations for the t cells and the tumors.
+    # also saves a snapshot plot from multiple time points.
     '1': plots_suite,
+    # save a video of the simulation.
     'video': make_snapshot_video,
 }
+
+# workflows are sets of configured experiments and plots, which run sequentially.
+# these are the primary configurations used to develop and evaluate simulations.
 workflow_library = {
+    # Workflow "main" is a large simulation with parameters based on in vivo measurements.
+    # Expected runtime is ~12 hours
+    'main': {
+        'name': 'tumor_microenvironment_experiment',
+        'experiment': '5',
+        'plots': [
+            {
+                'plot_id': '1',
+                'bounds': FULL_BOUNDS
+            },
+        ],
+    },
+    # a large experiment for testing purposes
     '1': {
         'name': 'tumor_tcell_experiment',
         'experiment': {
@@ -628,28 +652,8 @@ workflow_library = {
             },
         ],
     },
+    # a good workflow for testing, in a medium-sized environment with a small number of cells
     '2': {
-        'name': 'small_experiment',
-        'experiment': {
-            'experiment_id': '1',
-            'bounds': SMALL_BOUNDS,
-            'n_tumors': 1,
-            'n_tcells': 1,
-            'total_time': 10000,
-            'n_bins': [1, 1]
-        },
-        'plots': [
-            {
-                'plot_id': '1',
-                'bounds': SMALL_BOUNDS
-            },
-            {
-                'plot_id': 'video',
-                'bounds': SMALL_BOUNDS,
-            },
-        ],
-    },
-    '3': {
         'name': 'medium_experiment',
         'experiment': {
             'experiment_id': '1',
@@ -675,7 +679,8 @@ workflow_library = {
             },
         ],
     },
-    '4': {
+    # like the "main" workflow, but less configured.
+    '3': {
         'name': 'large_experiment',
         'experiment': '4',
         'plots': [
@@ -685,19 +690,8 @@ workflow_library = {
             },
         ],
     },
-    # Workflow 5 is a large simulation of large_experiment with parameters based on in vivo measurements.
-    # Expected runtime is ~12 hours
-    '5': {
-        'name': 'tumor_microenvironment_experiment',
-        'experiment': '5',
-        'plots': [
-            {
-                'plot_id': '1',
-                'bounds': FULL_BOUNDS
-            },
-        ],
-    },
-    '6': {
+    # an experimental set up for simulating t cells in the lymph node
+    'lymph_node': {
         'name': 'lymph_node_experiment',
         'experiment': '6',
         'plots': [
