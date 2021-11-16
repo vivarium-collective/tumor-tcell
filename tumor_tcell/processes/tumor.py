@@ -223,7 +223,7 @@ class TumorProcess(Process):
 
         available_IFNg = available_IFNg.to('count').magnitude
 
-        #TODO - test out with experiment
+        #TODO - test out with experiment and also do calculation
 
         import ipdb;
         ipdb.set_trace()
