@@ -34,12 +34,12 @@ from vivarium.plots.simulation_output import plot_simulation_output
 
 # directories
 from tumor_tcell import PROCESS_OUT_DIR
-from tumor_tcell.processes.fields import DIFFUSION_RATES
+from tumor_tcell.processes.fields import DIFFUSION_RATES, CONCENTRATION_UNIT
 
 
 NAME = 'Tumor'
 TIMESTEP = 60
-CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
+CONCENTRATION_UNIT_CONVERSION = 1 #ng/mL
 AVOGADRO = constants.N_A
 PI = constants.pi
 
@@ -81,6 +81,7 @@ class TumorProcess(Process):
         #TODO - make this more general from timestep/diameter
         #TODO - Use a global IFNg MW (also use in local fields)
         #TODO - synchronize expected concentration units with local fields
+        'external_concentration_unit': CONCENTRATION_UNIT,
         'pi': PI,
         'nAvagadro': AVOGADRO / units.mol,  # count / mol, #TODO convert back from ng
         'IFNg_MW': 17000 * units.g/units.mol,  # g/mol
@@ -157,7 +158,7 @@ class TumorProcess(Process):
                 },
                 'external': {
                     'IFNg': {
-                        '_default': 0.0 * CONCENTRATION_UNIT,
+                        '_default': 0.0 * CONCENTRATION_UNIT_CONVERSION,
                         '_emit': True,
                     }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
                 'exchange': {
@@ -215,11 +216,17 @@ class TumorProcess(Process):
         # find total volume
         sphere_radius = diameter/2 + diffusion_radius
         external_IFNg_available_volume = 4/3 * self.parameters['pi'] * sphere_radius ** 3
-        import ipdb; ipdb.set_trace()
-        # TODO -- get units of external_IFNg for the next calculation
 
         # external_IFNg_available_volume = self.parameters['external_IFNg_available_volume']
-        available_IFNg = external_IFNg * external_IFNg_available_volume * navogadro / mw
+        available_IFNg = external_IFNg * self.parameters['external_concentration_unit'] \
+                         * external_IFNg_available_volume * navogadro / mw
+
+        available_IFNg = available_IFNg.to('count').magnitude
+
+        #TODO - test out with experiment
+
+        import ipdb;
+        ipdb.set_trace()
 
         # death by apoptosis
         prob_death = get_probability_timestep(
@@ -316,47 +323,47 @@ def get_timeline(
     timeline = [
         (interval * 0 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 0.0,
-            ('boundary', 'external', 'IFNg'): 0.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 10.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
-            ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 2000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 3000.0,
-            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 4000.0,
-            ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 7000.0,
-            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 10000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 15000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 16000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),
