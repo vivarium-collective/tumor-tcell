@@ -201,7 +201,7 @@ def tumor_tcell_abm(
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
-    emit_step=None,
+    emit_step=1,
     emitter='timeseries',
     parallel=False,
     tumors_distance=None,
@@ -665,7 +665,7 @@ workflow_library = {
             # 'emitter': 'database',
             'tumors_distance': 25 * units.um,
             'tcells_distance': 10 * units.um,
-            'parallel': True,
+            'parallel': False,
         },
         'plots': [
             {
