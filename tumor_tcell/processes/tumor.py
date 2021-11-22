@@ -225,9 +225,6 @@ class TumorProcess(Process):
 
         #TODO - test out with experiment and also do calculation
 
-        import ipdb;
-        ipdb.set_trace()
-
         # death by apoptosis
         prob_death = get_probability_timestep(
             self.parameters['death_apoptosis'],

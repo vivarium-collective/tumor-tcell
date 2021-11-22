@@ -13,6 +13,8 @@ import numpy as np
 from scipy import constants
 from scipy.ndimage import convolve
 
+from vivarium.core.serialize import Quantity
+
 from vivarium.core.process import Process
 from vivarium.core.composition import simulate_process
 from vivarium.library.units import units, remove_units
@@ -92,7 +94,10 @@ class Fields(Process):
         self.bounds = [
             b.to(LENGTH_UNIT).magnitude
             for b in self.parameters['bounds']]
-        self.depth = self.parameters['depth'].to(LENGTH_UNIT).magnitude
+        self.depth = self.parameters['depth']
+        if isinstance(self.depth, Quantity):
+            self.depth = self.depth.to(LENGTH_UNIT).magnitude
+
 
         # get diffusion rates
         diffusion_rate = self.parameters['default_diffusion_rate']
