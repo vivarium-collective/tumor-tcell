@@ -201,7 +201,7 @@ def tumor_tcell_abm(
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
-    emit_step=None,
+    emit_step=1,
     emitter='timeseries',
     parallel=False,
     tumors_distance=None,
@@ -434,7 +434,7 @@ def tumor_tcell_abm(
     return data
 
 
-FULL_BOUNDS = [1600*units.um, 1600*units.um]
+FULL_BOUNDS = [1200*units.um, 1200*units.um]
 def large_experiment(
         n_tcells=12,
         n_tumors=1200,
@@ -444,8 +444,8 @@ def large_experiment(
         lymph_nodes=False,
         total_time=259200,
         tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
-        tcells_distance=290 * units.um,  # in or out (None) of the tumor
-        tcells_excluded_distance=260 * units.um,  # for creating a ring around tumor
+        tcells_distance=250 * units.um,  # in or out (None) of the tumor
+        tcells_excluded_distance=240 * units.um,  # for creating a ring around tumor
 ):
     """
     Configurable large environment that has many tumors and t cells. Calls tumor_tcell_abm
@@ -462,8 +462,8 @@ def large_experiment(
         sim_step=100*TIMESTEP,
         emit_step=10*TIMESTEP,
         bounds=FULL_BOUNDS,
-        n_bins=[160, 160],  # 10 um bin size, usually 120 by 120
-        halt_threshold=10000,  # 5000, #sqrt(halt_threshold)*15 <bounds, normally 5000
+        n_bins=[120, 120],  # 10 um bin size, usually 120 by 120
+        halt_threshold=4000,  # 5000, #sqrt(halt_threshold)*15 <bounds, normally 5000
         emitter='database',
         tumors_distance=tumors_distance,  # sqrt(n_tumors)*15(diameter)/2
         tcells_distance=tcells_distance,  # in or out (None) of the tumor
@@ -479,12 +479,12 @@ def tumor_microenvironment_experiment():
     """
     return large_experiment(
         n_tcells=12,
-        total_time=1209600,
+        total_time=259200,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=9,
         tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
-        tcells_distance=270 * units.um,  # in or out (None) of the tumor
-        tcells_excluded_distance=260 * units.um,  # for creating a ring around tumor
+        tcells_distance=220 * units.um,  # in or out (None) of the tumor
+        tcells_excluded_distance=200 * units.um,  # for creating a ring around tumor
     )
 
 
@@ -499,7 +499,7 @@ def lymph_node_experiment():
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=9,
         lymph_nodes=True,
-        total_time=600000,
+        total_time=60000,
     )
 
 
@@ -665,7 +665,7 @@ workflow_library = {
             # 'emitter': 'database',
             'tumors_distance': 25 * units.um,
             'tcells_distance': 10 * units.um,
-            'parallel': True,
+            'parallel': False,
         },
         'plots': [
             {
