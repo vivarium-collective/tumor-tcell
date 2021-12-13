@@ -24,6 +24,7 @@ import sys
 import math
 import random
 import argparse
+from scipy import constants
 
 from vivarium.library.units import units
 from vivarium.core.process import Process
@@ -33,12 +34,14 @@ from vivarium.plots.simulation_output import plot_simulation_output
 
 # directories
 from tumor_tcell import PROCESS_OUT_DIR
+from tumor_tcell.processes.fields import DIFFUSION_RATES, CONCENTRATION_UNIT
 
 
 NAME = 'Tumor'
 TIMESTEP = 60
-CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
-
+CONCENTRATION_UNIT_CONVERSION = 1 #ng/mL
+AVOGADRO = constants.N_A
+PI = constants.pi
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
     """transition probability as function of time"""
@@ -48,6 +51,11 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
 
 
 class TumorProcess(Process):
+    """TumorProcess
+
+    References:
+        *
+    """
     name = NAME
     defaults = {
         'time_step': TIMESTEP,
@@ -68,12 +76,15 @@ class TumorProcess(Process):
         'Max_IFNg_internalization': 21/60,  # number of IFNg 1250 molecules/cell/hr degraded conv to seconds (A. Celada, 1987)
         # volume to convert counts to available IFNg molecules able to be internalized based on the diffusion
         # coefficient and timestep of 60s
+        'diffusion': DIFFUSION_RATES,
         'external_IFNg_available_volume': 8.24*10 ** -8,  # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
         #TODO - make this more general from timestep/diameter
         #TODO - Use a global IFNg MW (also use in local fields)
         #TODO - synchronize expected concentration units with local fields
-        'Avagadro_num': 6.022*10 ** 14,  # count / nmol, #TODO convert back from ng
-        'IFNg_MW': 17000,  # g/mol
+        'external_concentration_unit': CONCENTRATION_UNIT,
+        'pi': PI,
+        'nAvagadro': AVOGADRO / units.mol,  # count / mol, #TODO convert back from ng
+        'IFNg_MW': 17000 * units.g/units.mol,  # g/mol
         'IFNg_threshold': 15000,  # calculated from home data of incubating 1 ng/mL for 20 mL and 20x10^6 cells and half-life
         'reduction_IFNg_internalization': 2,  # based on data from (Ersvaer, 2007) & (Darzi, 2017)
 
@@ -147,7 +158,7 @@ class TumorProcess(Process):
                 },
                 'external': {
                     'IFNg': {
-                        '_default': 0.0 * CONCENTRATION_UNIT,
+                        '_default': 0.0 * CONCENTRATION_UNIT_CONVERSION,
                         '_emit': True,
                     }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
                 'exchange': {
@@ -194,8 +205,25 @@ class TumorProcess(Process):
         internal_IFNg = states['internal']['IFNg']  # counts
 
         # determine available IFNg
-        available_IFNg = external_IFNg * self.parameters['external_IFNg_available_volume'] \
-                         * self.parameters['Avagadro_num'] / self.parameters['IFNg_MW']
+        diameter = states['boundary']['diameter']  # (um)
+        diffusion_rate = self.parameters['diffusion']['IFNg']
+        mw = self.parameters['IFNg_MW']
+        navogadro = self.parameters['nAvagadro']
+
+        # calculate diffusion distance in the timestep
+        diffusion_area= diffusion_rate * (timestep * units.s)
+        diffusion_radius = diffusion_area ** 0.5
+        # find total volume
+        sphere_radius = diameter/2 + diffusion_radius
+        external_IFNg_available_volume = 4/3 * self.parameters['pi'] * sphere_radius ** 3
+
+        # external_IFNg_available_volume = self.parameters['external_IFNg_available_volume']
+        available_IFNg = external_IFNg * self.parameters['external_concentration_unit'] \
+                         * external_IFNg_available_volume * navogadro / mw
+
+        available_IFNg = available_IFNg.to('count').magnitude
+
+        #TODO - test out with experiment and also do calculation
 
         # death by apoptosis
         prob_death = get_probability_timestep(
@@ -292,47 +320,47 @@ def get_timeline(
     timeline = [
         (interval * 0 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 0.0,
-            ('boundary', 'external', 'IFNg'): 0.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 10.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 1000.0,
-            ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 1.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 2000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 3000.0,
-            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 4 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 4000.0,
-            ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 4.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 5 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 7000.0,
-            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 3.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'PD1'): 5e4,
         }),
         (interval * 6 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 10000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 7 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 15000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 8 * TIMESTEP, {
             ('neighbors', 'receive', 'cytotoxic_packets'): 16000.0,
-            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT,
+            ('boundary', 'external', 'IFNg'): 2.0 * CONCENTRATION_UNIT_CONVERSION,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 9 * TIMESTEP, {}),
