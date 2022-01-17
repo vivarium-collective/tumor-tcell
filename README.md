@@ -115,14 +115,16 @@ for activation of T cells, induction of IFNg and cytotoxic packet secretion, and
 * T cells secrete IFNg which tumor cells uptake and causes state switch to upregulate MHCI, PDL1, and decrease proliferation
 <img src="/jupyter_notebooks/images/5_ABM.png" alt="tumor_tcell_experiment" width="500" align="center"/>
 
-###Experimental Output
+### Experimental Output
 Here are a few videos (can be generated autmomatically when running the code) that highlight simulation results initialized 
 with 1200 cells with either no T cells or 12 T cells of varying phenotypes ran over 3 "simulation" days
 
 * No T cell condition
-<img src="/jupyter_notebooks/images/Supplemental_video_1.mp4" alt="tumor_tcell_experiment" width="500" align="center"/>
+https://user-images.githubusercontent.com/6809431/149843689-9630a617-7862-451e-b7b7-c1c9a2f05f86.mp4
+
 * 25% PD1+ T cells
-<img src="/jupyter_notebooks/images/Supplemental_video_1.mp4" alt="tumor_tcell_experiment" width="500" align="center"/>
+https://user-images.githubusercontent.com/6809431/149843735-95cb59ac-35cd-4cad-a5d2-b1f18d27300c.mp4
+
 * 75% PD1+ T cells 
-<img src="/jupyter_notebooks/images/Supplemental_video_1.mp4" alt="tumor_tcell_experiment" width="500" align="center"/>
+https://user-images.githubusercontent.com/6809431/149843753-09226d69-e30c-45a3-8ce0-1577b6182853.mp4
 
