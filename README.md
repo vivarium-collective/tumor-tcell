@@ -10,16 +10,14 @@ integrated with multiplexed imaging datasets for initialization of the model and
 
 ## Notebook Tutorials
 
-TODO: Clean up notebooks for HTML
-
 ### Static notebooks:
- * [Model Tutorial](https://github.com/vivarium-collective/tumor-tcell/jupyter_notebooks/HTML_notebook/tumor_tcell_model.html):
+ * [Model Tutorial](https://github.com/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/HTML_notebook/tumor_tcell_model.html):
  Introduces the model, including the different functions and their interactions.
- * [Killing Experiments](https://github.com/vivarium-collective/tumor-tcell/jupyter_notebooks/HTML_notebook/Killing%Experiments.html):
+ * [Killing Experiments](https://github.com/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/HTML_notebook/Killing%Experiments.html):
  A notebook for modeling in-vitro killing experiments that can be run from a machine with the repository installed locally. 
  
 ### Colab notebooks:
-These can be altered by the user in a online environment:
+This Model Tutorial can be altered by the user in a online environment and used to run experiments:
  * [Model Tutorial](https://colab.research.google.com/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/tumor_tcell_model.ipynb) 
 
 
@@ -35,8 +33,12 @@ for example in a Python notebook. To install:
 ### Getting Started for Developers
 
 To set up the repository for development, we recommend you clone the github repository and build a local development
-environment with pyenv. pyenv lets you install and switch between multiple Python releases and multiple 
-"virtual environments", each with its own pip packages.
+environment with pyenv. We recommend using pyenv, which lets you install and switch between multiple Python releases and 
+multiple "virtual environments", each with its own pip packages. Using pyenv, create a virtual environment and 
+install Python 3.8.5. Follow the instructions [here](https://github.com/pyenv/pyenv). 
+Then, run the following command in your terminal:
+
+    $ pyenv virtualenv 3.8.5 tumor-tcell-env && pyenv local tumor-tcell-env
 
 To set up the library in your environment run:
 
@@ -113,10 +115,14 @@ for activation of T cells, induction of IFNg and cytotoxic packet secretion, and
 * T cells secrete IFNg which tumor cells uptake and causes state switch to upregulate MHCI, PDL1, and decrease proliferation
 <img src="/jupyter_notebooks/images/5_ABM.png" alt="tumor_tcell_experiment" width="500" align="center"/>
 
+###Experimental Output
+Here are a few videos (can be generated autmomatically when running the code) that highlight simulation results initialized 
+with 1200 cells with either no T cells or 12 T cells of varying phenotypes ran over 3 "simulation" days
 
+* No T cell condition
+<img src="/jupyter_notebooks/images/Supplemental_video_1.mp4" alt="tumor_tcell_experiment" width="500" align="center"/>
+* 25% PD1+ T cells
+<img src="/jupyter_notebooks/images/Supplemental_video_1.mp4" alt="tumor_tcell_experiment" width="500" align="center"/>
+* 75% PD1+ T cells 
+<img src="/jupyter_notebooks/images/Supplemental_video_1.mp4" alt="tumor_tcell_experiment" width="500" align="center"/>
 
-## TODO
-* tumor process -- address TODOs (accessible external volume more general from timestep/diameter)
-* look over Jupyter notebooks. Convert to Colab before submission -- this requires doing the pip install in the notebook.
-* README clean up the tutorials/notebooks section -- Colab? HTML?
-* add references to t cell and tumor processes, revisit this TODO once the paper references are complete 
