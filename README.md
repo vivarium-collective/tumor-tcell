@@ -13,15 +13,14 @@ integrated with multiplexed imaging datasets for initialization of the model and
 TODO: Clean up notebooks for HTML
 
 ### Static notebooks:
- * [Model Tutorial](https://github.com/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/tumor_tcell_model.ipynb):
+ * [Model Tutorial](https://github.com/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/HTML_notebook/tumor_tcell_model.html):
  Introduces the model, including the different functions and their interactions.
- * [Killing Experiments](https://github.com/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/Killing%20Experiments.ipynb):
- A notebook for modeling in-vitro killing experiments that can be run from a machine with the repository installed locally.
- * [Run test experiments](https://github.com/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/21_04_ABM_CODEX_exp.ipynb)
+ * [Killing Experiments](https://github.com/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/HTML_notebook/Killing%Experiments.html):
+ A notebook for modeling in-vitro killing experiments that can be run from a machine with the repository installed locally. 
  
 ### Colab notebooks:
 These can be altered by the user in a online environment:
- * [Run test experiments](www.example.com) TODO -- Make sure this is working before the paper release!
+ * [Model Tutorial](https://colab.research.google.com/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/tumor_tcell_model.ipynb) 
 
 
 ## Installation
