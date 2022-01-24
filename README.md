@@ -122,13 +122,3 @@ with 1200 cells with either no T cells or 12 T cells of varying phenotypes ran o
 #### No T cell condition
 
 https://user-images.githubusercontent.com/6809431/149843689-9630a617-7862-451e-b7b7-c1c9a2f05f86.mp4
-
-#### 25% PD1+ T cells
-
-https://user-images.githubusercontent.com/6809431/149843735-95cb59ac-35cd-4cad-a5d2-b1f18d27300c.mp4
-
-#### 75% PD1+ T cells
-
-<div align="center">
-  <a href="https://www.youtube.com/watch?v=-q-cQYyHWkI"><img src="https://www.youtube.com/watch?v=-q-cQYyHWkI/0.jpg" alt="75% PD1+ T cells"></a>
-</div>
