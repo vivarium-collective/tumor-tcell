@@ -119,15 +119,14 @@ for activation of T cells, induction of IFNg and cytotoxic packet secretion, and
 Here are a few videos (can be generated autmomatically when running the code) that highlight simulation results initialized 
 with 1200 cells with either no T cells or 12 T cells of varying phenotypes ran over 3 "simulation" days
 
-#### No T cell condition
-
-https://user-images.githubusercontent.com/6809431/149843689-9630a617-7862-451e-b7b7-c1c9a2f05f86.mp4
-
 #### 25% PD1+ T cells
 
-https://user-images.githubusercontent.com/6809431/149843735-95cb59ac-35cd-4cad-a5d2-b1f18d27300c.mp4
+[![25% PD1+ T cells](https://img.youtube.com/vi/1A74E_e5diE/hqdefault.jpg)](https://www.youtube.com/watch?v=1A74E_e5diE)
 
 #### 75% PD1+ T cells
 
-[![75% PD1+ T cells](https://img.youtube.com/vi/1A74E_e5diE/hqdefault.jpg)](https://www.youtube.com/watch?v=1A74E_e5diE)
+[![75% PD1+ T cells](https://img.youtube.com/vi/IJmQQRZYmfE/hqdefault.jpg)](https://www.youtube.com/watch?v=IJmQQRZYmfE)
 
+#### No T cell condition
+
+[![No T cell ](https://img.youtube.com/vi/0mjC3hlvoCM/hqdefault.jpg)](https://www.youtube.com/watch?v=0mjC3hlvoCM)
