@@ -129,5 +129,5 @@ https://user-images.githubusercontent.com/6809431/149843735-95cb59ac-35cd-4cad-a
 
 #### 75% PD1+ T cells
 
-[![75% PD1+ T cells](https://www.youtube.com/watch?v=-q-cQYyHWkI/0.jpg)](https://www.youtube.com/watch?v=-q-cQYyHWkI)
+[![75% PD1+ T cells](https://img.youtube.com/vi/1A74E_e5diE/hqdefault.jpg)](https://www.youtube.com/watch?v=1A74E_e5diE)
 
