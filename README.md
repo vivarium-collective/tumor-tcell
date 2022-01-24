@@ -129,4 +129,6 @@ https://user-images.githubusercontent.com/6809431/149843735-95cb59ac-35cd-4cad-a
 
 #### 75% PD1+ T cells
 
-[![75% PD1+ T cells](https://www.youtube.com/watch?v=-q-cQYyHWkI)](https://www.youtube.com/watch?v=-q-cQYyHWkI "75% PD1+ T cells")
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=-q-cQYyHWkI"><img src="https://www.youtube.com/watch?v=-q-cQYyHWkI/0.jpg" alt="75% PD1+ T cells"></a>
+</div>
