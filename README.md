@@ -44,6 +44,61 @@ To set up the library in your environment run:
 
     $ pip install -r requirements.txt 
 
+### Set up MongoDB
+
+We use a MongoDB database to store the data collected from running
+simulations. This can be a remote server, but for this guide we will
+run a MongoDB server locally. MongoDB is only required if you want to 
+use the `database` emitter in your experiments, which stores data in 
+MongoDB.
+
+Check Installation:
+
+    $ mongod --version
+    db version v4.2.3
+    ...
+
+Make sure you see a version at least 4.2.
+
+#### Install
+
+If you are on macOS, you can install MongoDB using [Homebrew](https://brew.sh). 
+You will need to add the MongoDB tap following the instructions 
+[here](https://github.com/mongodb/homebrew-brew). If you are on Linux, see the 
+MongoDB documentation's [instructions](https://docs.mongodb.com/manual/administration/install-on-linux/).
+
+#### Setup
+
+You can get a MongoDB server up and running locally any number of ways.
+Here is one:
+
+Create a folder ``code/mongodb``. This is where MongoDB will store the 
+database/ We store the database here instead of at the default location 
+in ``/usr/local/var/mongodb`` to avoid permissions issues if you are not 
+running as an administrator.
+
+Make a copy of the ``mongod`` configuration file so we can make changes:
+
+    $ cp /usr/local/etc/mongod.conf code/mongod.conf
+    
+Note that your configuration file may be somewhere slightly different. 
+Check the MongoDB documentation for your system.
+
+In ``code/mongod.conf`` change the path after ``dbPath:`` to point to ``code/mongodb``.
+   
+Create a shell script ``code/mongo.sh`` with the following content:
+
+    #!/bin/bash
+
+    mongod --config mongodb.conf
+
+Make the script executable:
+
+    $ chmod 700 code/mongo.sh
+
+Now you can launch MongoDB by running this script:
+
+    $ code/mongo.sh
 
 ## Running the model
 
