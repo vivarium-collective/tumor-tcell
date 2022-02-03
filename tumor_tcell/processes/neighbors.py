@@ -418,7 +418,7 @@ def test_growth_division(config=default_gd_config, settings={}):
     # make the process
     multibody = Neighbors(config)
     experiment = process_in_experiment(multibody, settings)
-    experiment.state.update_subschema(
+    experiment.state._update_subschema(
         ('cells',), {
             'boundary': {
                 'mass': {
@@ -428,7 +428,7 @@ def test_growth_division(config=default_gd_config, settings={}):
                     '_updater': 'set',
                     '_divider': 'split'},
                 }})
-    experiment.state.apply_subschemas()
+    experiment.state._apply_subschemas()
 
     # get initial cell state
     experiment.state.set_value({'cells': initial_cells_state})
@@ -485,7 +485,7 @@ def test_growth_division(config=default_gd_config, settings={}):
             invoked_update.append((InvokeUpdate({'cells': update}), None))
 
         # update experiment
-        experiment.send_updates(invoked_update)
+        experiment._send_updates(invoked_update)
 
     experiment.end()
     return experiment.emitter.get_data()

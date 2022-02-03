@@ -28,7 +28,7 @@ setup(
     package_data={},
     include_package_data=True,
     install_requires=[
-        'vivarium-core>=0.4.20',
+        'vivarium-core>=1.0.0',
         'vivarium-multibody==0.0.12',
         'tqdm',
         'opencv-python',
