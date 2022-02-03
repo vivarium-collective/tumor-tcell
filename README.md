@@ -1,6 +1,6 @@
 # Tumor/T cell Microenvironment ABM
 
-Here we created a multiscale agent-based model of the cancer microenvironment based on decades of research, 
+This project provides a multiscale agent-based model of the cancer microenvironment based on decades of research, 
 lab-derived values, and using the backbone of [Vivarium](https://vivarium-core.readthedocs.io/) 
 which is a flexible python-based framework that is extendable. 
 The model is based on individual agents (e.g., cancer cells, immune cells) and their intracellular and intercellular 
@@ -19,106 +19,6 @@ integrated with multiplexed imaging datasets for initialization of the model and
 ### Colab notebooks:
 This Model Tutorial can be altered by the user in a online environment and used to run experiments:
  * [Model Tutorial](https://colab.research.google.com/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/tumor_tcell_model.ipynb) 
-
-
-## Installation
-
-### Install as Python library
-
-Tumor-Tcell can be used as a Python library, which allows users to import modules into a different python environment,
-for example in a Python notebook. To install:
-
-    $ pip install tumor-tcell
-
-### Getting Started for Developers
-
-To set up the repository for development, we recommend you clone the github repository and build a local development
-environment with pyenv. We recommend using pyenv, which lets you install and switch between multiple Python releases and 
-multiple "virtual environments", each with its own pip packages. Using pyenv, create a virtual environment and 
-install Python 3.8.5. Follow the instructions [here](https://github.com/pyenv/pyenv). 
-Then, run the following command in your terminal:
-
-    $ pyenv virtualenv 3.8.5 tumor-tcell-env && pyenv local tumor-tcell-env
-
-To set up the library in your environment run:
-
-    $ pip install -r requirements.txt 
-
-### Set up MongoDB
-
-We use a MongoDB database to store the data collected from running
-simulations. This can be a remote server, but for this guide we will
-run a MongoDB server locally. MongoDB is only required if you want to 
-use the `database` emitter in your experiments, which stores data in 
-MongoDB.
-
-Check Installation:
-
-    $ mongod --version
-    db version v4.2.3
-    ...
-
-Make sure you see a version at least 4.2.
-
-#### Install
-
-If you are on macOS, you can install MongoDB using [Homebrew](https://brew.sh). 
-You will need to add the MongoDB tap following the instructions 
-[here](https://github.com/mongodb/homebrew-brew). If you are on Linux, see the 
-MongoDB documentation's [instructions](https://docs.mongodb.com/manual/administration/install-on-linux/).
-
-#### Setup
-
-You can get a MongoDB server up and running locally any number of ways.
-Here is one:
-
-Create a folder ``code/mongodb``. This is where MongoDB will store the 
-database/ We store the database here instead of at the default location 
-in ``/usr/local/var/mongodb`` to avoid permissions issues if you are not 
-running as an administrator.
-
-Make a copy of the ``mongod`` configuration file so we can make changes:
-
-    $ cp /usr/local/etc/mongod.conf code/mongod.conf
-    
-Note that your configuration file may be somewhere slightly different. 
-Check the MongoDB documentation for your system.
-
-In ``code/mongod.conf`` change the path after ``dbPath:`` to point to ``code/mongodb``.
-   
-Create a shell script ``code/mongo.sh`` with the following content:
-
-    #!/bin/bash
-
-    mongod --config mongodb.conf
-
-Make the script executable:
-
-    $ chmod 700 code/mongo.sh
-
-Now you can launch MongoDB by running this script:
-
-    $ code/mongo.sh
-
-## Running the model
-
-Simulation experiments are specified in the file `tumor_tcell/experiments/main.py`. 
-In this file, `tumor_tcell_abm` is the main function for generating and simulating tumor/T cell interactions in a
-2D microenvironment.
-
-Experiments can be triggered from the command line:
-
-    $ python tumor_tcell/experiments/main.py -w [workflow id]
-
-`workflow ids` are specified by the `workflow_library` at the bottom of the file. Workflow 3 is medium-sized 
-simulation that can be executed with this command:
-
-    $ python tumor_tcell/experiments/main.py -w 3
-
-Individual processes and composites can also be executed from the command line by running their files directly.
-For example, run the t-cell process like this:
-
-    $ python tumor_tcell/processes/t_cell.py [--single, -s] [--batch, -b] [--timeline, -t]
 
 
 ## Description of models
@@ -163,7 +63,7 @@ process, which operates on the molecular fields.
 
 
 ### Experiments
-In our Multi-scale agent based model, the T cells can interact with tumor cells in the following ways:
+In this multi-scale agent based model, the T cells can interact with tumor cells in the following ways:
 * T cell receptor (TCR on T cells) and Major histocompatibility complex I receptor (MHCI on tumor cells) 
 for activation of T cells, induction of IFNg and cytotoxic packet secretion, and slowing of T cell migration
 * PD1 receptor (on T cells) and PDL1 receptor (on tumor cells) that can inhibit cell activation and induce apoptosis
@@ -185,3 +85,59 @@ with 1200 cells with either no T cells or 12 T cells of varying phenotypes ran o
 #### No T cell condition
 
 [![No T cell ](https://img.youtube.com/vi/0mjC3hlvoCM/hqdefault.jpg)](https://www.youtube.com/watch?v=0mjC3hlvoCM)
+
+## Installation
+
+### Install as Python library
+
+Tumor-Tcell can be used as a Python library, which allows users to import modules into a different python environment,
+for example in a Python notebook. To install:
+
+    $ pip install tumor-tcell
+
+## Getting Started for Developers
+
+We recommend the [Vivarium Documentation](https://vivarium-core.readthedocs.io/en/latest/).
+
+To set up the repository for development, we recommend you clone the github repository and build a local development
+environment with pyenv. Pyenv lets you install and switch between multiple Python releases and 
+multiple "virtual environments". Using pyenv, create a virtual environment and 
+install Python 3.8.5. Follow the instructions [here](https://github.com/pyenv/pyenv). 
+Then, run the following command in your terminal:
+
+    $ pyenv virtualenv 3.8.5 tumor-tcell-env && pyenv local tumor-tcell-env
+
+To set up the library in your environment run:
+
+    $ pip install -r requirements.txt 
+
+### Set up MongoDB
+
+We use a MongoDB database to store the data collected from running
+simulations. This can be a remote server, but for this guide we will
+run a MongoDB server locally. MongoDB is only required if you want to 
+use the `database` emitter in your experiments, which stores data in 
+MongoDB.
+
+See [Getting Started for Developers](https://vivarium-core.readthedocs.io/en/latest/getting_started_dev.html) 
+for instructions on setting up MongoDB
+
+## Running the model
+
+Simulation experiments are specified in the file `tumor_tcell/experiments/main.py`. 
+In this file, `tumor_tcell_abm` is the main function for generating and simulating tumor/T cell interactions in a
+2D microenvironment.
+
+Experiments can be triggered from the command line:
+
+    $ python tumor_tcell/experiments/main.py -w [workflow id]
+
+`workflow ids` are specified by the `workflow_library` at the bottom of the file. Workflow 3 is medium-sized 
+simulation that can be executed with this command:
+
+    $ python tumor_tcell/experiments/main.py -w 3
+
+Individual processes and composites can also be executed from the command line by running their files directly.
+For example, run the t-cell process like this:
+
+    $ python tumor_tcell/processes/t_cell.py [--single, -s] [--batch, -b] [--timeline, -t]
