@@ -26,20 +26,20 @@ This Model Tutorial can be altered by the user in a online environment and used 
 ### Processes
 
 The model is composed of two major cell types (T cells & Tumor cells), each with two separate phenotpyes. 
-Each cell has an associated process. The process for each cell type contains the fundamental rules that 
+Each cell has an associated [Vivarium Process](https://vivarium-core.readthedocs.io/en/latest/guides/processes.html). The process for each cell type contains the fundamental rules that 
 govern its behavior in interacting with the other cell types and with the inputs it receives from the environment.
 
 Testing the processes individually enables understanding if underlying parameters derived from literature values 
 or primary data accurately represent behavior expected based on such research. 
 
-#### Tumor
+#### Tumor process
 The tumor process is focused on two states of a tumor: proliferative with low levels of immune molecules 
 (MHCI and PDL1) and quiescent with high levels of immune molecules (MHCI and PDL1). Its transition from the 
 proliferative state is dependent on the level of interferon gamma it is exposed to coming from the T cells. 
 Both tumor types can be killed by recieving cytotoxic packets from the T cells.
 <img src="/jupyter_notebooks/images/2_Tumor_process.png" alt="tumor_process" width="500" align="center"/>
 
-#### T cell
+#### T cell process
 The T cell process is focused on two states of a T cell: PD1- with increased secretion of immune molecules 
 (IFNg and cytotoxic packets) and PD1+ with decreased secretion of immune molecules (IFNg and cytotoxic packets). 
 These immune molecules have impact of the state and death of tumor cells. Its transition from the PD1- state is 
@@ -48,7 +48,7 @@ dependent on the length of time it is engaged with tumor cells.
 
 ### Composites
 
-Composites are integrated models with multiple initialized processes, and whose inter-connections are specified 
+[Vivarium Composites](https://vivarium-core.readthedocs.io/en/latest/guides/composites.html) are integrated models with multiple initialized processes, and whose inter-connections are specified 
 by a topology. The T-cell and Tumor *processes* shown individually above are here combined with additional processes 
 to create T-cell and Tumor *agents*. These include a division process, which waits for the division flag and then 
 carries out division; a death process, which waits for a death flag and then removes the agent; and a local field, 
@@ -62,7 +62,7 @@ exchange molecules with their neighbors, and exchange molecules with a molecular
 process, which operates on the molecular fields.
 
 
-### Experiments
+### Simulation Experiments
 In this multi-scale agent based model, the T cells can interact with tumor cells in the following ways:
 * T cell receptor (TCR on T cells) and Major histocompatibility complex I receptor (MHCI on tumor cells) 
 for activation of T cells, induction of IFNg and cytotoxic packet secretion, and slowing of T cell migration
