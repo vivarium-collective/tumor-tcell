@@ -63,14 +63,14 @@ process, which operates on the molecular fields.
 
 
 ### Simulation Experiments
-In this multi-scale agent based model, the T cells can interact with tumor cells in the following ways:
+In this multi-scale agent-based model, the T cells can interact with tumor cells in the following ways:
 * T cell receptor (TCR on T cells) and Major histocompatibility complex I receptor (MHCI on tumor cells) 
 for activation of T cells, induction of IFNg and cytotoxic packet secretion, and slowing of T cell migration
 * PD1 receptor (on T cells) and PDL1 receptor (on tumor cells) that can inhibit cell activation and induce apoptosis
 * T cells secrete IFNg which tumor cells uptake and causes state switch to upregulate MHCI, PDL1, and decrease proliferation
 <img src="/jupyter_notebooks/images/5_ABM.png" alt="tumor_tcell_experiment" width="500" align="center"/>
 
-### Experimental Output
+### Experimental Output (click images to play on youtube)
 Here are a few videos (can be generated autmomatically when running the code) that highlight simulation results initialized 
 with 1200 cells with either no T cells or 12 T cells of varying phenotypes ran over 3 "simulation" days
 
