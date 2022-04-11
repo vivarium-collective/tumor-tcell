@@ -264,7 +264,7 @@ def cytotoxicity_rep_plot(num_rep, save_name):
     pl.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     # Get csv saved in experiment id library
-    analysis_dir = '/mnt/c/Users/akoya-stanford/Python_Code/tumor-tcell/out/killing_experiments/'
+    analysis_dir = 'out/killing_experiments/'
     save_dir = analysis_dir + 'Multiple_killing_analysis/'
 
     analysis_out_dir = save_dir + save_name + '_n55_rep'  #####################
