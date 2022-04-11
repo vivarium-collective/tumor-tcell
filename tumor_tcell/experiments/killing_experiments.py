@@ -26,10 +26,13 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
     for n in range(1, num_rep + 1, 1):
 
         experiment_name = 'MHCI_Reduction_'+save_name+'_ncells_'+str(N_cells)+'_exp'+str(n)
-        parent_dir = '/mnt/c/Users/akoya-stanford/Python_Code/tumor-tcell/out/killing_experiments/'
+        #parent_dir = '/mnt/c/Users/akoya-stanford/Python_Code/tumor-tcell/out/killing_experiments/'
+
+        parent_dir = 'out/killing_experiments/'
+        os.makedirs(parent_dir, exist_ok=True)
 
         # Make a new folder to called by experiment
-        out_dir = parent_dir + experiment_name
+        out_dir = os.path.join(parent_dir, experiment_name)
         os.makedirs(out_dir, exist_ok=True)
 
 
