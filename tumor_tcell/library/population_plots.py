@@ -192,7 +192,10 @@ def population_group_plot(cell_plot_list, cell_states, out_dir=None, save_name=N
         pl.savefig(out_dir + '/' + save_name + '_total_subtype.png', transparent=True, format='png',
                    bbox_inches='tight', dpi=300)
 
-def cytotoxicity_group_plot(cell_plot_list, exp_1, cntrl_1, exp_2, cntrl_2, out_dir=None, save_name=None):
+def cytotoxicity_group_plot(
+        cell_plot_list, exp_1, cntrl_1, exp_2, cntrl_2,
+        out_dir=None, save_name=None
+):
     SMALL_SIZE = 18
     MEDIUM_SIZE = 22
     BIGGER_SIZE = 24
@@ -238,7 +241,8 @@ def cytotoxicity_group_plot(cell_plot_list, exp_1, cntrl_1, exp_2, cntrl_2, out_
 
     # Create plot
     pl.figure(figsize=(8, 4))
-    ttl_1 = sns.lineplot(data=cytotoxic_plot, x="time", y='cytotoxicity', hue='experiment_name')
+    ttl_1 = sns.lineplot(
+        data=cytotoxic_plot, x="time", y='cytotoxicity', hue='experiment_name')
     pl.title("Total " + save_name)
     pl.legend(title="Experiment")
     pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -249,7 +253,11 @@ def cytotoxicity_group_plot(cell_plot_list, exp_1, cntrl_1, exp_2, cntrl_2, out_
 
     return cytotoxic_plot
 
-def cytotoxicity_rep_plot(num_rep, save_name):
+def cytotoxicity_rep_plot(
+        num_rep,
+        save_name='cytotoxicity_rep_plot',
+        analysis_dir='out/killing_experiments/'
+):
     #settings for the plotting
     SMALL_SIZE = 18
     MEDIUM_SIZE = 22
@@ -264,9 +272,8 @@ def cytotoxicity_rep_plot(num_rep, save_name):
     pl.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     # Get csv saved in experiment id library
-    analysis_dir = 'out/killing_experiments/'
     save_dir = analysis_dir + 'Multiple_killing_analysis/'
-
+    os.makedirs(save_dir, exist_ok=True)
     analysis_out_dir = save_dir + save_name + '_n55_rep'  #####################
     os.makedirs(analysis_out_dir, exist_ok=True)
 
@@ -281,7 +288,7 @@ def cytotoxicity_rep_plot(num_rep, save_name):
     # read in dataframes
     for experiment in experiment_list:
         experiment_id = experiment
-        experiment_dir = analysis_dir + experiment_id + '/' + 'killing_PDL1_50_PDL1_0/'
+        experiment_dir = analysis_dir + experiment_id + '/killing_PDL1_50_PDL1_0/'
         os.chdir(experiment_dir)
 
         df_cytotoxicity = pd.read_csv(experiment + '_cytotoxicity.csv', index_col=0)
@@ -315,3 +322,7 @@ def cytotoxicity_rep_plot(num_rep, save_name):
     if save_name is not None:
         pl.savefig(analysis_out_dir + '/' + save_name + '_cytotoxicity.png', transparent=True, format='png',
                    bbox_inches='tight', dpi=300)
+
+
+if __name__ == '__main__':
+    cytotoxicity_rep_plot(num_rep=2, save_name='2_rep')
