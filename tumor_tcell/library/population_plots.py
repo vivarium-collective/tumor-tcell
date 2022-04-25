@@ -103,9 +103,14 @@ def death_group_plot(death_plot_list, out_dir=None, save_name=None):
     for experiment in death_plot_list:
         # Plot total number of deaths and type
         total_col = [col for col in experiment.columns if 'total' in col]
-        death_plot = pd.melt(experiment, id_vars=['death', 'time', 'experiment_name'], value_vars=total_col)
-        death_plot.rename(columns={'variable': 'death type', 'value': 'death count'}, inplace=True)
-        death_plot_l.append(death_plot)
+        if len(experiment) > 1:
+            death_plot = pd.melt(experiment, id_vars=['death', 'time', 'experiment_name'], value_vars=total_col)
+            death_plot.rename(columns={'variable': 'death type', 'value': 'death count'}, inplace=True)
+            death_plot_l.append(death_plot)
+
+    if not death_plot_l:
+        raise Warning('no death in these experiments, skipping death_group_plot')
+        return
 
     # Concatenate all
     death_plot = pd.concat(death_plot_l)
@@ -170,6 +175,9 @@ def population_group_plot(cell_plot_list, cell_states, out_dir=None, save_name=N
     cell_state_plot_2 = pd.concat(cell_state_2_list)
     cell_state_all = pd.concat([cell_state_plot_1, cell_state_plot_2])
 
+    experiment_plot.reset_index(inplace=True, drop=True)
+    cell_state_all.reset_index(inplace=True, drop=True)
+
     # Create plot
     pl.figure(figsize=(8, 4))
     ttl_1 = sns.lineplot(data=experiment_plot, x="time", y='cell', hue='experiment_name')
@@ -178,7 +186,8 @@ def population_group_plot(cell_plot_list, cell_states, out_dir=None, save_name=N
     pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     if save_name is not None:
-        pl.savefig(out_dir + '/' + save_name + '_total.png', transparent=True, format='png', bbox_inches='tight',
+        save_path = os.path.join(out_dir, save_name + '_total.png')
+        pl.savefig(save_path, transparent=True, format='png', bbox_inches='tight',
                    dpi=300)
 
     # Create plot
@@ -189,7 +198,8 @@ def population_group_plot(cell_plot_list, cell_states, out_dir=None, save_name=N
     pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     if save_name is not None:
-        pl.savefig(out_dir + '/' + save_name + '_total_subtype.png', transparent=True, format='png',
+        save_path = os.path.join(out_dir, save_name + '_total_subtype.png')
+        pl.savefig(save_path, transparent=True, format='png',
                    bbox_inches='tight', dpi=300)
 
 def cytotoxicity_group_plot(
@@ -238,18 +248,17 @@ def cytotoxicity_group_plot(
     tm_2['experiment_name'] = exp_2
     tm_2.rename(columns={'value': 'cytotoxicity'}, inplace=True)
     cytotoxic_plot = pd.concat([tm_1, tm_2])
-
+    cytotoxic_plot.reset_index(inplace=True, drop=True)
     # Create plot
     pl.figure(figsize=(8, 4))
-    ttl_1 = sns.lineplot(
-        data=cytotoxic_plot, x="time", y='cytotoxicity', hue='experiment_name')
+    ttl_1 = sns.lineplot(data=cytotoxic_plot, x="time", y='cytotoxicity', hue='experiment_name')
     pl.title("Total " + save_name)
     pl.legend(title="Experiment")
     pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
     if save_name is not None:
-        pl.savefig(out_dir + '/' + save_name + '_cytotoxicity.png', transparent=True, format='png',
-                   bbox_inches='tight', dpi=300)
+        save_path = os.path.join(out_dir, save_name + '_cytotoxicity.png')
+        pl.savefig(save_path, transparent=True, format='png', bbox_inches='tight', dpi=300)
 
     return cytotoxic_plot
 
