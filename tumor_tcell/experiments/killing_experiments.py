@@ -60,7 +60,7 @@ def killing_experiment(
         # Plot the data using tumor-tcell experiment notebook and save in current directory
         fig1, fig2, fig3 = plots_suite(data, out_dir=exp_out_dir_1, bounds=[b * units.um for b in BOUNDS])
 
-        # Extract data for plotting
+        # Extract dataframes for plotting
         df_tumor_death_1, df_tcell_death_1, tumor_plot_1, tcell_plot_1 = data_to_dataframes(data)
 
 
@@ -155,17 +155,17 @@ def killing_experiment(
         tumor_plot_list = [tumor_plot_1, tumor_plot_2, tumor_plot_3, tumor_plot_4]
 
         # save experiment dataframe in case need for later
-        os.chdir(exp_out_dir_5)
+        # os.chdir(exp_out_dir_5)
 
         tcell_death = pd.concat(df_tcell_death_list)
         tumor_death = pd.concat(df_tumor_death_list)
         tumor = pd.concat(tumor_plot_list)
         tcell = pd.concat(tcell_plot_list)
 
-        tumor_death.to_csv('tumor_death.csv')
-        tcell_death.to_csv('tcell_death.csv')
-        tumor.to_csv('tumor.csv')
-        tcell.to_csv('tcell.csv')
+        tumor_death.to_csv(exp_out_dir_5 + 'tumor_death.csv')
+        tcell_death.to_csv(exp_out_dir_5 + 'tcell_death.csv')
+        tumor.to_csv(exp_out_dir_5 + 'tumor.csv')
+        tcell.to_csv(exp_out_dir_5 + 'tcell.csv')
 
         cytotoxicity = cytotoxicity_group_plot(cell_plot_list=tumor_plot_list, exp_1=name_exp_1, cntrl_1=name_exp_4,
                                                exp_2=name_exp_2, cntrl_2=name_exp_3,
@@ -182,6 +182,6 @@ def killing_experiment(
 
 
 if __name__ == '__main__':
-    killing_experiment(N_cells=5, save_name='4', num_rep=2,
-                       # total_time=10000
+    killing_experiment(N_cells=20, save_name='4', num_rep=2,
+                       total_time=1000
                        )

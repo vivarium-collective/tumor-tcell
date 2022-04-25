@@ -111,7 +111,7 @@ def data_to_dataframes(data):
     df_death_sub = df_death_multi[~(df_death_multi['death']==False)]
 
     if df_death_sub.empty:
-        return None, None, tumor_plot, tcell_plot
+        return pd.DataFrame({}), pd.DataFrame({}), tumor_plot, tcell_plot
 
     # Only get the final log of the death than contains all the death information
     df_last_death = df_death_sub.loc[df_death_sub.index.levels[0][-1]]
