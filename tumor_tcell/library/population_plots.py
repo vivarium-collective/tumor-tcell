@@ -47,6 +47,11 @@ def population_plot(population_data, cell_states, out_dir=None, save_name=None):
     state_1 = cell_state_df.loc[cell_state_df['cell_state'] == cell_states[0]]
     state_2 = cell_state_df.loc[cell_state_df['cell_state'] == cell_states[1]]
 
+    # reset index
+    total_cell.reset_index(inplace=True, drop=True)
+    state_1.reset_index(inplace=True, drop=True)
+    state_2.reset_index(inplace=True, drop=True)
+
     pl.figure(figsize=(8, 4))
     ttl = sns.lineplot(data=total_cell, x="time", y='cell', label='total')
     ttl_state1 = sns.lineplot(data=state_1, x="time", y='cell', label=cell_states[0])
@@ -78,6 +83,10 @@ def death_plot(death_data, out_dir=None, save_name=None):
     pl.figure(figsize=(8, 4))
     death_plot = pd.melt(death_data, id_vars= ['death', 'time'], value_vars= total_col)
     death_plot.rename(columns={'variable':'death type', 'value' : 'death count'}, inplace=True)
+
+    # reset index
+    death_plot.reset_index(inplace=True, drop=True)
+
     death_cell = sns.lineplot(data=death_plot, x="time", y='death count', hue='death type')
     pl.title("# of deaths")
     pl.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -118,6 +127,10 @@ def death_group_plot(death_plot_list, out_dir=None, save_name=None):
     # Separate out total death
     total_death_plot = death_plot.loc[death_plot['death type'] == 'total_death']
     other_death_plot = death_plot.loc[~(death_plot['death type'] == 'total_death')]
+
+    # reset index
+    total_death_plot.reset_index(inplace=True, drop=True)
+    other_death_plot.reset_index(inplace=True, drop=True)
 
     # Plot figures
     pl.figure(figsize=(8, 4))
@@ -175,6 +188,7 @@ def population_group_plot(cell_plot_list, cell_states, out_dir=None, save_name=N
     cell_state_plot_2 = pd.concat(cell_state_2_list)
     cell_state_all = pd.concat([cell_state_plot_1, cell_state_plot_2])
 
+    # reset index
     experiment_plot.reset_index(inplace=True, drop=True)
     cell_state_all.reset_index(inplace=True, drop=True)
 
@@ -248,7 +262,10 @@ def cytotoxicity_group_plot(
     tm_2['experiment_name'] = exp_2
     tm_2.rename(columns={'value': 'cytotoxicity'}, inplace=True)
     cytotoxic_plot = pd.concat([tm_1, tm_2])
+
+    # reset index
     cytotoxic_plot.reset_index(inplace=True, drop=True)
+
     # Create plot
     pl.figure(figsize=(8, 4))
     ttl_1 = sns.lineplot(data=cytotoxic_plot, x="time", y='cytotoxicity', hue='experiment_name')
@@ -320,6 +337,9 @@ def cytotoxicity_rep_plot(
         Sigma_new_vec = np.array(df_plot['sem'])
         lower_bound = M_new_vec - Sigma_new_vec
         upper_bound = M_new_vec + Sigma_new_vec
+
+        # reset index
+        df_plot.reset_index(inplace=True, drop=True)
 
         # Create plot
         ttl_1 = sns.lineplot(data=df_plot, x="time", y='mean')
