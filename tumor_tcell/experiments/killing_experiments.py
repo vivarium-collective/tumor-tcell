@@ -53,8 +53,15 @@ def killing_experiment(
         # global parameters
         TIMESTEP = 60
         BOUNDS = bounds
-        data = tumor_tcell_abm(total_time=total_time, tumors=DEFAULT_TUMORS, tcells=DEFAULT_TCELLS,
-                               halt_threshold=500, emit_step=60, bounds=BOUNDS, sim_step=10 * TIMESTEP, )
+        data = tumor_tcell_abm(
+            total_time=total_time,
+            tumors=DEFAULT_TUMORS,
+            tcells=DEFAULT_TCELLS,
+            halt_threshold=500,
+            emit_step=60,
+            bounds=BOUNDS,
+            sim_step=10 * TIMESTEP,
+        )
         data = remove_units(data)
 
         # Plot the data using tumor-tcell experiment notebook and save in current directory
@@ -70,8 +77,15 @@ def killing_experiment(
         DEFAULT_TUMORS = get_tumors(number=N_TUMORS, relative_pdl1n=relative_pdl1n)
         DEFAULT_TCELLS = get_tcells(number=N_TCELLS, relative_pd1n=relative_pd1n)
 
-        data = tumor_tcell_abm(total_time=total_time, tumors=DEFAULT_TUMORS, tcells=DEFAULT_TCELLS,
-                               halt_threshold=500, emit_step=60, bounds=BOUNDS, sim_step=10 * TIMESTEP, )
+        data = tumor_tcell_abm(
+            total_time=total_time,
+            tumors=DEFAULT_TUMORS,
+            tcells=DEFAULT_TCELLS,
+            halt_threshold=500,
+            emit_step=60,
+            bounds=BOUNDS,
+            sim_step=10 * TIMESTEP,
+        )
         data = remove_units(data)
 
         # Plot the data using tumor-tcell experiment notebook and save in current directory
@@ -83,6 +97,7 @@ def killing_experiment(
 
 
         ##Experiment to compare to killing data 0:1 with 50% PDL1+ tumors
+        ##Control
         data = tumor_tcell_abm(
             bounds=BOUNDS,
             n_tumors=N_cells,
@@ -93,7 +108,8 @@ def killing_experiment(
             sim_step=10 * TIMESTEP,
             halt_threshold=500,
             time_step=TIMESTEP,
-            emit_step=60, )
+            emit_step=60,
+        )
         data = remove_units(data)
 
         # Plot the data using tumor-tcell experiment notebook and save in current directory
@@ -105,6 +121,7 @@ def killing_experiment(
 
 
         ##Experiment to compare to killing data 0:1 with 0% PDL1+ tumors
+        ##Control
         data = tumor_tcell_abm(
             bounds=BOUNDS,
             n_tumors=N_cells,
