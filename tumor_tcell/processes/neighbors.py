@@ -139,14 +139,14 @@ class Neighbors(Process):
         self.cell_loc_units = {}
 
         # make the multibody object
-        time_step = self.parameters['time_step']
+        timestep = self.parameters['timestep']
         multibody_config = {
             'cell_shape': 'circle',
             'jitter_force': self.parameters['jitter_force'],
             'bounds': [
                 b.to(self.length_unit).magnitude
                 for b in parameters['bounds']],
-            'physics_dt': min(time_step/10, 0.1)}
+            'physics_dt': min(timestep/10, 0.1)}
         self.physics = Pymunk(multibody_config)
 
         # interactive plot for visualization
