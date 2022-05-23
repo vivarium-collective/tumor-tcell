@@ -16,10 +16,8 @@ import random
 import numpy as np
 
 from vivarium.core.composer import Composer
-from vivarium.core.composition import (
-    composer_in_experiment,
-    COMPOSITE_OUT_DIR,
-)
+from vivarium.core.engine import Engine
+from vivarium.core.composition import COMPOSITE_OUT_DIR
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units, remove_units
 
@@ -189,12 +187,10 @@ def test_microenvironment(
         initial_state.update({'agents': initial_agents_state})
 
     # configure experiment
-    experiment_settings = {
-        'compartment': config,
-        'initial_state': initial_state}
-    experiment = composer_in_experiment(
-        compartment,
-        experiment_settings)
+    composite = compartment.generate()
+    experiment = Engine(
+        composite=composite,
+        initial_state=initial_state)
 
     # run experiment
     experiment.update(end_time)
