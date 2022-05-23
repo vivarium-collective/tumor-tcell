@@ -12,8 +12,6 @@ from vivarium.library.units import units, remove_units
 #Analysis tumor-tcell modules needed
 from tumor_tcell.library.data_process import data_to_dataframes
 from tumor_tcell.library.data_process import control_data_to_dataframes
-from tumor_tcell.library.population_analysis import division_analysis
-from tumor_tcell.library.population_plots import (population_plot, division_plot, death_plot)
 
 #Analysis tumor-tcell modules needed
 from tumor_tcell.library.population_plots import death_group_plot
@@ -21,19 +19,27 @@ from tumor_tcell.library.population_plots import population_group_plot
 from tumor_tcell.library.population_plots import cytotoxicity_group_plot
 
 
-def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
-                       bounds=[250 * units.um, 250 * units.um], total_time=48600,):
+def killing_experiment(
+        N_cells, save_name, num_rep=None, tumor_t_ratio=1,
+        bounds=[250 * units.um, 250 * units.um],
+        total_time=48600
+):
+    #run each replicate
     for n in range(1, num_rep + 1, 1):
 
-        experiment_name = 'MHCI_Reduction_'+save_name+'_ncells_'+str(N_cells)+'_exp'+str(n)
-        #parent_dir = '/mnt/c/Users/akoya-stanford/Python_Code/tumor-tcell/out/killing_experiments/'
-
+        experiment_name = f'MHCI_Reduction_{save_name}_ncells_{str(N_cells)}_exp{str(n)}'
         parent_dir = 'out/killing_experiments/'
-        os.makedirs(parent_dir, exist_ok=True)
 
-        # Make a new folder to called by experiment
+        # Make a new folder for each experiment
         out_dir = os.path.join(parent_dir, experiment_name)
-        os.makedirs(out_dir, exist_ok=True)
+        exp_out_dir_1 = os.path.join(out_dir, 'PDL1n_100percent_1')
+        exp_out_dir_2 = os.path.join(out_dir, 'PDL1n_50percent_1')
+        exp_out_dir_3 = os.path.join(out_dir, 'PDL1n_50percent_Cntrl_1')
+        exp_out_dir_4 = os.path.join(out_dir, 'PDL1n_100percent_Cntrl_1')
+        exp_out_dir_5 = os.path.join(out_dir, 'killing_PDL1_50_PDL1_0')
+        for exp_dir in [
+            parent_dir, out_dir, exp_out_dir_1, exp_out_dir_2, exp_out_dir_3, exp_out_dir_4, exp_out_dir_5]:
+            os.makedirs(exp_dir, exist_ok=True)
 
 
         ##Experiment to compare to killing data 1:1 with 0 PDL1+ tumors
@@ -47,18 +53,21 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
         # global parameters
         TIMESTEP = 60
         BOUNDS = bounds
-        data = tumor_tcell_abm(total_time=total_time, tumors=DEFAULT_TUMORS, tcells=DEFAULT_TCELLS,
-                               halt_threshold=500, emit_step=60, bounds=BOUNDS, sim_step=10 * TIMESTEP, )
+        data = tumor_tcell_abm(
+            total_time=total_time,
+            tumors=DEFAULT_TUMORS,
+            tcells=DEFAULT_TCELLS,
+            halt_threshold=500,
+            emit_step=60,
+            bounds=BOUNDS,
+            sim_step=10 * TIMESTEP,
+        )
         data = remove_units(data)
-
-        # Make a new folder to call analysis
-        exp_out_dir_1 = out_dir + '/PDL1n_100percent_1'  #####################
-        os.makedirs(exp_out_dir_1, exist_ok=True)
 
         # Plot the data using tumor-tcell experiment notebook and save in current directory
         fig1, fig2, fig3 = plots_suite(data, out_dir=exp_out_dir_1, bounds=[b * units.um for b in BOUNDS])
 
-        # Extract data for plotting
+        # Extract dataframes for plotting
         df_tumor_death_1, df_tcell_death_1, tumor_plot_1, tcell_plot_1 = data_to_dataframes(data)
 
 
@@ -68,13 +77,16 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
         DEFAULT_TUMORS = get_tumors(number=N_TUMORS, relative_pdl1n=relative_pdl1n)
         DEFAULT_TCELLS = get_tcells(number=N_TCELLS, relative_pd1n=relative_pd1n)
 
-        data = tumor_tcell_abm(total_time=total_time, tumors=DEFAULT_TUMORS, tcells=DEFAULT_TCELLS,
-                               halt_threshold=500, emit_step=60, bounds=BOUNDS, sim_step=10 * TIMESTEP, )
+        data = tumor_tcell_abm(
+            total_time=total_time,
+            tumors=DEFAULT_TUMORS,
+            tcells=DEFAULT_TCELLS,
+            halt_threshold=500,
+            emit_step=60,
+            bounds=BOUNDS,
+            sim_step=10 * TIMESTEP,
+        )
         data = remove_units(data)
-
-        # Make a new folder to call analysis
-        exp_out_dir_2 = out_dir + '/PDL1n_50percent_1'  #####################
-        os.makedirs(exp_out_dir_2, exist_ok=True)
 
         # Plot the data using tumor-tcell experiment notebook and save in current directory
         fig1, fig2, fig3 = plots_suite(data, out_dir=exp_out_dir_2, bounds=[b * units.um for b in BOUNDS])
@@ -85,6 +97,7 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
 
 
         ##Experiment to compare to killing data 0:1 with 50% PDL1+ tumors
+        ##Control
         data = tumor_tcell_abm(
             bounds=BOUNDS,
             n_tumors=N_cells,
@@ -95,12 +108,9 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
             sim_step=10 * TIMESTEP,
             halt_threshold=500,
             time_step=TIMESTEP,
-            emit_step=60, )
+            emit_step=60,
+        )
         data = remove_units(data)
-
-        # Make a new folder to call analysis
-        exp_out_dir_3 = out_dir + '/PDL1n_50percent_Cntrl_1'  #####################
-        os.makedirs(exp_out_dir_3, exist_ok=True)
 
         # Plot the data using tumor-tcell experiment notebook and save in current directory
         fig1, fig2, fig3 = plots_suite(data, out_dir=exp_out_dir_3, bounds=[b * units.um for b in BOUNDS])
@@ -111,6 +121,7 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
 
 
         ##Experiment to compare to killing data 0:1 with 0% PDL1+ tumors
+        ##Control
         data = tumor_tcell_abm(
             bounds=BOUNDS,
             n_tumors=N_cells,
@@ -124,10 +135,6 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
             emit_step=60, )
         data = remove_units(data)
 
-        # Make a new folder to call analysis
-        exp_out_dir_4 = out_dir + '/PDL1n_100percent_Cntrl_1'  #####################
-        os.makedirs(exp_out_dir_4, exist_ok=True)
-
         # Plot the data using tumor-tcell experiment notebook and save in current directory
         fig1, fig2, fig3 = plots_suite(data, out_dir=exp_out_dir_4, bounds=[b * units.um for b in BOUNDS])
 
@@ -136,7 +143,7 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
 
 
         ###Analyze all together for cytotoxicity
-        # Add experimental Tag to each dataframe
+        # Add experimental tag to each dataframe
         name_exp_1 = '0% PDL1+'
         name_exp_2 = '50% PDL1+'
         name_exp_3 = '50% PDL1+ Cntrl'
@@ -158,33 +165,29 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
         df_tumor_death_4['experiment_name'] = name_exp_4
         tumor_plot_4['experiment_name'] = name_exp_4
 
-        # Make a new folder to call analysis
-        exp_out_dir_5 = out_dir + '/killing_PDL1_50_PDL1_0'  #####################
-        os.makedirs(exp_out_dir_5, exist_ok=True)
-
-        # Cobmine together in list form for analysis together
+        # Combine together in list form for analysis together
         df_tcell_death_list = [df_tcell_death_1, df_tcell_death_2]
         df_tumor_death_list = [df_tumor_death_1, df_tumor_death_2, df_tumor_death_3, df_tumor_death_4]
         tcell_plot_list = [tcell_plot_1, tcell_plot_2]
         tumor_plot_list = [tumor_plot_1, tumor_plot_2, tumor_plot_3, tumor_plot_4]
 
         # save experiment dataframe in case need for later
-        os.chdir(exp_out_dir_5)
+        # os.chdir(exp_out_dir_5)
 
         tcell_death = pd.concat(df_tcell_death_list)
         tumor_death = pd.concat(df_tumor_death_list)
         tumor = pd.concat(tumor_plot_list)
         tcell = pd.concat(tcell_plot_list)
 
-        tumor_death.to_csv('tumor_death.csv')
-        tcell_death.to_csv('tcell_death.csv')
-        tumor.to_csv('tumor.csv')
-        tcell.to_csv('tcell.csv')
+        tumor_death.to_csv(exp_out_dir_5 + 'tumor_death.csv')
+        tcell_death.to_csv(exp_out_dir_5 + 'tcell_death.csv')
+        tumor.to_csv(exp_out_dir_5 + 'tumor.csv')
+        tcell.to_csv(exp_out_dir_5 + 'tcell.csv')
 
         cytotoxicity = cytotoxicity_group_plot(cell_plot_list=tumor_plot_list, exp_1=name_exp_1, cntrl_1=name_exp_4,
                                                exp_2=name_exp_2, cntrl_2=name_exp_3,
                                                out_dir=exp_out_dir_5, save_name=experiment_name)
-        cytotoxicity.to_csv(experiment_name + '_cytotoxicity.csv')
+        cytotoxicity.to_csv(exp_out_dir_5 + experiment_name + '_cytotoxicity.csv')
 
         death_group_plot(death_plot_list=df_tcell_death_list, out_dir=exp_out_dir_5, save_name='Tcells')
         death_group_plot(death_plot_list=df_tumor_death_list, out_dir=exp_out_dir_5, save_name='Tumors')
@@ -195,3 +198,7 @@ def killing_experiment(N_cells, save_name, num_rep=None, tumor_t_ratio=1,
                               save_name='Tumor')
 
 
+if __name__ == '__main__':
+    killing_experiment(N_cells=20, save_name='4', num_rep=2,
+                       total_time=1000
+                       )
