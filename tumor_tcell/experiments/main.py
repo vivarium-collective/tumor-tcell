@@ -594,6 +594,18 @@ def make_snapshot_video(
         filename='tumor_tcell_video'
     )
 
+
+# tests
+def test_medium_simulation():
+    # run a test confirming workflow #2 is running
+    Control(
+        experiments=experiments_library,
+        plots=plots_library,
+        workflows=workflow_library,
+        args=['-w', '2']
+    )
+
+
 ######################################
 # libraries of experiments and plots #
 ######################################

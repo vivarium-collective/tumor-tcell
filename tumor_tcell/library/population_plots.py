@@ -279,6 +279,7 @@ def cytotoxicity_group_plot(
 
     return cytotoxic_plot
 
+
 def cytotoxicity_rep_plot(
         num_rep,
         save_name='cytotoxicity_rep_plot',
@@ -299,7 +300,6 @@ def cytotoxicity_rep_plot(
 
     # Get csv saved in experiment id library
     save_dir = analysis_dir + 'Multiple_killing_analysis/'
-    os.makedirs(save_dir, exist_ok=True)
     analysis_out_dir = save_dir + save_name + '_n55_rep'  #####################
     os.makedirs(analysis_out_dir, exist_ok=True)
 
@@ -315,9 +315,8 @@ def cytotoxicity_rep_plot(
     for experiment in experiment_list:
         experiment_id = experiment
         experiment_dir = analysis_dir + experiment_id + '/killing_PDL1_50_PDL1_0/'
-        os.chdir(experiment_dir)
 
-        df_cytotoxicity = pd.read_csv(experiment + '_cytotoxicity.csv', index_col=0)
+        df_cytotoxicity = pd.read_csv(experiment_dir + experiment + '_cytotoxicity.csv', index_col=0)
         df_cytotoxicity['replicate'] = experiment
         high_cytotoxicity_list.append(df_cytotoxicity)
 
