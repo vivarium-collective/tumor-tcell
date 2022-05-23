@@ -187,7 +187,7 @@ def killing_experiment(
         cytotoxicity = cytotoxicity_group_plot(cell_plot_list=tumor_plot_list, exp_1=name_exp_1, cntrl_1=name_exp_4,
                                                exp_2=name_exp_2, cntrl_2=name_exp_3,
                                                out_dir=exp_out_dir_5, save_name=experiment_name)
-        cytotoxicity.to_csv(experiment_name + '_cytotoxicity.csv')
+        cytotoxicity.to_csv(exp_out_dir_5 + experiment_name + '_cytotoxicity.csv')
 
         death_group_plot(death_plot_list=df_tcell_death_list, out_dir=exp_out_dir_5, save_name='Tcells')
         death_group_plot(death_plot_list=df_tumor_death_list, out_dir=exp_out_dir_5, save_name='Tumors')
