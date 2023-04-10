@@ -163,10 +163,16 @@ def lymph_node_location(
         bounds,
         relative_position=[[0.95,1],[0.95,1]]
 ):
-    """return random location within `relative_position` of the total environment `bounds`"""
+    """
+    return random location within `relative_position` of the total environment `bounds`
+
+    TODO -- escaping to the lymph nodes should use vasculature, like a port out of the tumor.
+    TODO -- Could be placed randomly within the tumor, rather than a separate lymph node compartment.
+    """
     return [
         random.uniform(bounds[0]*relative_position[0][0], bounds[0]*relative_position[0][1]),
         random.uniform(bounds[0]*relative_position[1][0], bounds[0]*relative_position[1][1])]
+
 
 def convert_to_hours(data):
     """Convert seconds to hours"""
@@ -210,7 +216,7 @@ def tumor_tcell_abm(
     tcells_excluded_distance=None,
     tumors_center=None,
     tcell_center=None,
-    lymph_nodes=False,
+    lymph_nodes=False,  # TODO -- get this to work when True
 ):
     """ Tumor-Tcell simulation
 
@@ -254,6 +260,7 @@ def tumor_tcell_abm(
 
     Note:
         * the `lymph_nodes` option has not been thoroughly tested.
+        TODO -- This should allow t cells to port in/out of the tumor, rather than having a descignated LN location. When in the T cell they present an antigen to recruite more T Cells.
     """
 
     ############################
@@ -343,11 +350,11 @@ def tumor_tcell_abm(
                     center=tcell_center,
                     distance_from_center=tcells_distance,
                     excluded_distance_from_center=tcells_excluded_distance,
-                ) if not lymph_nodes else lymph_node_location(bounds)),
+                ) if not lymph_nodes else lymph_node_location(bounds)),  # TODO -- work on lymph node location. Rethink how location works -- separate compartment?
                 'diameter': state.get('diameter', 7.5 * units.um),
                 'velocity': state.get('velocity', 10.0 * units.um/units.min)},
             'globals': {
-                'LN_no_migration': lymph_nodes,
+                'LN_no_migration': lymph_nodes,  # TODO -- this may no longer be needed if we are using a different compartment
             },
             'internal': {
                 'cell_state': state.get('cell_state', None),
@@ -491,15 +498,17 @@ def tumor_microenvironment_experiment():
 def lymph_node_experiment():
     """
     WORK IN PROGRESS
+    TODO: this is going to be the LN simulation for the response to reviewers
     """
     return large_experiment(
-        n_tcells=12,
-        n_tumors=120,
-        tcells_state_PD1n=0.8,
+        # TODO -- what initial states for the resubmission?
+        n_tcells=2,  # 12
+        n_tumors=12,  # 1200
+        # tcells_state_PD1n=0.8,
         tumors_state_PDL1n=0.5,
-        tcells_total_PD1n=9,
-        lymph_nodes=True,
-        total_time=60000,
+        tcells_total_PD1n=1,  # 9, 3
+        lymph_nodes=True,  # TODO: Get this to work!
+        total_time=100,  # TODO -- run this for 259200 (3 days)
     )
 
 
@@ -620,6 +629,7 @@ experiments_library = {
     '5': tumor_microenvironment_experiment,
     # a work-in-progress to place some t cells in a lymph node, at a
     # distance from the tumor.
+    # TODO: get this to work
     '6': lymph_node_experiment,
 }
 plots_library = {
@@ -703,6 +713,7 @@ workflow_library = {
         ],
     },
     # an experimental set up for simulating t cells in the lymph node
+    # TODO: get this workflow to work
     'lymph_node': {
         'name': 'lymph_node_experiment',
         'experiment': '6',
