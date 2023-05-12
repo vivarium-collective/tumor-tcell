@@ -288,7 +288,7 @@ class TumorProcess(Process):
                 'PDL1': PDL1,
                 'MHCI': MHCI})
 
-            # degrade locally available IFNg in the environment
+            # uptake locally available IFNg in the environment
             IFNg_degrade = min(int(self.parameters['Max_IFNg_internalization'] \
                                    / self.parameters['reduction_IFNg_internalization'] * timestep), int(available_IFNg))
 
