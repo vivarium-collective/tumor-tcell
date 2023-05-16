@@ -6,15 +6,16 @@ Dendritic Cell Process
 import random
 from scipy import constants
 from vivarium.core.process import Process
-from vivarium.core.composition import simulate_process
+from vivarium.core.composer import Composite
+from vivarium.core.engine import Engine
 from vivarium.plots.simulation_output import plot_simulation_output
-from tumor_tcell.processes.fields import DIFFUSION_RATES, CONCENTRATION_UNIT
+from tumor_tcell.processes.fields import DIFFUSION_RATES  #, CONCENTRATION_UNIT
 from tumor_tcell.processes.tumor import get_probability_timestep
 from vivarium.library.units import units
 
 
 TIMESTEP = 60  # seconds
-# CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
+CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
 AVOGADRO = constants.N_A
 PI = constants.pi
 
@@ -27,12 +28,11 @@ class DendriticCellProcess(Process):
     """
     defaults = {
         'mass': 0.0,  #TODO
-        'diameter': 10.0,  # * units.um,
+        'diameter': 10.0 * units.um,  # * units.um, 'diameter': 15
         'velocity': 2.0,  # * units.um/units.min,  # when inactive 2-5 um/min, when active 10-15 um/min
         'diffusion': DIFFUSION_RATES,
         'pi': PI,
         'nAvagadro': AVOGADRO / units.mol,  # count / mol, #TODO convert back from ng
-        'IFNg_MW': 17000 * units.g / units.mol,  # g/mol
         'external_concentration_unit': CONCENTRATION_UNIT,
 
         # death rates
@@ -44,7 +44,7 @@ class DendriticCellProcess(Process):
         'divide_time': 5*24*60*60,  # 5 days (*24*60*60 seconds)
 
         # transitions
-        'internal_tumor_debris_threshold': 10000,  # TODO -- get this
+        'internal_tumor_debris_threshold': 10000 * CONCENTRATION_UNIT,  # TODO -- get this
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4,
@@ -52,6 +52,7 @@ class DendriticCellProcess(Process):
 
         # uptake
         'tumor_debris_uptake': 21 / 60,  # TODO -- number of tumor debris molecules/cell/hr uptaken conv to seconds
+        'tumor_debris_MW': 17000 * units.g / units.mol,  # g/mol TODO -- check this
     }
 
     def __init__(self, parameters=None):
@@ -74,7 +75,9 @@ class DendriticCellProcess(Process):
                     '_default': 0,
                     '_updater': 'accumulate'}},  # used to count number of divisions over time.
             'internal': {
-                'cell_state': 'inactive',  # either 'activate' or 'inactive'
+                'cell_state': {
+                    '_default': 'inactive'
+                },  # either 'activate' or 'inactive'
                 'tumor_debris': {
                     '_default': 0,
                     '_updater': 'accumulate'},
@@ -86,7 +89,8 @@ class DendriticCellProcess(Process):
                     '_emit': True,
                     '_updater': 'accumulate'}},  # counts how long in lymph node, high value increases chance of migration back to tumor
             'boundary': {
-                'cell_type': 'dendritic',  # Moght be needed for neighbors, but really for the experimenters to quantify
+                'cell_type': {
+                    '_default': 'dendritic'},  # Moght be needed for neighbors, but really for the experimenters to quantify
                 'mass': {
                     '_value': self.parameters['mass']},
                 'diameter': {
@@ -97,7 +101,8 @@ class DendriticCellProcess(Process):
                     'tumor_debris': {
                         '_default': 0.0,  # TODO: units.ng / units.mL
                         '_emit': True},
-                    'lymph_node': {'_default': False}}},  # this is True when in the lymph node, begins counter for how long.
+                    'lymph_node': {
+                        '_default': False}}},  # this is True when in the lymph node, begins counter for how long.
             'neighbors': {  # this is only for presenting in the lymph node, not in the tumor "arena"
                 'present': {
                     'PDL1': {
@@ -123,7 +128,7 @@ class DendriticCellProcess(Process):
 
         # determine available IFNg
         diameter = states['boundary']['diameter']  # (um)
-        tumor_debris_diffusion_rate = self.parameters['diffusion']['tumor_debris']
+        tumor_debris_diffusion_rate = self.parameters['diffusion']['tumor_debris'] * units.cm * units.cm / units.day  # TODO -- add this back in DIFFUSION RATES
         mw = self.parameters['tumor_debris_MW']
         navogadro = self.parameters['nAvagadro']
 
@@ -215,25 +220,26 @@ class DendriticCellProcess(Process):
 def test_single_d_cell(
     total_time=43200,
     time_step=TIMESTEP,
-    timeline=None,
     out_dir='out'):
 
-    d_cell_process = DendriticCellProcess({})
-    if timeline is not None:
-        settings = {
-            'timeline': {
-                'timeline': timeline,
-                'time_step': time_step}}
-    else:
-        settings = {
-            'total_time': total_time,
-            'time_step': time_step}
+    d_cell_process = DendriticCellProcess({'timestep': time_step})
 
-    # get initial state
-    settings['initial_state'] = d_cell_process.initial_state()
+    # put in composite
+    initial_state = d_cell_process.initial_state()
+    processes = {'d_cell': d_cell_process}
+    topology = {'d_cell': {port: (port,)
+                           for port in d_cell_process.ports_schema().keys()}}
+    composite = Composite({
+        'processes': processes,
+        'topology': topology,
+        'initial_state': initial_state})
 
     # run experiment
-    timeseries = simulate_process(d_cell_process, settings)
+    sim = Engine(composite=composite)
+    sim.update(total_time)
+
+    # get the data
+    timeseries = sim.emitter.get_timeseries()  # simulate_process(d_cell_process, settings)
 
     # plot
     plot_settings = {'remove_zeros': False}
