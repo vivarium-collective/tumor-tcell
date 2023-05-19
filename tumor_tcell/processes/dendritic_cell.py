@@ -15,7 +15,7 @@ from vivarium.library.units import units
 
 
 TIMESTEP = 60  # seconds
-CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
+CONCENTRATION_UNIT = units.ng / units.mL  # TODO: units.ng / units.mL
 AVOGADRO = constants.N_A
 PI = constants.pi
 
@@ -143,6 +143,8 @@ class DendriticCellProcess(Process):
                          * external_tumor_debris_available_volume * navogadro / mw
 
         available_tumor_debris_counts = available_tumor_debris.to('count').magnitude
+        available_tumor_debris_counts = 0
+        # TODO -- why is this value '0j'?
 
         # TODO -- we need to move available tumor debris to internal tumor debris
 
@@ -217,6 +219,34 @@ class DendriticCellProcess(Process):
 
 
 # test functions
+def get_timeline(
+        total_time=129600,
+        number_steps=10):
+    """Make a timeline that feeds input to the tumor process"""
+
+    interval = total_time/(number_steps*TIMESTEP)
+
+    timeline = [
+        (interval * 0 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 10.0,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+        (interval * 1 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 0.0,
+            ('neighbors', 'accept', 'TCR'): 5e4,
+        }),
+        (interval * 2 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 10.0,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+        (interval * 3 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 0.0,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+    ]
+    return timeline
+
+
 def test_single_d_cell(
     total_time=43200,
     time_step=TIMESTEP,
@@ -226,6 +256,7 @@ def test_single_d_cell(
 
     # put in composite
     initial_state = d_cell_process.initial_state()
+    initial_state['boundary'] = {'external': {'tumor_debris': 0.1}}
     processes = {'d_cell': d_cell_process}
     topology = {'d_cell': {port: (port,)
                            for port in d_cell_process.ports_schema().keys()}}
@@ -239,7 +270,7 @@ def test_single_d_cell(
     sim.update(total_time)
 
     # get the data
-    timeseries = sim.emitter.get_timeseries()  # simulate_process(d_cell_process, settings)
+    timeseries = sim.emitter.get_timeseries()
 
     # plot
     plot_settings = {'remove_zeros': False}

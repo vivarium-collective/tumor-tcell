@@ -294,7 +294,13 @@ def tumor_tcell_abm(
             'bounds': bounds,
             'n_bins': n_bins,
             'depth': depth}}
-    environment_composer = TumorMicroEnvironment(environment_config)
+    if not lymph_nodes:
+        environment_composer = TumorMicroEnvironment(environment_config)
+    else:
+        environment_config['lymph_node'] = {}
+        environment_composer = TumorAndLymphNodeEnvironment(environment_config)
+
+    # TODO -- build different environment if doing lymph node
 
     ## process for logging the final time and state of agents
     logger_config = {'time_step': time_step}
@@ -350,12 +356,12 @@ def tumor_tcell_abm(
                     center=tcell_center,
                     distance_from_center=tcells_distance,
                     excluded_distance_from_center=tcells_excluded_distance,
-                ) if not lymph_nodes else lymph_node_location(bounds)),  # TODO -- work on lymph node location. Rethink how location works -- separate compartment?
+                )),
                 'diameter': state.get('diameter', 7.5 * units.um),
                 'velocity': state.get('velocity', 10.0 * units.um/units.min)},
-            'globals': {
-                'LN_no_migration': lymph_nodes,  # TODO -- this may no longer be needed if we are using a different compartment
-            },
+            # 'globals': {
+            #     'LN_no_migration': lymph_nodes,  # TODO -- this may no longer be needed if we are using a different compartment
+            # },
             'internal': {
                 'cell_state': state.get('cell_state', None),
                 'velocity_timer': state.get('velocity_timer', 0),
