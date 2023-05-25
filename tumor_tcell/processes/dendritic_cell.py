@@ -3,15 +3,21 @@
 Dendritic Cell Process
 ==============
 """
+
+
 import random
 from scipy import constants
+
 from vivarium.core.process import Process
 from vivarium.core.composer import Composite
 from vivarium.core.engine import Engine
 from vivarium.plots.simulation_output import plot_simulation_output
+from vivarium.library.units import units
+from vivarium.processes.timeline import TimelineProcess
+
 from tumor_tcell.processes.fields import DIFFUSION_RATES  #, CONCENTRATION_UNIT
 from tumor_tcell.processes.tumor import get_probability_timestep
-from vivarium.library.units import units
+
 
 
 TIMESTEP = 60  # seconds
@@ -120,7 +126,6 @@ class DendriticCellProcess(Process):
                 }
             }}
 
-
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
         external_tumor_debris = states['boundary']['external']['tumor_debris']  # concentration
@@ -133,21 +138,16 @@ class DendriticCellProcess(Process):
         navogadro = self.parameters['nAvagadro']
 
         # calculate diffusion distance in the timestep
-        diffusion_area = tumor_debris_diffusion_rate * (timestep * units.s)
+        diffusion_area = tumor_debris_diffusion_rate * timestep * units.s
         diffusion_radius = diffusion_area ** 0.5
         # find total volume
         sphere_radius = diameter / 2 + diffusion_radius
         external_tumor_debris_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3
-
         available_tumor_debris = external_tumor_debris * self.parameters['external_concentration_unit'] \
-                         * external_tumor_debris_available_volume * navogadro / mw
-
+                                 * external_tumor_debris_available_volume * navogadro / mw
         available_tumor_debris_counts = available_tumor_debris.to('count').magnitude
-        available_tumor_debris_counts = 0
-        # TODO -- why is this value '0j'?
 
         # TODO -- we need to move available tumor debris to internal tumor debris
-
         # TODO - test out with experiment and also do calculation
 
         # death by apoptosis
@@ -177,34 +177,30 @@ class DendriticCellProcess(Process):
             pass
 
         ## Build up an update
-        update = {'internal': {},
-                  'boundary': {},
-                  # 'neighbors': {'present': {}, 'accept': {}, 'receive': {}}  # all interactions are through the boundary
-                  }
+        update = {'internal': {}, 'boundary': {}}
 
         # state transition
         new_cell_state = cell_state
         if cell_state == 'inactive':
-            if internal_tumor_debris >= self.parameters['internal_tumor_debris_threshold']:
+            if internal_tumor_debris >= self.parameters['internal_tumor_debris_threshold']:  # TODO -- the parameter is in ng/mL, while the variable is ints
                 new_cell_state = 'active'
                 cell_state_count = 1
                 update.update({
                     'internal': {
                         'cell_state': new_cell_state,
                         'cell_state_count': cell_state_count}})
-        elif cell_state == 'active':
-            pass
+        # elif cell_state == 'active':
+        #     pass
 
         # behavior
         # uptake locally available IFNg in the environment
-        tumor_debris_uptake = min(int(self.parameters['tumor_debris_uptake'] * timestep), int(available_tumor_debris_counts))  # TODO -- check this
+        tumor_debris_uptake = min(
+            int(self.parameters['tumor_debris_uptake'] * timestep),
+            int(available_tumor_debris_counts))  # TODO -- check this
         update['boundary'].update(
             {'exchange': {'tumor_debris': -tumor_debris_uptake}})
         update['internal'].update({
             'tumor_debris': tumor_debris_uptake})
-
-        MHCI = 1000
-        PDL1 = 0
 
         if new_cell_state == 'active':
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
@@ -212,8 +208,8 @@ class DendriticCellProcess(Process):
             update['neighbors']['present'].update({
                 'PDL1': PDL1,
                 'MHCI': MHCI})
-        elif new_cell_state == 'inactive':
-            pass
+        # elif new_cell_state == 'inactive':
+        #     pass
 
         return update
 
@@ -250,16 +246,27 @@ def get_timeline(
 def test_single_d_cell(
     total_time=43200,
     time_step=TIMESTEP,
-    out_dir='out'):
+    out_dir='out'
+):
+    timeline = get_timeline()
 
     d_cell_process = DendriticCellProcess({'timestep': time_step})
+    timeline_process = TimelineProcess({'timeline': timeline})
 
-    # put in composite
+    # initial state
     initial_state = d_cell_process.initial_state()
     initial_state['boundary'] = {'external': {'tumor_debris': 0.1}}
-    processes = {'d_cell': d_cell_process}
-    topology = {'d_cell': {port: (port,)
-                           for port in d_cell_process.ports_schema().keys()}}
+
+    # put in composite
+    processes = {
+        'd_cell': d_cell_process,
+        'timeline': timeline_process
+    }
+    topology = {
+        'd_cell': {port: (port,)for port in d_cell_process.ports_schema().keys()},
+        'timeline': {port: (port,) for port in timeline_process.ports()}
+    }
+
     composite = Composite({
         'processes': processes,
         'topology': topology,
