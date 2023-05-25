@@ -39,7 +39,7 @@ CONCENTRATION_UNIT = units.ng / units.mL
 LENGTH_UNIT = units.um
 DIFFUSION_RATES = {
     'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day (Liao, 2014)
-    'tumor_debris': 1.0-3,  # * units.cm * units.cm / units.day,  # TODO -- get this number
+    'tumor_debris': 1.0e-3,  # * units.cm * units.cm / units.day,  # TODO -- get this number
 }
 
 
