@@ -35,7 +35,10 @@ from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
 # tumor-tcell imports
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
-from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
+from tumor_tcell.composites.tumor_microenvironment import (
+    TumorMicroEnvironment,
+    TumorAndLymphNodeEnvironment
+)
 from tumor_tcell.composites.death_logger import DeathLogger
 
 # default parameters
@@ -156,22 +159,6 @@ def random_location(
         pos_y = random.uniform(0, bounds[1])
 
     return [pos_x, pos_y]
-
-
-
-def lymph_node_location(
-        bounds,
-        relative_position=[[0.95,1],[0.95,1]]
-):
-    """
-    return random location within `relative_position` of the total environment `bounds`
-
-    TODO -- escaping to the lymph nodes should use vasculature, like a port out of the tumor.
-    TODO -- Could be placed randomly within the tumor, rather than a separate lymph node compartment.
-    """
-    return [
-        random.uniform(bounds[0]*relative_position[0][0], bounds[0]*relative_position[0][1]),
-        random.uniform(bounds[0]*relative_position[1][0], bounds[0]*relative_position[1][1])]
 
 
 def convert_to_hours(data):
@@ -297,15 +284,12 @@ def tumor_tcell_abm(
     if not lymph_nodes:
         environment_composer = TumorMicroEnvironment(environment_config)
     else:
-        environment_config['lymph_node'] = {}
+        environment_config['lymph_node'] = {}  # todo -- configure the lymph node
         environment_composer = TumorAndLymphNodeEnvironment(environment_config)
-
-    # TODO -- build different environment if doing lymph node
 
     ## process for logging the final time and state of agents
     logger_config = {'time_step': time_step}
     logger_composer = DeathLogger(logger_config)
-
 
     #######################################
     # Initialize the composite simulation #
@@ -359,9 +343,6 @@ def tumor_tcell_abm(
                 )),
                 'diameter': state.get('diameter', 7.5 * units.um),
                 'velocity': state.get('velocity', 10.0 * units.um/units.min)},
-            # 'globals': {
-            #     'LN_no_migration': lymph_nodes,  # TODO -- this may no longer be needed if we are using a different compartment
-            # },
             'internal': {
                 'cell_state': state.get('cell_state', None),
                 'velocity_timer': state.get('velocity_timer', 0),

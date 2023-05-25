@@ -79,7 +79,6 @@ class TumorMicroEnvironment(Composer):
         }
 
 
-
 class TumorAndLymphNodeEnvironment(Composer):
     """This Composer will have a 2D environment like TumorMicroEnvironment,
     and also a 2nd nonspatial lymph node environment that cells can migrate to"""
