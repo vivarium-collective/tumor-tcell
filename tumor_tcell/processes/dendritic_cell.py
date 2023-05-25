@@ -47,7 +47,7 @@ class DendriticCellProcess(Process):
         'divide_time': 5 * 24 * 60 * 60,  # 5 days (*24*60*60 seconds)
 
         # transitions
-        'internal_tumor_debris_threshold': 10000 * CONCENTRATION_UNIT,  # TODO -- get this
+        'internal_tumor_debris_threshold': 10000,  # This is in counts # TODO (John) replace with actual
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4,
@@ -79,29 +79,37 @@ class DendriticCellProcess(Process):
                     '_updater': 'accumulate'}},  # used to count number of divisions over time.
             'internal': {
                 'cell_state': {
-                    '_default': 'inactive'
+                    '_default': 'inactive',
+                    '_emit': True,
+                    '_updater': 'set',
                 },  # either 'activate' or 'inactive'
                 'tumor_debris': {
                     '_default': 0,
-                    '_updater': 'accumulate'},
+                    '_updater': 'accumulate',
+                    '_emit': True},
                 'cell_state_count': {
                     '_default': 0,
                     '_updater': 'accumulate'},  # counts how many total cell in a given time. Might not be needed.
-                'lymph_node_timer': {
+                'active_timer': {  # counts how long the cell has been active
                     '_default': 0,
                     '_emit': True,
-                    '_updater': 'accumulate'}},
-            # counts how long in lymph node, high value increases chance of migration back to tumor
+                    '_updater': 'accumulate'},
+                'lymph_node_timer': {  # counts how long in lymph node, high value increases chance of migration back to tumor
+                    '_default': 0,  # TODO -- does the LN time this, or do the cells?
+                    '_emit': True,
+                    '_updater': 'accumulate'},
+            },
             'boundary': {
                 'cell_type': {
                     '_default': 'dendritic'},
-                # Moght be needed for neighbors, but really for the experimenters to quantify
+                # Might be needed for neighbors, but really for the experimenters to quantify
                 'mass': {
                     '_value': self.parameters['mass']},
                 'diameter': {
                     '_default': self.parameters['diameter']},
                 'velocity': {
-                    '_default': self.parameters['velocity']},
+                    '_default': self.parameters['velocity'],
+                    '_emit': True},
                 'external': {
                     'tumor_debris': {
                         '_default': 0.0,  # TODO: units.ng / units.mL
@@ -114,8 +122,9 @@ class DendriticCellProcess(Process):
                         '_default': 0,
                         '_updater': 'set'},
                     'MHCI': {
-                        '_default': 50000,  # high level for activation, should come from environment
-                        '_updater': 'set'}},
+                        '_default': 0,  # high level for activation, should come from environment
+                        '_updater': 'set',
+                        '_emit': True}},
                 'accept': {
                     'PD1': {'_default': 0},
                     'TCR': {
@@ -173,25 +182,29 @@ class DendriticCellProcess(Process):
                         'divide': True,
                         'PDL1n_divide_count': PDL1n_divide_count
                     }}
-        elif cell_state == 'inactive':
-            pass
+        # elif cell_state == 'inactive':
+        #     pass
 
         ## Build up an update
-        update = {'internal': {}, 'boundary': {}}
+        update = {
+            'internal': {},
+            'boundary': {},
+            'neighbors': {
+                'present': {}}}
 
         # state transition
         new_cell_state = cell_state
         if cell_state == 'inactive':
-            if internal_tumor_debris >= self.parameters[
-                'internal_tumor_debris_threshold']:  # TODO -- the parameter is in ng/mL, while the variable is ints
+            if internal_tumor_debris >= self.parameters['internal_tumor_debris_threshold']:  # TODO -- the parameter is in ng/mL, while the variable is ints
                 new_cell_state = 'active'
                 cell_state_count = 1
                 update.update({
                     'internal': {
                         'cell_state': new_cell_state,
                         'cell_state_count': cell_state_count}})
-        # elif cell_state == 'active':
-        #     pass
+            update['internal']['active_timer'] = -states['internal']['active_timer']
+        elif cell_state == 'active':
+            update['internal']['active_timer'] = timestep
 
         # behavior
         # uptake locally available IFNg in the environment
@@ -225,15 +238,15 @@ def get_timeline(
 
     timeline = [
         (interval * 0 * TIMESTEP, {
-            ('boundary', 'external', 'tumor_debris'): 10.0,
+            ('boundary', 'external', 'tumor_debris'): 1e7,
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 1 * TIMESTEP, {
-            ('boundary', 'external', 'tumor_debris'): 0.0,
+            ('boundary', 'external', 'tumor_debris'): 1e7,
             ('neighbors', 'accept', 'TCR'): 5e4,
         }),
         (interval * 2 * TIMESTEP, {
-            ('boundary', 'external', 'tumor_debris'): 10.0,
+            ('boundary', 'external', 'tumor_debris'): 1e7,
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
