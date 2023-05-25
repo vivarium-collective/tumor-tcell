@@ -12,7 +12,9 @@ class LymphNode(Process):
     interaction of T cells and Dendritic cells,
     and T cells leaving to the environment
     """
-    defaults = {}
+    defaults = {
+        'time_dendritic_finds_tcell': 2.0,  # hours
+    }
 
     def __init__(self, parameters=None):
         super().__init__(parameters)
@@ -20,25 +22,29 @@ class LymphNode(Process):
     def ports_schema(self):
         cell_schema = {
             '*': {
+                'internal': {
+                    'cell_state': {
+                        '_default': 'inactive',
+                        '_emit': True,
+                        '_updater': 'set',
+                    },
+                },
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
                     'cell_type': {},
-                    'location': {
-                        '_emit': True,
-                        '_default': [
-                            0.5 * bound for bound in self.parameters['bounds']],
-                        '_updater': 'set',
-                        '_divider': {
-                            'divider': daughter_locations,
-                            'topology': {
-                                'diameter': ('..', 'diameter',)}}},
-                    'diameter': {
-                        '_emit': True,
-                        '_default': 1.0 * self.length_unit},
-                    'mass': {
-                        '_default': 1.0 * self.mass_unit},
-                    'velocity': {
-                        '_default': 0.0 * self.velocity_unit}},
+                    # 'location': {
+                    #     '_emit': True,
+                    #     '_default': [
+                    #         0.5 * bound for bound in self.parameters['bounds']],
+                    #     '_updater': 'set',
+                    #     '_divider': {
+                    #         'divider': daughter_locations,
+                    #         'topology': {
+                    #             'diameter': ('..', 'diameter',)
+                    #         }
+                    #     }
+                    # },
+                },
                 'neighbors': {
                     'present': {
                         '*': {
