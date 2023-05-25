@@ -4,7 +4,6 @@ Dendritic Cell Process
 ==============
 """
 
-
 import random
 from scipy import constants
 
@@ -15,10 +14,8 @@ from vivarium.plots.simulation_output import plot_simulation_output
 from vivarium.library.units import units
 from vivarium.processes.timeline import TimelineProcess
 
-from tumor_tcell.processes.fields import DIFFUSION_RATES  #, CONCENTRATION_UNIT
+from tumor_tcell.processes.fields import DIFFUSION_RATES  # , CONCENTRATION_UNIT
 from tumor_tcell.processes.tumor import get_probability_timestep
-
-
 
 TIMESTEP = 60  # seconds
 CONCENTRATION_UNIT = units.ng / units.mL  # TODO: units.ng / units.mL
@@ -33,7 +30,7 @@ class DendriticCellProcess(Process):
         *
     """
     defaults = {
-        'mass': 0.0,  #TODO
+        'mass': 0.0,  # TODO
         'diameter': 10.0 * units.um,  # * units.um, 'diameter': 15
         'velocity': 2.0,  # * units.um/units.min,  # when inactive 2-5 um/min, when active 10-15 um/min
         'diffusion': DIFFUSION_RATES,
@@ -43,11 +40,11 @@ class DendriticCellProcess(Process):
 
         # death rates
         'death_apoptosis': 0.5,  # TODO --
-        'death_time': 10*24*60*60,  # 10 days (*24*60*60 seconds)
+        'death_time': 10 * 24 * 60 * 60,  # 10 days (*24*60*60 seconds)
 
         # division
         'divide_prob': 0.6,  # probability of division 24 hr
-        'divide_time': 5*24*60*60,  # 5 days (*24*60*60 seconds)
+        'divide_time': 5 * 24 * 60 * 60,  # 5 days (*24*60*60 seconds)
 
         # transitions
         'internal_tumor_debris_threshold': 10000 * CONCENTRATION_UNIT,  # TODO -- get this
@@ -93,10 +90,12 @@ class DendriticCellProcess(Process):
                 'lymph_node_timer': {
                     '_default': 0,
                     '_emit': True,
-                    '_updater': 'accumulate'}},  # counts how long in lymph node, high value increases chance of migration back to tumor
+                    '_updater': 'accumulate'}},
+            # counts how long in lymph node, high value increases chance of migration back to tumor
             'boundary': {
                 'cell_type': {
-                    '_default': 'dendritic'},  # Moght be needed for neighbors, but really for the experimenters to quantify
+                    '_default': 'dendritic'},
+                # Moght be needed for neighbors, but really for the experimenters to quantify
                 'mass': {
                     '_value': self.parameters['mass']},
                 'diameter': {
@@ -133,7 +132,8 @@ class DendriticCellProcess(Process):
 
         # determine available IFNg
         diameter = states['boundary']['diameter']  # (um)
-        tumor_debris_diffusion_rate = self.parameters['diffusion']['tumor_debris'] * units.cm * units.cm / units.day  # TODO -- add this back in DIFFUSION RATES
+        tumor_debris_diffusion_rate = self.parameters['diffusion'][
+                                          'tumor_debris'] * units.cm * units.cm / units.day  # TODO -- add this back in DIFFUSION RATES
         mw = self.parameters['tumor_debris_MW']
         navogadro = self.parameters['nAvagadro']
 
@@ -182,7 +182,8 @@ class DendriticCellProcess(Process):
         # state transition
         new_cell_state = cell_state
         if cell_state == 'inactive':
-            if internal_tumor_debris >= self.parameters['internal_tumor_debris_threshold']:  # TODO -- the parameter is in ng/mL, while the variable is ints
+            if internal_tumor_debris >= self.parameters[
+                'internal_tumor_debris_threshold']:  # TODO -- the parameter is in ng/mL, while the variable is ints
                 new_cell_state = 'active'
                 cell_state_count = 1
                 update.update({
@@ -220,7 +221,7 @@ def get_timeline(
         number_steps=10):
     """Make a timeline that feeds input to the tumor process"""
 
-    interval = total_time/(number_steps*TIMESTEP)
+    interval = total_time / (number_steps * TIMESTEP)
 
     timeline = [
         (interval * 0 * TIMESTEP, {
@@ -244,9 +245,9 @@ def get_timeline(
 
 
 def test_single_d_cell(
-    total_time=43200,
-    time_step=TIMESTEP,
-    out_dir='out'
+        total_time=43200,
+        time_step=TIMESTEP,
+        out_dir='out'
 ):
     timeline = get_timeline()
 
@@ -263,7 +264,7 @@ def test_single_d_cell(
         'timeline': timeline_process
     }
     topology = {
-        'd_cell': {port: (port,)for port in d_cell_process.ports_schema().keys()},
+        'd_cell': {port: (port,) for port in d_cell_process.ports_schema().keys()},
         'timeline': {port: (port,) for port in timeline_process.ports()}
     }
 
