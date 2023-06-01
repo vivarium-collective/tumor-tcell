@@ -199,7 +199,7 @@ def tumor_tcell_abm(
     n_dendritic=0,
     tumors=None,
     tcells=None,
-    dendritic=None,
+    dendritic_cells=None,
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=0.8,
     tcells_total_PD1n=None,
@@ -329,8 +329,8 @@ def tumor_tcell_abm(
         tumors = get_tumors(
             number=n_tumors,
             relative_pdl1n=tumors_state_PDL1n)
-    if not dendritic:
-        dendritic = get_dendritic(
+    if not dendritic_cells:
+        dendritic_cells = get_dendritic(
             number=n_dendritic)
 
     # add T cells to the composite
@@ -344,7 +344,7 @@ def tumor_tcell_abm(
         composite_model.merge(composite=tumor, path=('agents', agent_id))
 
     # add dendritic cells to the composite
-    for agent_id in dendritic.keys():
+    for agent_id in dendritic_cells.keys():
         dendritic = dendritic_composer.generate({'agent_id': agent_id})
         composite_model.merge(composite=dendritic, path=('agents', agent_id))
 
@@ -410,12 +410,7 @@ def tumor_tcell_abm(
                 # 'diameter': state.get('diameter', 15 * units.um),
                 # 'velocity': state.get('velocity', 0.0 * units.um/units.min)
             },
-            # 'neighbors': {
-            #     'present': {
-            #         'PDL1': state.get('PDL1', None),
-            #         'MHCI': state.get('MHCI', 1000)}
-            # }
-        } for agent_id, state in dendritic.items()}
+        } for agent_id, state in dendritic_cells.items()}
 
     # combine all the initial states together
     initial_state = {
@@ -542,7 +537,7 @@ def lymph_node_experiment():
         # TODO -- what initial states for the resubmission?
         n_tcells=2,  # 12
         n_tumors=2,  # 1200
-        n_dendritic=2,  # 1200
+        n_dendritic=1,  # 1200
         # tcells_state_PD1n=0.8,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
