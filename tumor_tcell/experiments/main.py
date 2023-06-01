@@ -216,7 +216,7 @@ def tumor_tcell_abm(
     tcells_excluded_distance=None,
     tumors_center=None,
     tcell_center=None,
-    lymph_nodes=False,  # TODO -- get this to work when True
+    lymph_nodes=False,
 ):
     """ Tumor-Tcell simulation
 
@@ -541,7 +541,7 @@ def lymph_node_experiment():
         # tcells_state_PD1n=0.8,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
-        lymph_nodes=True,  # TODO: Get this to work!
+        lymph_nodes=True,
         total_time=100,  # TODO -- run this for 259200 (3 days)
     )
 
@@ -663,7 +663,6 @@ experiments_library = {
     '5': tumor_microenvironment_experiment,
     # a work-in-progress to place some t cells in a lymph node, at a
     # distance from the tumor.
-    # TODO: get this to work
     '6': lymph_node_experiment,
 }
 plots_library = {
@@ -747,7 +746,6 @@ workflow_library = {
         ],
     },
     # an experimental set up for simulating t cells in the lymph node
-    # TODO: get this workflow to work
     'lymph_node': {
         'name': 'lymph_node_experiment',
         'experiment': '6',
