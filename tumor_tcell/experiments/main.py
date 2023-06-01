@@ -421,6 +421,10 @@ def tumor_tcell_abm(
             **initial_dendritic
         }}
 
+    if lymph_nodes:
+        # TODO add ~100 t cells to lymph node.
+        # TODO all of these need to be of 'cell_state': 'PD1n'
+        initial_state['lymph_node'] = {}
 
     ######################
     # Run the simulation #
