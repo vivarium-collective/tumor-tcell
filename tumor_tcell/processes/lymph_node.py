@@ -4,7 +4,7 @@ Lymph Node Environment Process
 
 
 from vivarium.core.process import Process
-from tumor_tcell.processes.neighbors import daughter_locations
+from vivarium.core.engine import pp
 
 
 class LymphNode(Process):
@@ -25,25 +25,13 @@ class LymphNode(Process):
                 'internal': {
                     'cell_state': {
                         '_default': 'inactive',
-                        '_emit': True,
                         '_updater': 'set',
                     },
                 },
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
                     'cell_type': {},
-                    # 'location': {
-                    #     '_emit': True,
-                    #     '_default': [
-                    #         0.5 * bound for bound in self.parameters['bounds']],
-                    #     '_updater': 'set',
-                    #     '_divider': {
-                    #         'divider': daughter_locations,
-                    #         'topology': {
-                    #             'diameter': ('..', 'diameter',)
-                    #         }
-                    #     }
-                    # },
+                    'location': {},  # TODO -- needed?
                 },
                 'neighbors': {
                     'present': {
@@ -59,14 +47,31 @@ class LymphNode(Process):
                     'receive': {
                         '*': {'_default': 0.0}}}}}
 
+        lymph_node_schema = {
+            '*': {
+                'internal': {
+                    'cell_state': {
+                        '_default': 'inactive',
+                        '_updater': 'set',
+                    },
+                },
+                'boundary': {
+                    # cell_type must be either 'tumor', 't_cell', or 'dendritic'
+                    'cell_type': {},
+                    'location': {},  # TODO -- needed?
+                },
+            }
+        }
+
         return {
             'cells': cell_schema,
-            'lymph_node': {},
+            'lymph_node': lymph_node_schema,
         }
 
     def next_update(self, timestep, states):
         microenvironment_cells = states['cells']
         lymph_node_cells = states['lymph_node']
+        # pp(states)
 
         # get the cells that are in the tumor environment
 
@@ -74,7 +79,6 @@ class LymphNode(Process):
 
         update = {}
         # move cells between tumor environment and lymph node
-
 
         return update
 

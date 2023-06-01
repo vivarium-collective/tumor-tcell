@@ -30,7 +30,7 @@ class DendriticCellProcess(Process):
         *
     """
     defaults = {
-        'mass': 0.0,  # TODO
+        'mass': 2.0 * units.ng,  # TODO
         'diameter': 10.0 * units.um,  # * units.um, 'diameter': 15
         'velocity': 2.0,  # * units.um/units.min,  # when inactive 2-5 um/min, when active 10-15 um/min
         'diffusion': DIFFUSION_RATES,
@@ -142,7 +142,7 @@ class DendriticCellProcess(Process):
         # determine available IFNg
         diameter = states['boundary']['diameter']  # (um)
         tumor_debris_diffusion_rate = self.parameters['diffusion'][
-                                          'tumor_debris'] * units.cm * units.cm / units.day  # TODO -- add this back in DIFFUSION RATES
+                                          'tumor_debris'] #* units.cm * units.cm / units.day  # TODO -- add this back in DIFFUSION RATES
         mw = self.parameters['tumor_debris_MW']
         navogadro = self.parameters['nAvagadro']
 

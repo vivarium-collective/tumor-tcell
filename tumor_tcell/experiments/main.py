@@ -35,6 +35,7 @@ from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
 # tumor-tcell imports
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
+from tumor_tcell.composites.dendritic_agent import DendriticAgent
 from tumor_tcell.composites.tumor_microenvironment import (
     TumorMicroEnvironment,
     TumorAndLymphNodeEnvironment
@@ -50,6 +51,7 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
+DENDRITIC_ID = 'dendritic'
 
 # parameters for toy experiments
 MEDIUM_BOUNDS = [90*units.um, 90*units.um]
@@ -107,6 +109,15 @@ def get_tumors(number=1, relative_pdl1n=0.5):
             'type': 'tumor',
             'cell_state': 'PDL1n' if random.uniform(0, 1) < relative_pdl1n else 'PDL1p',
             'diameter': 15 * units.um,
+        } for n in range(number)}
+
+
+def get_dendritic(number=1):
+    return {
+        '{}_{}'.format(DENDRITIC_ID, n): {
+            'type': 'dendritic',
+            # 'cell_state': 'PDL1n' if random.uniform(0, 1) < relative_pdl1n else 'PDL1p',
+            'diameter': 10.0 * units.um,   # TODO -- don't hardcode this!
         } for n in range(number)}
 
 
@@ -185,8 +196,10 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     n_tumors=120,
     n_tcells=9,
+    n_dendritic=0,
     tumors=None,
     tcells=None,
+    dendritic=None,
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=0.8,
     tcells_total_PD1n=None,
@@ -268,6 +281,12 @@ def tumor_tcell_abm(
         'time_step': time_step}
     tumor_composer = TumorAgent(tumor_config)
 
+    ## Dendritic composer
+    dendritic_config = {
+        'dendritic_cell': {'_parallel': parallel},
+        'time_step': time_step}
+    dendritic_composer = DendriticAgent(dendritic_config)
+
     ## Environment composer
     environment_config = {
         'neighbors_multibody': {
@@ -310,6 +329,9 @@ def tumor_tcell_abm(
         tumors = get_tumors(
             number=n_tumors,
             relative_pdl1n=tumors_state_PDL1n)
+    if not dendritic:
+        dendritic = get_dendritic(
+            number=n_dendritic)
 
     # add T cells to the composite
     for agent_id in tcells.keys():
@@ -321,6 +343,10 @@ def tumor_tcell_abm(
         tumor = tumor_composer.generate({'agent_id': agent_id})
         composite_model.merge(composite=tumor, path=('agents', agent_id))
 
+    # add dendritic cells to the composite
+    for agent_id in dendritic.keys():
+        dendritic = dendritic_composer.generate({'agent_id': agent_id})
+        composite_model.merge(composite=dendritic, path=('agents', agent_id))
 
     ###################################
     # Initialize the simulation state #
@@ -371,11 +397,34 @@ def tumor_tcell_abm(
                     'MHCI': state.get('MHCI', 1000)}
             }} for agent_id, state in tumors.items()}
 
+    initial_dendritic = {
+        agent_id: {
+            'internal': {
+                'cell_state': state.get('cell_state', None)},
+            'boundary': {
+                'location': state.get('location', random_location(
+                    bounds,
+                    center=tumors_center,
+                    distance_from_center=tumors_distance,
+                    excluded_distance_from_center=tumors_excluded_distance)),
+                # 'diameter': state.get('diameter', 15 * units.um),
+                # 'velocity': state.get('velocity', 0.0 * units.um/units.min)
+            },
+            # 'neighbors': {
+            #     'present': {
+            #         'PDL1': state.get('PDL1', None),
+            #         'MHCI': state.get('MHCI', 1000)}
+            # }
+        } for agent_id, state in dendritic.items()}
+
     # combine all the initial states together
     initial_state = {
         **initial_env,
         'agents': {
-            **initial_t_cells, **initial_tumors}}
+            **initial_t_cells,
+            **initial_tumors,
+            **initial_dendritic
+        }}
 
 
     ######################
@@ -412,7 +461,7 @@ def tumor_tcell_abm(
     for time in tqdm(range(0, total_time, sim_step)):
         n_agents = len(experiment.state.get_value()['agents'])
         if n_agents < halt_threshold:
-            experiment.run_for(sim_step)
+            experiment.update(sim_step)
         else:
             print(f'halt threshold of {halt_threshold} reached at time = {time}')
             continue
@@ -432,6 +481,7 @@ FULL_BOUNDS = [1200*units.um, 1200*units.um]
 def large_experiment(
         n_tcells=12,
         n_tumors=1200,
+        n_dendritic=0,
         tcells_state_PD1n=None,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=None,
@@ -448,6 +498,7 @@ def large_experiment(
     return tumor_tcell_abm(
         n_tcells=n_tcells,
         n_tumors=n_tumors,
+        n_dendritic=n_dendritic,
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
         tcells_total_PD1n=tcells_total_PD1n,
@@ -489,13 +540,14 @@ def lymph_node_experiment():
     """
     return large_experiment(
         # TODO -- what initial states for the resubmission?
-        n_tcells=1,  # 12
-        n_tumors=1,  # 1200
+        n_tcells=2,  # 12
+        n_tumors=2,  # 1200
+        n_dendritic=2,  # 1200
         # tcells_state_PD1n=0.8,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
         lymph_nodes=True,  # TODO: Get this to work!
-        total_time=10,  # TODO -- run this for 259200 (3 days)
+        total_time=100,  # TODO -- run this for 259200 (3 days)
     )
 
 
@@ -592,14 +644,14 @@ def make_snapshot_video(
 
 
 # tests
-def test_medium_simulation():
-    # run a test confirming workflow #2 is running
-    Control(
-        experiments=experiments_library,
-        plots=plots_library,
-        workflows=workflow_library,
-        args=['-w', '2']
-    )
+# def test_medium_simulation():
+#     # run a test confirming workflow #2 is running
+#     Control(
+#         experiments=experiments_library,
+#         plots=plots_library,
+#         workflows=workflow_library,
+#         args=['-w', '2']
+#     )
 
 
 ######################################
