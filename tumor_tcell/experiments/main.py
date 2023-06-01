@@ -23,7 +23,7 @@ from tqdm import tqdm
 import math
 
 # vivarium-core imports
-from vivarium.core.engine import Engine, timestamp
+from vivarium.core.engine import Engine, timestamp, pp
 from vivarium.library.units import units, remove_units
 from vivarium.core.control import Control
 
@@ -412,7 +412,7 @@ def tumor_tcell_abm(
     for time in tqdm(range(0, total_time, sim_step)):
         n_agents = len(experiment.state.get_value()['agents'])
         if n_agents < halt_threshold:
-            experiment.update(sim_step)
+            experiment.run_for(sim_step)
         else:
             print(f'halt threshold of {halt_threshold} reached at time = {time}')
             continue
@@ -489,13 +489,13 @@ def lymph_node_experiment():
     """
     return large_experiment(
         # TODO -- what initial states for the resubmission?
-        n_tcells=2,  # 12
-        n_tumors=12,  # 1200
+        n_tcells=1,  # 12
+        n_tumors=1,  # 1200
         # tcells_state_PD1n=0.8,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
         lymph_nodes=True,  # TODO: Get this to work!
-        total_time=100,  # TODO -- run this for 259200 (3 days)
+        total_time=10,  # TODO -- run this for 259200 (3 days)
     )
 
 
@@ -720,8 +720,10 @@ workflow_library = {
 
 # run with python tumor_tcell/experiments/main.py [workflow id]
 if __name__ == '__main__':
-    Control(
-        experiments=experiments_library,
-        plots=plots_library,
-        workflows=workflow_library,
-    )
+    lymph_node_experiment()
+
+    # Control(
+    #     experiments=experiments_library,
+    #     plots=plots_library,
+    #     workflows=workflow_library,
+    # )

@@ -37,7 +37,7 @@ class TCellAgent(Composer):
 
     name = NAME
     defaults = {
-        'reuse_processes': True,
+        'reuse_processes': False,
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
