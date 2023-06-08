@@ -170,7 +170,7 @@ class TCellProcess(Process):
                 'PD1p_divide_count': {
                     '_default': 0,
                     '_updater': 'accumulate'},
-                'LN_no_migration': {
+                'LN_no_migration': {   # TODO (ERAN) -- can this be removed??
                     '_default': False,
                     '_divider': {
                         'divider': lymph_node_division,
@@ -421,9 +421,10 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            if states['globals']['LN_no_migration']:
-                update['boundary'].update({
-                    'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+            # TODO (ERAN) -- safe to remove?
+            # if states['globals']['LN_no_migration']:
+            #     update['boundary'].update({
+            #         'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
 
             # Reset the velocity timer after refractory period
             elif velocity_timer >= self.parameters['PD1n_migration_refractory_time']:
@@ -484,9 +485,9 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            if states['globals']['LN_no_migration']:
-                update['boundary'].update({
-                    'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+            # if states['globals']['LN_no_migration']:
+            #     update['boundary'].update({
+            #         'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
 
             # Reset the velocity timer after refractory period
             elif velocity_timer >= self.parameters['PD1p_migration_refractory_time']:

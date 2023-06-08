@@ -67,7 +67,8 @@ TAG_COLORS = {
 def get_tcells(
         number=1,
         relative_pd1n=0.2,
-        total_pd1n=None
+        total_pd1n=None,
+        added_identifier='',
 ):
     """
     make an initial state for any number of tcell instances,
@@ -77,7 +78,7 @@ def get_tcells(
     if total_pd1n:
         assert isinstance(total_pd1n, int)
         return {
-        '{}_{}'.format(TCELL_ID, n): {
+        f'{TCELL_ID}{added_identifier}_{n}': {
             'type': 'tcell',
             'cell_state': 'PD1n' if n < total_pd1n else 'PD1p',
             'TCR_timer': random.uniform(0, 5400),
@@ -88,7 +89,7 @@ def get_tcells(
     else:
         assert relative_pd1n <= 1.0
         return {
-        '{}_{}'.format(TCELL_ID, n): {
+        f'{TCELL_ID}{added_identifier}_{n}': {
             'type': 'tcell',
             'cell_state': 'PD1n' if random.uniform(0, 1) < relative_pd1n else 'PD1p',
             'TCR_timer': random.uniform(0, 5400),
@@ -197,6 +198,7 @@ def tumor_tcell_abm(
     n_tumors=120,
     n_tcells=9,
     n_dendritic=0,
+    n_tcells_lymph_node=3,
     tumors=None,
     tcells=None,
     dendritic_cells=None,
@@ -326,6 +328,12 @@ def tumor_tcell_abm(
             number=n_tcells,
             relative_pd1n=tcells_state_PD1n,
             total_pd1n=tcells_total_PD1n)
+        if lymph_nodes:
+            tcells_lymph_node = get_tcells(
+                number=n_tcells_lymph_node,
+                relative_pd1n=1.0,
+                added_identifier='_LN'
+            )
     if not tumors:
         tumors = get_tumors(
             number=n_tumors,
@@ -423,9 +431,21 @@ def tumor_tcell_abm(
         }}
 
     if lymph_nodes:
-        # TODO add ~100 t cells to lymph node.
-        # TODO all of these need to be of 'cell_state': 'PD1n'
-        initial_state['lymph_node'] = {}
+        initial_t_cells = {
+            agent_id: {
+                'boundary': {
+                    'diameter': state.get('diameter', 7.5 * units.um),
+                    'velocity': state.get('velocity', 10.0 * units.um / units.min)},
+                'internal': {   # TODO -- Is this added automatically when moved to tumor environment?
+                    'cell_state': state.get('cell_state', None),
+                    'velocity_timer': state.get('velocity_timer', 0),
+                    'TCR_timer': state.get('TCR_timer', 0)},
+                'neighbors': {
+                    'present': {
+                        'PD1': state.get('PD1', None),
+                        'TCR': state.get('TCR', 50000)}
+                }} for agent_id, state in tcells_lymph_node.items()}
+        initial_state['lymph_node'] = initial_t_cells
 
     ######################
     # Run the simulation #
@@ -482,6 +502,7 @@ def large_experiment(
         n_tcells=12,
         n_tumors=1200,
         n_dendritic=0,
+        n_tcells_lymph_node=3,
         tcells_state_PD1n=None,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=None,
@@ -545,6 +566,7 @@ def lymph_node_experiment():
         n_tcells=2,  # 12
         n_tumors=2,  # 1200
         n_dendritic=6,  # 1200
+        n_tcells_lymph_node=3,
         # tcells_state_PD1n=0.8,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
