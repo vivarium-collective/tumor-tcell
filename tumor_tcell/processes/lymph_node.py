@@ -20,27 +20,25 @@ class LymphNode(Process):
     def __init__(self, parameters=None):
         super().__init__(parameters)
 
-    def initial_state(self, config):
-        agent_ids = config.get('agent_ids')
+    def initial_state(self, config=None):
+        if config:
+            agent_ids = config.get('agent_ids', [])
         # TODO all of these need to be of 'cell_state': 'PD1n'
         # TODO -- T cells need a random timer value between 0 and 8 hours to start with
         return {
             'lymph_node': {}  # TODO put tcells in lymph node (maybe in main.py)
         }
+
     def ports_schema(self):
         cell_schema = {
             '*': {
                 'internal': {
                     'cell_state': {
                         '_default': 'inactive',
-                        '_updater': 'set',
-                    },
-                },
+                        '_updater': 'set' }},
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {},
-                    'location': {},  # TODO -- needed?
-                },
+                    'cell_type': {}},
                 'neighbors': {
                     'present': {
                         '*': {
@@ -53,33 +51,23 @@ class LymphNode(Process):
                     'transfer': {
                         '*': {'_default': 0.0}},
                     'receive': {
-                        '*': {'_default': 0.0}
-                    }
-                }}}
+                        '*': {'_default': 0.0}}}}}
 
         lymph_node_schema = {
             '*': {
                 'internal': {
                     'cell_state': {
                         '_default': 'inactive',
-                        '_updater': 'set',
-                    },
+                        '_updater': 'set'},
                     'lymph_node_timer': {
-                        '_default': 0
-                    }  # TODO -- maybe this should just be for T cells rather than everything?
-                },
+                        '_default': 0}},
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {},
-                    'location': {},  # TODO -- needed?
-                },
-            }
-        }
+                    'cell_type': {}}}}
 
         return {
             'cells': cell_schema,
-            'lymph_node': lymph_node_schema,
-        }
+            'lymph_node': lymph_node_schema}
 
     def next_update(self, timestep, states):
         microenvironment_cells = states['cells']
@@ -88,11 +76,11 @@ class LymphNode(Process):
         update = {
             'cells': {
                 '_add': [],
-                '_remove': [],
+                '_delete': [],
             },
             'lymph_node': {
                 '_add': [],
-                '_remove': [],
+                '_delete': [],
             }
         }
 
@@ -109,25 +97,21 @@ class LymphNode(Process):
         # Maybe increase division probability 12-16 hours of division.
 
 
-        ################
-        # moving cells #
-        ################
-
-        # move dendritic cells from tumor to the lymph node
-        # Once dendritic cells are active, they move to LN and stay there until chemokines subsist. We are assuming they remain in LN for the duration of the simulation
-        for cell_id, specs in microenvironment_cells.items():
-            if specs['boundary']['cell_type'] == 'dendritic':
-                # get the state of the dendritic cells in the microenvironment
-                if specs['internal']['cell_state'] == 'active': # either active or inactive
-                    update['lymph_node']['_add'].append({cell_id: specs})  # if active, move to lymph node, remove from microenvironment
-                    update['cells']['_remove'].append({cell_id: specs})
-                    # 12 hour delay between the time that a dendritic cell leaves microenvironment until it is ready to interact with t cells in the LN
+        ##############
+        # lymph node #
+        ##############
 
         # move T cells from lymph node to the tumor
         # T cells move one way from the LN to the tumor. going back to LN is more rare, so we are leaving it out
-        for cell_id, specs in lymph_node_cells.item():
-            if specs['boundary']['cell_type'] == 't-cell':
-                pass
+
+        for cell_id, specs in lymph_node_cells.items():
+            cell_type = specs['boundary']['cell_type']
+            cell_state = specs['internal']['cell_state']
+
+            if cell_type == 't-cell':
+                if cell_state == 'PD1p':
+                    pass
+
                 # use timers for the t cells.
                 # We don't want t cells to become refractory in the LN.
 
@@ -135,6 +119,37 @@ class LymphNode(Process):
                 # Random timer for each T cell to
 
 
+        #####################
+        # tumor environment #
+        #####################
+
+        # Move dendritic cells from tumor to the lymph node
+        # Once dendritic cells are active, they move to LN and stay there until chemokines subsist.
+        # We are assuming they remain in LN for the duration of the simulation
+
+        for cell_id, specs in microenvironment_cells.items():
+            cell_type = specs['boundary']['cell_type']
+            cell_state = specs['internal']['cell_state']
+
+            if cell_type == 'dendritic':
+                if cell_state == 'active':
+                    # if active, move to lymph node, remove from microenvironment
+                    update['lymph_node']['_add'].append({'key': cell_id, 'state': specs})
+                    update['cells']['_delete'].append(cell_id)
+                elif cell_state == 'inactive':
+                    update['cells'][cell_id] = {
+                        'internal': {
+                            'lymph_node_timer': timestep  # increase the timer
+                        }
+                    }
+
+                    # 12 hour delay between the time that a dendritic cell leaves microenvironment until it is ready to interact with t cells in the LN
+
+
+        print(f'STATES CELLS: {list(states["cells"].keys())}')
+        print(f'STATES LN: {list(states["lymph_node"].keys())}')
+        print(f'UPDATE CELLS: {update["cells"]}')
+        print(f'UPDATE LN: {update["lymph_node"]}')
 
         return update
 

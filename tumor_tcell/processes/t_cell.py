@@ -204,10 +204,6 @@ class TCellProcess(Process):
                     '_emit': True,
                     '_updater': 'accumulate',
                 },  # affects dwell time at tumor
-                'lymph_node_timer': {
-                    '_default': 0,
-                    '_updater': 'accumulate',
-                },  # affects TCR expression
             },
             'boundary': {
                 'cell_type': {
@@ -275,7 +271,6 @@ class TCellProcess(Process):
         PDL1 = states['neighbors']['accept']['PDL1']
         MHCI = states['neighbors']['accept']['MHCI']
         TCR_timer = states['internal']['TCR_timer']
-        lymph_node_timer = states['internal']['lymph_node_time']
         velocity_timer = states['internal']['velocity_timer']
         TCR = states['neighbors']['present']['TCR']
         refractory_count = states['internal']['refractory_count']
@@ -314,20 +309,6 @@ class TCellProcess(Process):
                             'death': 'PD1p_apoptosis'}}
 
         # division
-        # TODO if lymph_node_timer, then increase division probability
-        if lymph_node_timer > self.parameter['lymph_node_timer_threshold']:  # TODO -- what is the threshold?
-            # TODO -- what is the probability of division once the timer passes the threshold?
-            prob_divide = get_probability_timestep(
-                self.parameters['???'],
-                10000000,  # 28 hours (28*60*60 seconds)  # TODO -- get this.
-                timestep)
-            if random.uniform(0, 1) < prob_divide:
-                return {
-                    'globals': {
-                        'divide': True,
-                    }
-                }
-
         elif cell_state == 'PD1n':
             prob_divide = get_probability_timestep(
                 self.parameters['PD1n_growth_28hr'],

@@ -112,11 +112,11 @@ def get_tumors(number=1, relative_pdl1n=0.5):
         } for n in range(number)}
 
 
-def get_dendritic(number=1):
+def get_dendritic(number=1, dendritic_state_active=0.0):
     return {
         '{}_{}'.format(DENDRITIC_ID, n): {
             'type': 'dendritic',
-            # 'cell_state': 'PDL1n' if random.uniform(0, 1) < relative_pdl1n else 'PDL1p',
+            'cell_state': 'active' if random.uniform(0, 1) < dendritic_state_active else 'inactive',
             'diameter': 10.0 * units.um,   # TODO -- don't hardcode this!
         } for n in range(number)}
 
@@ -203,6 +203,7 @@ def tumor_tcell_abm(
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=0.8,
     tcells_total_PD1n=None,
+    dendritic_state_active=0.0,
     total_time=70000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
@@ -331,7 +332,7 @@ def tumor_tcell_abm(
             relative_pdl1n=tumors_state_PDL1n)
     if not dendritic_cells:
         dendritic_cells = get_dendritic(
-            number=n_dendritic)
+            number=n_dendritic, dendritic_state_active=dendritic_state_active)
 
     # add T cells to the composite
     for agent_id in tcells.keys():
@@ -484,6 +485,7 @@ def large_experiment(
         tcells_state_PD1n=None,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=None,
+        dendritic_state_active=0.0,
         lymph_nodes=False,
         total_time=259200,
         tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
@@ -501,6 +503,7 @@ def large_experiment(
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
         tcells_total_PD1n=tcells_total_PD1n,
+        dendritic_state_active=dendritic_state_active,
         total_time=total_time,
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
@@ -541,10 +544,11 @@ def lymph_node_experiment():
         # TODO -- what initial states for the resubmission?
         n_tcells=2,  # 12
         n_tumors=2,  # 1200
-        n_dendritic=1,  # 1200
+        n_dendritic=6,  # 1200
         # tcells_state_PD1n=0.8,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
+        dendritic_state_active=0.5,
         lymph_nodes=True,
         total_time=100,  # TODO -- run this for 259200 (3 days)
     )
