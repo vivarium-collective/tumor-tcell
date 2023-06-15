@@ -2,10 +2,35 @@
 Lymph Node Environment Process
 """
 
+import math
 import random
 from vivarium.core.process import Process
 from vivarium.core.engine import pp
-from tumor_tcell.processes.t_cell import get_probability_timestep
+from tumor_tcell.processes.t_cell import get_probability_timestep, TIMESTEP
+from vivarium.library.units import remove_units
+from tumor_tcell.library.location import random_location, DEFAULT_BOUNDS
+
+
+def probability_of_occurrence_within_interval(interval_duration, expected_time):
+    """
+    Compute the probability that an event will occur at least once
+    within a given time interval.
+
+    This assumes the event follows a Poisson process, where the event
+    is expected to occur once every `expected_time` hours.
+
+    Args:
+        interval_duration (float): The duration of the time interval.
+        expected_time (float): The expected time between occurrences.
+
+    Returns:
+        float: The probability of the event occurring at least once
+               within the time interval.
+    """
+    lambda_ = interval_duration / expected_time
+    P_0 = math.exp(-lambda_)
+    P_at_least_one = 1 - P_0
+    return P_at_least_one
 
 
 class LymphNode(Process):
@@ -14,11 +39,16 @@ class LymphNode(Process):
     and T cells leaving to the environment
     """
     defaults = {
+        'time_step': TIMESTEP,
+        'tumor_env_bounds': remove_units(DEFAULT_BOUNDS),
         'time_dendritic_finds_tcell': 2.0,  # hours
         'n_tcells_in_lymph_node': 100,  # number of cells in 3D LN structure. TODO -- calculate number in a 2D slice
-        'transit_time': 12.0,  # 12 hour delay between the time that a dendritic cell leaves microenvironment until it is ready to interact with t cells in the LN
-        'tcell_find_dendritic_6hr': 0.5,  # TODO(ERAN): 0.95 will find dendritic in 6 hrs (actually 6-8)
-        'prob_division_when_stimulated': 0.20,  # PD1p_growth_28hr = 20% division in 28 hours. TODO (ERAN) recalculate. Should divide 4-6 times in 12-16 hours
+        'tcell_find_dendritic_6hr': 0.95,  # TODO(ERAN): 0.95 will find dendritic in 6 hrs (actually 6-8)
+        'expected_dendritic_transit_time': 43200,  # 12*60*60. 12 hour delay between the time that a dendritic cell leaves microenvironment until it is ready to interact with t cells in the LN
+        'expected_tcell_transit_time': 300,  # 5*60. arrive in tumor environment within approximate 5 circulations, which is 5 minutes  TODO (John) check this
+        'expected_division_interval': 10800,  # divide approximately every 3 hours, or 4-6 times in 12-16 hours. 3*60*60=10800
+        'expected_interaction_duration': 28800,  # 8*60*60 t cells interact with dendritic cells for approximately 8 hours
+        'expected_delay_before_migration': 43200,  # 12*60*60. t cells wait approx 12 hours after interaction is complete before starting migration
     }
 
     def __init__(self, parameters=None):
@@ -27,14 +57,12 @@ class LymphNode(Process):
     def initial_state(self, config=None):
         if config:
             agent_ids = config.get('agent_ids', [])
-        # TODO all of these need to be of 'cell_state': 'PD1n'
-        # TODO -- T cells need a random timer value between 0 and 8 hours to start with
         return {
             'lymph_node': {}  # TODO put tcells in lymph node (maybe in main.py)
         }
 
     def ports_schema(self):
-        cell_schema = {
+        tumor_env_schema = {
             '*': {
                 'internal': {
                     'cell_state': {
@@ -42,7 +70,9 @@ class LymphNode(Process):
                         '_updater': 'set'}},
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {}},
+                    'cell_type': {},
+                    'location': {}
+                },
         }}
 
         lymph_node_schema = {
@@ -51,13 +81,12 @@ class LymphNode(Process):
                     'cell_state': {
                         '_default': 'inactive',
                         '_updater': 'set'},
-                    'lymph_node_timer': {
-                        '_default': 0
-                    }
                 },
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {}}}}
+                    'cell_type': {
+                        '_default': '',
+                    }}}}
 
         # TODO -- reuse the schemas more instead of copying
         in_transit_schema = {
@@ -66,17 +95,16 @@ class LymphNode(Process):
                     'cell_state': {
                         '_default': 'inactive',
                         '_updater': 'set'},
-                    'transit_timer': {
-                        '_default': 0
-                    }
                 },
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {}},
+                    'cell_type': {
+                        '_default': '',
+                    }},
         }}
 
         return {
-            'cells': cell_schema,
+            'cells': tumor_env_schema,
             'lymph_node': lymph_node_schema,
             'in_transit': in_transit_schema
         }
@@ -101,15 +129,6 @@ class LymphNode(Process):
             }
         }
 
-        # interactions between dendritic and t cells
-        # This will be about setting timers on the t cells and tracking interaction
-        # TODO if dendritic cells are in lymph node, then start random timer, to set time for T cells to get the dendritic cell -- different threshold? different timer?
-        # if interaction, increase the T cell lymph_node_interaction_timer state
-
-        # TODO -- do this in the T cell process: let them divide in the LN
-        # Maybe increase division probability 12-16 hours of division.
-
-
         ##############
         # lymph node #
         ##############
@@ -119,55 +138,55 @@ class LymphNode(Process):
         # ~60k-180k total T cells. 0.005 are antigen-specific. We want a 2D slice ~1
         # Start off with ~3 t cells in LN, allow them to interact
 
+        # check if there are dendritic cells present for interacting with T cells
+        dendritic_cells_present = any([
+            specs['boundary']['cell_type'] == 'dendritic'
+            for specs in lymph_node_cells.values()])
+
         for cell_id, specs in lymph_node_cells.items():
             cell_type = specs['boundary']['cell_type']
             cell_state = specs['internal']['cell_state']
 
-            if cell_type == 'dendritic':
-                pass
-                # update['lymph_node'][cell_id] = {
-                #     'internal': {
-                #         'lymph_node_timer': timestep  # increase the timer
-                #     }
-                # }
-            if cell_type == 't-cell':
-                # Sense dendritic cells. We are assuming all t cells are a match to the dendritic cells.
-                # Calculate probability of interaction
-                prob_interaction = get_probability_timestep(
-                    self.parameters['tcell_find_dendritic_6hr'],
-                    21600,  # 6 hours (6*60*60 seconds)
-                    timestep)
-                if random.uniform(0, 1) < prob_interaction:
-                    update['lymph_node'][cell_id] = {}
-                    # this t-cell is now interacting
-                    # start dividing over next 12-18 hours. Probability of division goes up
-                    prob_divide = get_probability_timestep(
-                        self.parameters['prob_division_when_stimulated'],
-                        100800,  # 28 hours (28*60*60 seconds) TODO ???
-                        timestep)
-                    if random.uniform(0, 1) < prob_divide:
-                        update['lymph_node'][cell_id].update({'globals': {'divide': True}})
-
-                    # time how long since interaction
-                    update['lymph_node'][cell_id].update({
-                        'internal': {
-                            'lymph_node_timer': timestep  # increase the timer
+            if cell_type == 't-cell' and dendritic_cells_present:
+                if cell_state == 'interacting':
+                    # interact with dendritic cells for 8 hours, then 12 hour activation delay, and then migrate to tumor
+                    prob_interaction_completion = probability_of_occurrence_within_interval(
+                        timestep, self.parameters['expected_interaction_duration'])
+                    if random.uniform(0, 1) < prob_interaction_completion:
+                        # first delay, then migrate
+                        update['lymph_node'][cell_id] = {
+                            'internal': {'cell_state': 'delay'}
                         }
-                    })
 
-
-                # in LN, t-cells are confined to different spaces "t cell zones"
-                # during immune response, dendritic cells move to these regions.  T cells sense dendritic cells, and if specific match there are repeated interactions for ~6-8 hours. These cells are acitvated and start dividing (4 divisions in next 2 days). and then leav to tumor.
-
-                if cell_state == 'PD1p':
-                    pass
-
-                # use timers for the t cells.
-                # We don't want t cells to become refractory in the LN.
-
-                # T cells interact with dendritic cells for 8 hours (on average -- get a distribution), then 12 hour activation delay, another hour of interactions, and then migrate to tumor
-                # Random timer for each T cell to
-
+                elif cell_state == 'delay':
+                    # get probability of migration starting
+                    prob_migration = probability_of_occurrence_within_interval(
+                        timestep, self.parameters['expected_delay_before_migration'])
+                    if random.uniform(0, 1) < prob_migration:
+                        # TODO -- move it to "in transit", which should be relatively fast
+                        # begin transit
+                        update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
+                        update['cells']['_delete'].append(cell_id)
+                    else:
+                        # start dividing over next 12-18 hours. Probability of division goes up
+                        prob_divide = probability_of_occurrence_within_interval(
+                            timestep, self.parameters['expected_division_interval'])
+                        if random.uniform(0, 1) < prob_divide:
+                            update['lymph_node'][cell_id].update({
+                                'globals': {
+                                    'divide': True}})
+                else:
+                    # Calculate probability of finding/initializing interaction with dendritic cells
+                    # TODO -- this should depend on dendritic cell being present. Not interacting alone
+                    prob_interaction = get_probability_timestep(
+                        self.parameters['tcell_find_dendritic_6hr'],
+                        21600,  # 6 hours (6*60*60 seconds)
+                        timestep)
+                    if random.uniform(0, 1) < prob_interaction:
+                        # this t-cell is now interacting
+                        update['lymph_node'][cell_id] = {
+                            'internal': {'cell_state': 'interacting'}
+                        }
 
         #####################
         # tumor environment #
@@ -187,7 +206,6 @@ class LymphNode(Process):
                     update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
                     update['cells']['_delete'].append(cell_id)
 
-
         ##############
         # in transit #
         ##############
@@ -197,20 +215,22 @@ class LymphNode(Process):
 
             if cell_type == 'dendritic':
                 # dendritic cells move only from tumor to LN
-                if specs['internal']['transit_timer'] >= self.parameter['transit_time']:  # TODO dendritic_transit_timer
-                    specs['internal']['transit_timer'] = 0.0
+                prob_arrival = probability_of_occurrence_within_interval(
+                    timestep, self.parameters['expected_dendritic_transit_time'])
+                if random.uniform(0, 1) < prob_arrival:
                     # move to lymph node
                     update['lymph_node']['_add'].append({'key': cell_id, 'state': specs})
                     update['in_transit']['_delete'].append(cell_id)
-                else:
-                    update['lymph_node'][cell_id] = {
-                        'internal': {
-                            'transit_timer': timestep  # increase the timer
-                        }
-                    }
             if cell_type == 't-cell':
                 # t cells move from LN to tumor
-                pass
+                prob_arrival = probability_of_occurrence_within_interval(
+                    timestep, self.parameters['expected_tcell_transit_time'])
+                if random.uniform(0, 1) < prob_arrival:
+                    # move to lymph node
+                    location = random_location(self.parameters['tumor_env_bounds'])
+                    specs['boundary']['location'] = location
+                    update['cells']['_add'].append({'key': cell_id, 'state': specs})
+                    update['in_transit']['_delete'].append(cell_id)
 
 
         print(f'STATES TUMOR ENV: {list(states["cells"].keys())}')
