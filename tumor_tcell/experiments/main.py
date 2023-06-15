@@ -41,6 +41,7 @@ from tumor_tcell.composites.tumor_microenvironment import (
     TumorAndLymphNodeEnvironment
 )
 from tumor_tcell.composites.death_logger import DeathLogger
+from tumor_tcell.library.location import random_location
 
 # default parameters
 PI = math.pi
@@ -120,57 +121,6 @@ def get_dendritic(number=1, dendritic_state_active=0.0):
             'cell_state': 'active' if random.uniform(0, 1) < dendritic_state_active else 'inactive',
             'diameter': 10.0 * units.um,   # TODO -- don't hardcode this!
         } for n in range(number)}
-
-
-def random_location(
-        bounds,
-        center=None,
-        distance_from_center=None,
-        excluded_distance_from_center=None
-):
-    """
-    generate a single random location within `bounds`, and within `distance_from_center`
-    of a provided `center`. `excluded_distance_from_center` is an additional parameter
-    that leaves an empty region around the center point.
-    """
-    if distance_from_center and excluded_distance_from_center:
-        assert distance_from_center > excluded_distance_from_center, \
-            'distance_from_center must be greater than excluded_distance_from_center'
-
-    # get the center
-    if center:
-        center_x = center[0]
-        center_y = center[1]
-    else:
-        center_x = bounds[0]/2
-        center_y = bounds[1]/2
-
-    if distance_from_center:
-        if excluded_distance_from_center:
-            ring_size = distance_from_center - excluded_distance_from_center
-            distance = excluded_distance_from_center + ring_size * math.sqrt(random.random())
-        else:
-            distance = distance_from_center * math.sqrt(random.random())
-
-        angle = random.uniform(0, 2 * PI)
-        dy = math.sin(angle)*distance
-        dx = math.cos(angle)*distance
-        pos_x = center_x+dx
-        pos_y = center_y+dy
-
-    elif excluded_distance_from_center:
-        in_center = True
-        while in_center:
-            pos_x = random.uniform(0, bounds[0])
-            pos_y = random.uniform(0, bounds[1])
-            distance = (pos_x**2 + pos_y**2)**0.5
-            if distance > excluded_distance_from_center:
-                in_center = False
-    else:
-        pos_x = random.uniform(0, bounds[0])
-        pos_y = random.uniform(0, bounds[1])
-
-    return [pos_x, pos_y]
 
 
 def convert_to_hours(data):
@@ -306,7 +256,9 @@ def tumor_tcell_abm(
     if not lymph_nodes:
         environment_composer = TumorMicroEnvironment(environment_config)
     else:
-        environment_config['lymph_node'] = {}  # todo -- configure the lymph node
+        environment_config['lymph_node'] = {
+            'bounds': bounds,  # tumor environment bounds
+        }
         environment_composer = TumorAndLymphNodeEnvironment(environment_config)
 
     ## process for logging the final time and state of agents
@@ -434,6 +386,7 @@ def tumor_tcell_abm(
         initial_t_cells = {
             agent_id: {
                 'boundary': {
+                    'cell_type': 't-cell',
                     'diameter': state.get('diameter', 7.5 * units.um),
                     'velocity': state.get('velocity', 10.0 * units.um / units.min)},
                 'internal': {   # TODO -- Is this added automatically when moved to tumor environment?

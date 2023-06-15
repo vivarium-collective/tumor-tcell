@@ -62,6 +62,40 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
     timestep_fraction = timestep / timescale
     return 1 - math.exp(-rate * timestep_fraction)
 
+
+# def get_probability_timestep(probability_parameter, interval_duration, expected_time):
+#     """
+#     Calculate the probability of an event occurring within a given
+#     time interval, given the average time between occurrences and
+#     the probability of an event occurring within that average time.
+#
+#     Args:
+#         interval_duration (float): The duration of the time interval
+#                                    in hours.
+#         expected_time (float): The average time between occurrences
+#                                of the event in hours.
+#         probability_parameter (float): The probability of the event occurring
+#                              within the expected time.
+#
+#     Returns:
+#         float: The probability of the event occurring within the
+#                interval_duration.
+#     """
+#     # Compute the average rate of occurrence
+#     lambda_ = -math.log(1 - probability_parameter) / expected_time
+#
+#     # Calculate the average rate of occurrence within the desired interval
+#     lambda_interval = lambda_ * interval_duration
+#
+#     # Compute the probability of no occurrence
+#     P_0 = math.exp(-lambda_interval)
+#
+#     # The probability of at least one occurrence is 1 - P(0)
+#     P_at_least_one = 1 - P_0
+#
+#     return P_at_least_one
+
+
 class TCellProcess(Process):
     """TCellProcess
 
