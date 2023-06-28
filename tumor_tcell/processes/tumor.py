@@ -91,6 +91,9 @@ class TumorProcess(Process):
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4,
         'PDL1p_MHCI_equilibrium': 5e4,
+
+        #Total tumor debris to release
+        'tumor_debris_amount': 1.4e15, #Molecules per cell (Apetoh, 2007)
     }
 
     def __init__(self, parameters=None):
@@ -165,7 +168,14 @@ class TumorProcess(Process):
                     'IFNg': {
                         '_default': 0,  # counts
                         '_updater': 'accumulate',
-                    }},
+                    },
+                    'tumor_debris': {
+                        '_default': 0,
+                        '_updater': 'accumulate',
+                        '_divider': 'split',
+                    },
+                },
+
             },
             'neighbors': {
                 'present': {
@@ -225,17 +235,29 @@ class TumorProcess(Process):
 
         #TODO - test out with experiment and also do calculation
 
+        ## Build up an update - TODO @Eran - is this okay to move this update earlier?
+        update = {'internal': {},
+                  'boundary': {},
+                  'neighbors': {'present': {}, 'accept': {}, 'receive': {}}}
+
         # death by apoptosis
         prob_death = get_probability_timestep(
             self.parameters['death_apoptosis'],
             432000,  # 5 days (5*24*60*60 seconds)
             timestep)
         if random.uniform(0, 1) < prob_death:
+            #if lymph_node == True: #TODO - @Eran- how do we let it know it is a lymph node exp
+            tumor_debris = self.parameters['tumor_debris_amount']
+            update['boundary'].update({
+                'exchange': {'tumor_debris': int(tumor_debris)}})
             return {
                 'globals': {
                     'death': 'apoptosis'}}
 
         if cytotoxic_packets >= self.parameters['cytotoxic_packet_threshold']:
+            tumor_debris = self.parameters['tumor_debris_amount']
+            update['boundary'].update({
+                'exchange': {'tumor_debris': int(tumor_debris)}})
             return {
                 'globals': {
                     'death': 'Tcell_death'}}
@@ -257,10 +279,6 @@ class TumorProcess(Process):
         elif cell_state == 'PDL1p':
             pass
 
-        ## Build up an update
-        update = {'internal': {},
-                  'boundary': {},
-                  'neighbors': {'present': {}, 'accept': {}, 'receive': {}}}
 
         # state transition
         new_cell_state = cell_state

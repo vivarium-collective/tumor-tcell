@@ -31,31 +31,33 @@ class DendriticCellProcess(Process):
     """
     defaults = {
         'mass': 2.0 * units.ng,  # TODO
-        'diameter': 10.0 * units.um,  # * units.um, 'diameter': 15
-        'velocity': 2.0,  # * units.um/units.min,  # when inactive 2-5 um/min, when active 10-15 um/min
+        'diameter': 10.0 * units.um,  # * units.um, (Morefield, 2005)
+        'velocity': 3.0,  # * units.um/units.min,  # when inactive 2-5 um/min, \
+            # when active 10-15 um/min (Lammermann, 2008)
         'diffusion': DIFFUSION_RATES,
         'pi': PI,
         'nAvagadro': AVOGADRO / units.mol,  # count / mol, #TODO convert back from ng
         'external_concentration_unit': CONCENTRATION_UNIT,
 
         # death rates
-        'death_apoptosis': 0.5,  # TODO --
-        'death_time': 10 * 24 * 60 * 60,  # 10 days (*24*60*60 seconds)
+        'death_apoptosis': 0.5,  # (Naik, 2008)
+        'death_time': 4 * 24 * 60 * 60,  # 10 days (*24*60*60 seconds) (Naik, 2008)
 
         # division
         'divide_prob': 0.6,  # probability of division 24 hr
-        'divide_time': 5 * 24 * 60 * 60,  # 5 days (*24*60*60 seconds)
+        'divide_time': 5 * 24 * 60 * 60,  # 5 days (*24*60*60 seconds) (data)
 
         # transitions
-        'internal_tumor_debris_threshold': 10000,  # This is in counts # TODO (John) replace with actual
+        'internal_tumor_debris_threshold': 415000,  # This is in counts # (Yang, 2006)
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4,
         'PDL1p_MHCI_equilibrium': 5e4,
 
         # uptake
-        'tumor_debris_uptake': 21 / 60,  # TODO -- number of tumor debris molecules/cell/hr uptaken conv to seconds
-        'tumor_debris_MW': 17000 * units.g / units.mol,  # g/mol TODO -- check this
+        'tumor_debris_uptake': 300 / 60,  # number of tumor debris molecules/cell/hr uptaken \
+            # conv to seconds (Yang, 2006)
+        'tumor_debris_MW': 29000 * units.g / units.mol,  # g/mol (Apetoh, 2007)
     }
 
     def __init__(self, parameters=None):
@@ -139,7 +141,7 @@ class DendriticCellProcess(Process):
         external_tumor_debris = states['boundary']['external']['tumor_debris']  # concentration
         internal_tumor_debris = states['internal']['tumor_debris']  # counts
 
-        # determine available IFNg
+        # determine available tumor debris
         diameter = states['boundary']['diameter']  # (um)
         tumor_debris_diffusion_rate = self.parameters['diffusion'][
                                           'tumor_debris'] #* units.cm * units.cm / units.day  # TODO -- add this back in DIFFUSION RATES
@@ -202,12 +204,12 @@ class DendriticCellProcess(Process):
                     'internal': {
                         'cell_state': new_cell_state,
                         'cell_state_count': cell_state_count}})
-            update['internal']['active_timer'] = -states['internal']['active_timer']
+            update['internal']['active_timer'] = -states['internal']['active_timer'] #TODO - I don't think we use this
         elif cell_state == 'active':
             update['internal']['active_timer'] = timestep
 
         # behavior
-        # uptake locally available IFNg in the environment
+        # uptake locally available tumor debris in the environment
         tumor_debris_uptake = min(
             int(self.parameters['tumor_debris_uptake'] * timestep),
             int(available_tumor_debris_counts))  # TODO -- check this
@@ -250,7 +252,27 @@ def get_timeline(
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
         (interval * 3 * TIMESTEP, {
-            ('boundary', 'external', 'tumor_debris'): 0.0,
+            ('boundary', 'external', 'tumor_debris'): 1e7,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+        (interval * 4 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 1e7,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+        (interval * 5 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 1e7,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+        (interval * 6 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 1e7,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+        (interval * 7 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 1e7,
+            ('neighbors', 'accept', 'TCR'): 0.0,
+        }),
+        (interval * 8 * TIMESTEP, {
+            ('boundary', 'external', 'tumor_debris'): 1e7,
             ('neighbors', 'accept', 'TCR'): 0.0,
         }),
     ]
@@ -258,7 +280,7 @@ def get_timeline(
 
 
 def test_single_d_cell(
-        total_time=43200,
+        total_time=129600,
         time_step=TIMESTEP,
         out_dir='out'
 ):
