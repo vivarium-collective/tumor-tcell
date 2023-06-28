@@ -41,14 +41,24 @@ class LymphNode(Process):
     defaults = {
         'time_step': TIMESTEP,
         'tumor_env_bounds': remove_units(DEFAULT_BOUNDS),
-        'time_dendritic_finds_tcell': 2.0,  # hours
-        'n_tcells_in_lymph_node': 100,  # number of cells in 3D LN structure. TODO -- calculate number in a 2D slice
-        'tcell_find_dendritic_6hr': 0.95,  # TODO(ERAN): 0.95 will find dendritic in 6 hrs (actually 6-8)
-        'expected_dendritic_transit_time': 43200,  # 12*60*60. 12 hour delay between the time that a dendritic cell leaves microenvironment until it is ready to interact with t cells in the LN
-        'expected_tcell_transit_time': 300,  # 5*60. arrive in tumor environment within approximate 5 circulations, which is 5 minutes  TODO (John) check this
-        'expected_division_interval': 10800,  # divide approximately every 3 hours, or 4-6 times in 12-16 hours. 3*60*60=10800
-        'expected_interaction_duration': 28800,  # 8*60*60 t cells interact with dendritic cells for approximately 8 hours
-        'expected_delay_before_migration': 43200,  # 12*60*60. t cells wait approx 12 hours after interaction is complete before starting migration
+        'time_dendritic_finds_tcell': 2.0,  # hours TODO - I don't think we use this
+        'n_tcells_in_lymph_node': 3,  # number of cells in 3D LN structure. CD8+ T cells 12% of all cells, \
+            # 5x10^6 cells/LN, so 600,000 T cells. 0.5% of those are antigen specific, so about 3000 T cells \
+            # within the lymph node that are reactive (total pool of cells that could proliferated/divide. \
+            # - from data and divide 3000/1000 (1/1000th of space that we are simulating) = 3
+        'tcell_find_dendritic_time': 0.95,  # 95% will find dendritic in 4 hrs (Itano, 2003);;(Bousso, 2008)
+        'expected_dendritic_transit_time': 28800,  # 8*60*60. 8 hour delay between the time that a dendritic \
+            # cell leaves microenvironment until it is ready to interact with t cells in the LN and interact with \
+            # T cells that take about 4 hours to find it for a total of 12 hours total until engagement is \
+            # seen (Itano, 2003);;(Bousso, 2008)
+        'expected_tcell_transit_time': 3600,  # 60*60. arrive in tumor environment after 1 hour of migration in,\
+            # efferent lymph to circulation (Hunter, 2016)
+        'expected_division_interval': 14400,  # divide approximately every 4 hours, or 5-6 times in 24 hours. \
+            # 3*60*60=10800, (Mempel, 2004);(Bousso, 2008)
+        'expected_interaction_duration': 28800,  # 8*60*60 t cells interact with dendritic cells for approximately \
+            # 8 hours (Itano, 2003)
+        'expected_delay_before_migration': 43200,  # 12*60*60. t cells wait approx 12 hours after interaction is \
+            # complete before starting migration (Itano, 2003);(Bousso, 2008)
     }
 
     def __init__(self, parameters=None):
@@ -179,9 +189,9 @@ class LymphNode(Process):
                     # Calculate probability of finding/initializing interaction with dendritic cells
                     # TODO -- this should depend on dendritic cell being present. Not interacting alone
                     prob_interaction = get_probability_timestep(
-                        self.parameters['tcell_find_dendritic_6hr'],
-                        21600,  # 6 hours (6*60*60 seconds)
-                        timestep)
+                        self.parameters['tcell_find_dendritic_time'],
+                        14400,  # 6 hours (6*60*60 seconds)
+                        timestep) #(Itano, 2003)
                     if random.uniform(0, 1) < prob_interaction:
                         # this t-cell is now interacting
                         update['lymph_node'][cell_id] = {

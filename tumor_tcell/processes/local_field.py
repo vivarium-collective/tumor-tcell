@@ -28,7 +28,8 @@ class LocalField(Deriver):
     name = 'local_field'
     defaults = {
         'molecular_weight': {
-            'IFNg': 17000 * units.g / units.mol
+            'IFNg': 17000 * units.g / units.mol,
+            'tumor_debris': 29000 * units.g / units.mol, #Assumed HGMB1 (Apetoh, 2007)
         },
         'concentration_unit': CONCENTRATION_UNIT
     }

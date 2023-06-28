@@ -62,7 +62,10 @@ TAG_COLORS = {
     ('internal', 'cell_state', 'PDL1p'): 'skyblue',
     ('internal', 'cell_state', 'PDL1n'): 'indianred',
     ('internal', 'cell_state', 'PD1p'): 'limegreen',
-    ('internal', 'cell_state', 'PD1n'): 'darkorange', }
+    ('internal', 'cell_state', 'PD1n'): 'darkorange',
+    ('internal', 'cell_state', 'inactive'): 'black',
+    ('internal', 'cell_state', 'active'): 'gray',
+}
 
 
 def get_tcells(
@@ -465,6 +468,7 @@ def large_experiment(
         tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
         tcells_distance=250 * units.um,  # in or out (None) of the tumor
         tcells_excluded_distance=240 * units.um,  # for creating a ring around tumor
+        field_molecules=['IFNg'],
 ):
     """
     Configurable large environment that has many tumors and t cells. Calls tumor_tcell_abm
@@ -490,6 +494,7 @@ def large_experiment(
         tcells_distance=tcells_distance,  # in or out (None) of the tumor
         tcells_excluded_distance=tcells_excluded_distance,  # for creating a ring around tumor
         lymph_nodes=lymph_nodes,
+        field_molecules=field_molecules,
     )
 
 # Change experimental PD1 and PDL1 levels for full experiment
@@ -516,16 +521,17 @@ def lymph_node_experiment():
     """
     return large_experiment(
         # TODO -- what initial states for the resubmission?
-        n_tcells=2,  # 12
-        n_tumors=2,  # 1200
-        n_dendritic=6,  # 1200
+        n_tcells=40,  # 12
+        n_tumors=40,  # 1200
+        n_dendritic=40,  # 1200
         n_tcells_lymph_node=3,
-        # tcells_state_PD1n=0.8,
+        # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
-        tcells_total_PD1n=1,  # 9, 3
-        dendritic_state_active=0.5,
+        tcells_total_PD1n=30,  # 9, 3
+        dendritic_state_active=0.5, # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=100,  # TODO -- run this for 259200 (3 days)
+        total_time=259200,  # TODO -- run this for 259200 (3 days)
+        field_molecules=['IFNg', 'tumor_debris'],
     )
 
 
@@ -548,6 +554,7 @@ def plots_suite(
     # separate out t cell and tumor data for the multi-generation plots
     tcell_data = {}
     tumor_data = {}
+    dendritic_data = {}
     for time, time_data in data.items():
         if 'agents' not in time_data:
             continue
@@ -562,7 +569,11 @@ def plots_suite(
                 agent_id: agent_data
                 for agent_id, agent_data in all_agents_data.items()
                 if TUMOR_ID in agent_id}}
-
+        dendritic_data[time] = {
+            'agents': {
+                agent_id: agent_data
+                for agent_id, agent_data in all_agents_data.items()
+                if DENDRITIC_ID in agent_id}}
     # # get the final death log
     # times_vector = list(data.keys())
     # death_log = data[times_vector[-1]]['log']
@@ -575,6 +586,7 @@ def plots_suite(
             ('boundary', 'location')]}
     fig1 = plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
     fig2 = plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
+    fig4 = plot_agents_multigen(dendritic_data, plot_settings, out_dir, DENDRITIC_ID)
 
     # snapshots plot shows cells and chemical fields in space at different times
     # extract data
@@ -594,7 +606,7 @@ def plots_suite(
         field_label_size=48,
         time_display='hr')
 
-    return fig1, fig2, fig3
+    return fig1, fig2, fig3, fig4
 
 
 def make_snapshot_video(
@@ -750,8 +762,8 @@ workflow_library = {
 if __name__ == '__main__':
     lymph_node_experiment()
 
-    # Control(
-    #     experiments=experiments_library,
-    #     plots=plots_library,
-    #     workflows=workflow_library,
-    # )
+    Control(
+        experiments=experiments_library,
+        plots=plots_library,
+        workflows=workflow_library,
+    )

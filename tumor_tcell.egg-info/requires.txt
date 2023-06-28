@@ -1,0 +1,7 @@
+vivarium-core>=1.0.0
+vivarium-multibody==0.0.12
+tqdm
+opencv-python
+pymunk
+pandas
+seaborn
