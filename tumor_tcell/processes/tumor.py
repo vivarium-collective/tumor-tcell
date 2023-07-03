@@ -235,7 +235,7 @@ class TumorProcess(Process):
 
         #TODO - test out with experiment and also do calculation
 
-        ## Build up an update - TODO @Eran - is this okay to move this update earlier?
+        ## Build up an update
         update = {'internal': {},
                   'boundary': {},
                   'neighbors': {'present': {}, 'accept': {}, 'receive': {}}}
@@ -248,17 +248,17 @@ class TumorProcess(Process):
         if random.uniform(0, 1) < prob_death:
             #if lymph_node == True: #TODO - @Eran- how do we let it know it is a lymph node exp
             tumor_debris = self.parameters['tumor_debris_amount']
-            update['boundary'].update({
-                'exchange': {'tumor_debris': int(tumor_debris)}})
             return {
+                'boundary':{
+                    'exchange': {'tumor_debris': int(tumor_debris)}},
                 'globals': {
                     'death': 'apoptosis'}}
 
         if cytotoxic_packets >= self.parameters['cytotoxic_packet_threshold']:
             tumor_debris = self.parameters['tumor_debris_amount']
-            update['boundary'].update({
-                'exchange': {'tumor_debris': int(tumor_debris)}})
             return {
+                'boundary':{
+                    'exchange': {'tumor_debris': int(tumor_debris)}},
                 'globals': {
                     'death': 'Tcell_death'}}
 
