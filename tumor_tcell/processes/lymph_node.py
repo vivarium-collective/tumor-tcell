@@ -243,12 +243,12 @@ class LymphNode(Process):
                     update['in_transit']['_delete'].append(cell_id)
 
 
-        print(f'STATES TUMOR ENV: {list(states["cells"].keys())}')
-        print(f'STATES LN: {list(states["lymph_node"].keys())}')
-        print(f'STATES IN TRANSIT: {list(states["in_transit"].keys())}')
-        print(f'UPDATE TUMOR ENV: {update["cells"]}')
-        print(f'UPDATE LN: {update["lymph_node"]}')
-        print(f'UPDATE IN TRANSIT: {update["in_transit"]}')
+        # print(f'STATES TUMOR ENV: {list(states["cells"].keys())}')
+        # print(f'STATES LN: {list(states["lymph_node"].keys())}')
+        # print(f'STATES IN TRANSIT: {list(states["in_transit"].keys())}')
+        # print(f'UPDATE TUMOR ENV: {update["cells"]}')
+        # print(f'UPDATE LN: {update["lymph_node"]}')
+        # print(f'UPDATE IN TRANSIT: {update["in_transit"]}')
 
         return update
 

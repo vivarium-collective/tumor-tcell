@@ -371,8 +371,8 @@ def tumor_tcell_abm(
                     center=tumors_center,
                     distance_from_center=tumors_distance,
                     excluded_distance_from_center=tumors_excluded_distance)),
-                # 'diameter': state.get('diameter', 15 * units.um),
-                # 'velocity': state.get('velocity', 0.0 * units.um/units.min)
+                'diameter': state.get('diameter', 10 * units.um), #TODO - @Eran this should not be required
+                'velocity': state.get('velocity', 3.0 * units.um/units.min)
             },
         } for agent_id, state in dendritic_cells.items()}
 
@@ -521,16 +521,16 @@ def lymph_node_experiment():
     """
     return large_experiment(
         # TODO -- what initial states for the resubmission?
-        n_tcells=40,  # 12
-        n_tumors=40,  # 1200
-        n_dendritic=40,  # 1200
+        n_tcells=4,  # 12
+        n_tumors=4,  # 1200
+        n_dendritic=4,  # 1200
         n_tcells_lymph_node=3,
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
-        tcells_total_PD1n=30,  # 9, 3
+        tcells_total_PD1n=2,  # 9, 3
         dendritic_state_active=0.5, # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=259200,  # TODO -- run this for 259200 (3 days)
+        total_time=6000,  # TODO -- run this for 259200 (3 days)
         field_molecules=['IFNg', 'tumor_debris'],
     )
 
@@ -760,7 +760,7 @@ workflow_library = {
 
 # run with python tumor_tcell/experiments/main.py [workflow id]
 if __name__ == '__main__':
-    lymph_node_experiment()
+    # lymph_node_experiment()
 
     Control(
         experiments=experiments_library,
