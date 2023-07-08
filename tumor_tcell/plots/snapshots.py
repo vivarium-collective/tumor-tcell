@@ -15,6 +15,8 @@ from matplotlib.collections import LineCollection
 import numpy as np
 
 from vivarium.library.dict_utils import get_value_from_path
+from vivarium.core.emitter import deserialize_value, DatabaseEmitter
+
 
 
 DEFAULT_BOUNDS = [10, 10]
