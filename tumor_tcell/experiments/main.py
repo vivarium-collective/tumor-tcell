@@ -31,6 +31,8 @@ from vivarium.core.control import Control
 from vivarium.plots.agents_multigen import plot_agents_multigen
 from tumor_tcell.plots.video import make_video
 from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
+from vivarium.core.emitter import deserialize_value
+
 
 # tumor-tcell imports
 from tumor_tcell.composites.tumor_agent import TumorAgent
@@ -521,16 +523,16 @@ def lymph_node_experiment():
     """
     return large_experiment(
         # TODO -- what initial states for the resubmission?
-        n_tcells=4,  # 12
-        n_tumors=4,  # 1200
-        n_dendritic=4,  # 1200
-        n_tcells_lymph_node=3,
+        n_tcells=2,  # 12
+        n_tumors=20,  # 1200
+        n_dendritic=20,  # 1200
+        n_tcells_lymph_node=20,
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
-        tcells_total_PD1n=2,  # 9, 3
+        tcells_total_PD1n=1,  # 9, 3
         dendritic_state_active=0.5, # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=6000,  # TODO -- run this for 259200 (3 days)
+        total_time=10000,  # TODO -- run this for 259200 (3 days)
         field_molecules=['IFNg', 'tumor_debris'],
     )
 
@@ -586,16 +588,18 @@ def plots_suite(
             ('boundary', 'location')]}
     fig1 = plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
     fig2 = plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
-    fig4 = plot_agents_multigen(dendritic_data, plot_settings, out_dir, DENDRITIC_ID)
-
+    if dendritic_data:
+        fig4 = plot_agents_multigen(dendritic_data, plot_settings, out_dir, DENDRITIC_ID)
+    else:
+        fig4=None
     # snapshots plot shows cells and chemical fields in space at different times
     # extract data
     agents, fields = format_snapshot_data(data)
 
     # make the plot
     fig3 = plot_snapshots(
-        bounds=remove_units(bounds),
-        agents=remove_units(agents),
+        bounds=remove_units(deserialize_value(bounds)),
+        agents=remove_units(deserialize_value(agents)),
         fields=fields,
         tag_colors=TAG_COLORS,
         n_snapshots=n_snapshots,
@@ -622,8 +626,8 @@ def make_snapshot_video(
     step = math.ceil(n_times/n_steps)
 
     make_video(
-        data=remove_units(data),
-        bounds=remove_units(bounds),
+        data=remove_units(deserialize_value(data)),
+        bounds=remove_units(deserialize_value(bounds)),
         agent_shape='circle',
         tag_colors=TAG_COLORS,
         step=step,

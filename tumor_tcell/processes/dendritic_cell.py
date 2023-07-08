@@ -48,7 +48,7 @@ class DendriticCellProcess(Process):
         'divide_time': 5 * 24 * 60 * 60,  # 5 days (*24*60*60 seconds) (data)
 
         # transitions
-        'internal_tumor_debris_threshold': 415000,  # This is in counts # (Yang, 2006)
+        'internal_tumor_debris_threshold': 40,  # 415000 This is in counts # (Yang, 2006) TODO - @John change back
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4,

@@ -243,7 +243,7 @@ class TumorProcess(Process):
         # death by apoptosis
         prob_death = get_probability_timestep(
             self.parameters['death_apoptosis'],
-            432000,  # 5 days (5*24*60*60 seconds)
+            40,  #432000 5 days (5*24*60*60 seconds) TODO - @John change back
             timestep)
         if random.uniform(0, 1) < prob_death:
             #if lymph_node == True: #TODO - @Eran- how do we let it know it is a lymph node exp
