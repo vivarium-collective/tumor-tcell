@@ -5,11 +5,13 @@ Lymph Node Environment Process
 import math
 import random
 from vivarium.core.process import Process
-from vivarium.core.engine import pp
+from vivarium.core.engine import pp, Engine
 from tumor_tcell.processes.t_cell import get_probability_timestep, TIMESTEP
 from vivarium.library.units import remove_units
 from tumor_tcell.library.location import random_location, DEFAULT_BOUNDS
 
+
+DEFAULT_CELL_TYPE = 'default_cell_type'
 
 def probability_of_occurrence_within_interval(interval_duration, expected_time):
     """
@@ -72,6 +74,7 @@ class LymphNode(Process):
         }
 
     def ports_schema(self):
+
         tumor_env_schema = {
             '*': {
                 'internal': {
@@ -80,7 +83,8 @@ class LymphNode(Process):
                         '_updater': 'set'}},
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {},
+                    'cell_type': {
+                        '_default': DEFAULT_CELL_TYPE},
                     'location': {}
                 },
         }}
@@ -95,7 +99,7 @@ class LymphNode(Process):
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
                     'cell_type': {
-                        '_default': '',
+                        '_default': DEFAULT_CELL_TYPE,
                     }}}}
 
         # TODO -- reuse the schemas more instead of copying
@@ -109,7 +113,7 @@ class LymphNode(Process):
                 'boundary': {
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
                     'cell_type': {
-                        '_default': '',
+                        '_default': DEFAULT_CELL_TYPE,
                     }},
         }}
 
@@ -174,14 +178,16 @@ class LymphNode(Process):
                         timestep, self.parameters['expected_delay_before_migration'])
                     if random.uniform(0, 1) < prob_migration:
                         # TODO -- move it to "in transit", which should be relatively fast
-                        # begin transit
+                        # begin transit from lymph node
                         update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
-                        update['cells']['_delete'].append(cell_id)
+                        update['lymph_node']['_delete'].append(cell_id)
                     else:
                         # start dividing over next 12-18 hours. Probability of division goes up
                         prob_divide = probability_of_occurrence_within_interval(
                             timestep, self.parameters['expected_division_interval'])
                         if random.uniform(0, 1) < prob_divide:
+                            if cell_id not in update['lymph_node']:
+                                update['lymph_node'][cell_id] = {}
                             update['lymph_node'][cell_id].update({
                                 'globals': {
                                     'divide': True}})
@@ -212,7 +218,7 @@ class LymphNode(Process):
 
             if cell_type == 'dendritic':
                 if cell_state == 'active':
-                    # begin transit
+                    # begin transit from tumor environment
                     update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
                     update['cells']['_delete'].append(cell_id)
 
@@ -228,7 +234,7 @@ class LymphNode(Process):
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_dendritic_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
-                    # move to lymph node
+                    # arrive at lymph node
                     update['lymph_node']['_add'].append({'key': cell_id, 'state': specs})
                     update['in_transit']['_delete'].append(cell_id)
             if cell_type == 't-cell':
@@ -236,7 +242,7 @@ class LymphNode(Process):
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_tcell_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
-                    # move to lymph node
+                    # arrive at lymph node
                     location = random_location(self.parameters['tumor_env_bounds'])
                     specs['boundary']['location'] = location
                     update['cells']['_add'].append({'key': cell_id, 'state': specs})
@@ -249,32 +255,65 @@ class LymphNode(Process):
         # print(f'UPDATE TUMOR ENV: {update["cells"]}')
         # print(f'UPDATE LN: {update["lymph_node"]}')
         # print(f'UPDATE IN TRANSIT: {update["in_transit"]}')
-        if update['in_transit'].get('_add') or update['in_transit'].get('_delete'):
-            print(f'UPDATE: {pp(update)}')
-            x=0
 
         return update
 
 
-from vivarium.core.engine import Engine
+
 def test_lymph_node():
-    n_in_cells = 4
-    n_in_transit = 2
-    n_in_ln = 1
     simtime = 1000000
+    init_state = {
+        'cells': {
+            'tcell_0': {'internal': {'cell_state': 'PD1n'}, 'boundary': {'cell_type': 't-cell', 'location': []}},
+            'tcell_1': {'internal': {'cell_state': 'PD1p'}, 'boundary': {'cell_type': 't-cell', 'location': []}},
+            'tumor_0': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_1': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_2': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_3': {'internal': {'cell_state': 'PDL1p'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_4': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_5': {'internal': {'cell_state': 'PDL1p'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_6': {'internal': {'cell_state': 'PDL1p'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_7': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_8': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_9': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_10': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_11': {'internal': {'cell_state': 'PDL1p'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_12': {'internal': {'cell_state': 'PDL1p'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_13': {'internal': {'cell_state': 'PDL1p'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_14': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_15': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_16': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_17': {'internal': {'cell_state': 'PDL1p'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_18': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'tumor_19': {'internal': {'cell_state': 'PDL1n'}, 'boundary': {'cell_type': 'tumor', 'location': []}},
+            'dendritic_0': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_1': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_2': {'internal': {'cell_state': 'inactive'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_3': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_4': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_5': {'internal': {'cell_state': 'inactive'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_6': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_7': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_8': {'internal': {'cell_state': 'inactive'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_9': {'internal': {'cell_state': 'inactive'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_10': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_11': {'internal': {'cell_state': 'inactive'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_12': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_13': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_14': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_15': {'internal': {'cell_state': 'inactive'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_16': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_17': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_18': {'internal': {'cell_state': 'inactive'}, 'boundary': {'cell_type': 'dendritic', 'location': []}},
+            'dendritic_19': {'internal': {'cell_state': 'active'}, 'boundary': {'cell_type': 'dendritic', 'location': []}}},
+        'lymph_node': {
+            'tcell_LN_0': {'internal': {'cell_state': 'PD1n'}, 'boundary': {'cell_type': 't-cell'}},
+            'tcell_LN_1': {'internal': {'cell_state': 'PD1n'}, 'boundary': {'cell_type': 't-cell'}},
+            'tcell_LN_2': {'internal': {'cell_state': 'PD1n'}, 'boundary': {'cell_type': 't-cell'}}},
+        'in_transit': {}}
 
-    cell_schema = {
-        'internal': {
-            'cell_state': 'inactive'},
-        'boundary': {
-            'cell_type': '',
-            'location': {}}
-    }
-
+    # make the simulation and run
     ln = LymphNode()
-
-    print(pp(ln.ports_schema()))
-
     sim = Engine(
         processes={'ln': ln},
         topology={'ln': {
@@ -282,18 +321,11 @@ def test_lymph_node():
             'lymph_node': ('lymph_node',),
             'in_transit': ('in_transit',)}
         },
-        initial_state={
-            'cells': {f'c{i}': cell_schema for i in range(n_in_cells)},
-            'lymph_node': {f'ln{i}': cell_schema for i in range(n_in_ln)},
-            'in_transit': {f't{i}': cell_schema for i in range(n_in_transit)},
-        }
+        initial_state=init_state
     )
-
     sim.update(simtime)
-
-    print(pp(sim.state.get_value()))
-    x=0
-
+    data = sim.emitter.get_data()
+    print(pp(data[simtime]))
 
 
 if __name__ == '__main__':
