@@ -249,12 +249,51 @@ class LymphNode(Process):
         # print(f'UPDATE TUMOR ENV: {update["cells"]}')
         # print(f'UPDATE LN: {update["lymph_node"]}')
         # print(f'UPDATE IN TRANSIT: {update["in_transit"]}')
+        if update['in_transit'].get('_add') or update['in_transit'].get('_delete'):
+            print(f'UPDATE: {pp(update)}')
+            x=0
 
         return update
 
 
+from vivarium.core.engine import Engine
 def test_lymph_node():
-    pass
+    n_in_cells = 4
+    n_in_transit = 2
+    n_in_ln = 1
+    simtime = 1000000
+
+    cell_schema = {
+        'internal': {
+            'cell_state': 'inactive'},
+        'boundary': {
+            'cell_type': '',
+            'location': {}}
+    }
+
+    ln = LymphNode()
+
+    print(pp(ln.ports_schema()))
+
+    sim = Engine(
+        processes={'ln': ln},
+        topology={'ln': {
+            'cells': ('cells',),
+            'lymph_node': ('lymph_node',),
+            'in_transit': ('in_transit',)}
+        },
+        initial_state={
+            'cells': {f'c{i}': cell_schema for i in range(n_in_cells)},
+            'lymph_node': {f'ln{i}': cell_schema for i in range(n_in_ln)},
+            'in_transit': {f't{i}': cell_schema for i in range(n_in_transit)},
+        }
+    )
+
+    sim.update(simtime)
+
+    print(pp(sim.state.get_value()))
+    x=0
+
 
 
 if __name__ == '__main__':
