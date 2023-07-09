@@ -1,5 +1,6 @@
 # User files #
 ##############
+**/out/
 out/*
 user/*
 .idea/
