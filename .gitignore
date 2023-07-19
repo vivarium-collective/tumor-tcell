@@ -1,5 +1,6 @@
 # User files #
 ##############
+.DS_Store
 **/out/
 out/*
 user/*
