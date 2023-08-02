@@ -13,6 +13,7 @@ from tumor_tcell.library.location import random_location, DEFAULT_BOUNDS
 
 DEFAULT_CELL_TYPE = 'default_cell_type'
 
+
 def probability_of_occurrence_within_interval(interval_duration, expected_time):
     """
     Compute the probability that an event will occur at least once
@@ -215,7 +216,6 @@ class LymphNode(Process):
         for cell_id, specs in microenvironment_cells.items():
             cell_type = specs['boundary']['cell_type']
             cell_state = specs['internal']['cell_state']
-
             if cell_type == 'dendritic':
                 if cell_state == 'active':
                     # begin transit from tumor environment
