@@ -327,6 +327,7 @@ def tumor_tcell_abm(
     initial_t_cells = {
         agent_id: {
             'boundary': {
+                'cell_type': 't-cell',
                 'location': state.get('location', random_location(
                     bounds,
                     center=tcell_center,
@@ -350,6 +351,7 @@ def tumor_tcell_abm(
             'internal': {
                 'cell_state': state.get('cell_state', None)},
             'boundary': {
+                'cell_type': 'tumor',
                 'location': state.get('location', random_location(
                     bounds,
                     center=tumors_center,
@@ -368,6 +370,7 @@ def tumor_tcell_abm(
             'internal': {
                 'cell_state': state.get('cell_state', None)},
             'boundary': {
+                'cell_type': 'dendritic',
                 'location': state.get('location', random_location(
                     bounds,
                     center=tumors_center,
@@ -530,7 +533,7 @@ def lymph_node_experiment():
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
-        dendritic_state_active=0.5, # This should be changed to 0 after check that is working
+        dendritic_state_active=0.5,  # This should be changed to 0 after check that is working
         lymph_nodes=True,
         total_time=10000,  # TODO -- run this for 259200 (3 days)
         field_molecules=['IFNg', 'tumor_debris'],

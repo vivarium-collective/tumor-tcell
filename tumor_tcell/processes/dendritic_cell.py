@@ -33,7 +33,7 @@ class DendriticCellProcess(Process):
         'mass': 2.0 * units.ng,  # TODO
         'diameter': 10.0 * units.um,  # * units.um, (Morefield, 2005)
         'velocity': 3.0,  # * units.um/units.min,  # when inactive 2-5 um/min, \
-            # when active 10-15 um/min (Lammermann, 2008)
+        # when active 10-15 um/min (Lammermann, 2008)
         'diffusion': DIFFUSION_RATES,
         'pi': PI,
         'nAvagadro': AVOGADRO / units.mol,  # count / mol, #TODO convert back from ng
@@ -56,15 +56,24 @@ class DendriticCellProcess(Process):
 
         # uptake
         'tumor_debris_uptake': 300 / 60,  # number of tumor debris molecules/cell/hr uptaken \
-            # conv to seconds (Yang, 2006)
+        # conv to seconds (Yang, 2006)
         'tumor_debris_MW': 29000 * units.g / units.mol,  # g/mol (Apetoh, 2007)
     }
 
     def __init__(self, parameters=None):
         super().__init__(parameters)
+        diffusion_area = self.parameters['diffusion']['tumor_debris'] * self.parameters['timestep'] * units.s
+        diffusion_radius = diffusion_area ** 0.5
+        sphere_radius = self.parameters['diameter'] / 2 + diffusion_radius
+        external_tumor_debris_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3
+        self.molar_available_tumor_debris = self.parameters['external_concentration_unit'] * \
+                                            external_tumor_debris_available_volume * self.parameters['nAvagadro'] / \
+                                            self.parameters['tumor_debris_MW']
 
     def initial_state(self, config=None):
-        return {}
+        return {
+            'boundary': {
+                'cell_type': 'dendritic'}}
 
     def ports_schema(self):
         return {
@@ -92,11 +101,8 @@ class DendriticCellProcess(Process):
                 'cell_state_count': {
                     '_default': 0,
                     '_updater': 'accumulate'},  # counts how many total cell in a given time. Might not be needed.
-                'active_timer': {  # counts how long the cell has been active
-                    '_default': 0,
-                    '_emit': True,
-                    '_updater': 'accumulate'},
-                'lymph_node_timer': {  # counts how long in lymph node, high value increases chance of migration back to tumor
+                'lymph_node_timer': {
+                    # counts how long in lymph node, high value increases chance of migration back to tumor
                     '_default': 0,  # TODO -- does the LN time this, or do the cells?
                     '_emit': True,
                     '_updater': 'accumulate'},
@@ -104,7 +110,7 @@ class DendriticCellProcess(Process):
             'boundary': {
                 'cell_type': {
                     '_default': 'dendritic',
-                    '_emit': True,},
+                    '_emit': True, },
                 # Might be needed for neighbors, but really for the experimenters to quantify
                 'mass': {
                     '_value': self.parameters['mass']},
@@ -143,20 +149,7 @@ class DendriticCellProcess(Process):
         internal_tumor_debris = states['internal']['tumor_debris']  # counts
 
         # determine available tumor debris
-        diameter = states['boundary']['diameter']  # (um)
-        tumor_debris_diffusion_rate = self.parameters['diffusion'][
-                                          'tumor_debris'] #* units.cm * units.cm / units.day  # TODO -- add this back in DIFFUSION RATES
-        mw = self.parameters['tumor_debris_MW']
-        navogadro = self.parameters['nAvagadro']
-
-        # calculate diffusion distance in the timestep
-        diffusion_area = tumor_debris_diffusion_rate * timestep * units.s
-        diffusion_radius = diffusion_area ** 0.5
-        # find total volume
-        sphere_radius = diameter / 2 + diffusion_radius
-        external_tumor_debris_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3
-        available_tumor_debris = external_tumor_debris * self.parameters['external_concentration_unit'] \
-                                 * external_tumor_debris_available_volume * navogadro / mw
+        available_tumor_debris = external_tumor_debris * self.molar_available_tumor_debris
         available_tumor_debris_counts = available_tumor_debris.to('count').magnitude
 
         # TODO -- we need to move available tumor debris to internal tumor debris
@@ -185,8 +178,6 @@ class DendriticCellProcess(Process):
                         'divide': True,
                         'PDL1n_divide_count': PDL1n_divide_count
                     }}
-        # elif cell_state == 'inactive':
-        #     pass
 
         ## Build up an update
         update = {
@@ -205,9 +196,6 @@ class DendriticCellProcess(Process):
                     'internal': {
                         'cell_state': new_cell_state,
                         'cell_state_count': cell_state_count}})
-            update['internal']['active_timer'] = -states['internal']['active_timer'] #TODO - I don't think we use this
-        elif cell_state == 'active':
-            update['internal']['active_timer'] = timestep
 
         # behavior
         # uptake locally available tumor debris in the environment
@@ -225,8 +213,6 @@ class DendriticCellProcess(Process):
             update['neighbors']['present'].update({
                 'PDL1': PDL1,
                 'MHCI': MHCI})
-        # elif new_cell_state == 'inactive':
-        #     pass
 
         return update
 
