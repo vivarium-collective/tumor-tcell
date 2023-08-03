@@ -124,6 +124,7 @@ class TumorAndLymphNodeEnvironment(Composer):
             'lymph_node_transfer': {
                 'cells': ('agents',),
                 'lymph_node': ('lymph_node',),
+                'in_transit': ('in_transit',),
             }
         }
 

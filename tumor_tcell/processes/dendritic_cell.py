@@ -109,7 +109,7 @@ class DendriticCellProcess(Process):
             },
             'boundary': {
                 'cell_type': {
-                    '_default': 'dendritic',
+                    '_value': 'dendritic',
                     '_emit': True, },
                 # Might be needed for neighbors, but really for the experimenters to quantify
                 'mass': {
