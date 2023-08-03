@@ -37,11 +37,13 @@ DEFAULT_HUE = HUES[0]
 DEFAULT_SV = [100.0/100.0, 70.0/100.0]
 FLOURESCENT_SV = [0.75, 1.0]  # SV for fluorescent colors
 
+
 def check_plt_backend():
     # reset matplotlib backend for non-interactive plotting
     plt.close('all')
     if plt.get_backend() == 'TkAgg':
         matplotlib.use('Agg')
+
 
 class LineWidthData(Line2D):
     def __init__(self, *args, **kwargs):
@@ -61,6 +63,7 @@ class LineWidthData(Line2D):
         self._lw_data = lw
 
     _linewidth = property(_get_lw, _set_lw)
+
 
 def plot_agent(
         ax, data, color, agent_shape, membrane_width=0.1,
