@@ -130,18 +130,9 @@ class LymphNode(Process):
         in_transit = states['in_transit']
 
         update = {
-            'cells': {
-                '_add': [],
-                '_delete': [],
-            },
-            'lymph_node': {
-                '_add': [],
-                '_delete': [],
-            },
-            'in_transit': {
-                '_add': [],
-                '_delete': [],
-            }
+            'cells': {},
+            'lymph_node': {},
+            'in_transit': {}
         }
 
         ##############
@@ -179,6 +170,10 @@ class LymphNode(Process):
                         timestep, self.parameters['expected_delay_before_migration'])
                     if random.uniform(0, 1) < prob_migration:
                         # TODO -- move it to "in transit", which should be relatively fast
+                        if '_add' not in update['in_transit']:
+                            update['in_transit']['_add'] = []
+                        if '_delete' not in update['lymph_node']:
+                            update['lymph_node']['_delete'] = []
                         # begin transit from lymph node
                         update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
                         update['lymph_node']['_delete'].append(cell_id)
@@ -218,8 +213,12 @@ class LymphNode(Process):
             cell_state = specs['internal']['cell_state']
             if cell_type == 'dendritic':
                 if cell_state == 'active':
+                    if '_add' not in update['in_transit']:
+                        update['in_transit']['_add'] = []
+                    if '_delete' not in update['cells']:
+                        update['cells']['_delete'] = []
                     # begin transit from tumor environment
-                    update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
+                    update['in_transit']['_add'].append({'key': cell_id, 'state': specs})  # TODO -- do we need to bring the state in?
                     update['cells']['_delete'].append(cell_id)
 
         ##############
@@ -234,6 +233,10 @@ class LymphNode(Process):
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_dendritic_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
+                    if '_add' not in update['lymph_node']:
+                        update['lymph_node']['_add'] = []
+                    if '_delete' not in update['in_transit']:
+                        update['in_transit']['_delete'] = []
                     # arrive at lymph node
                     update['lymph_node']['_add'].append({'key': cell_id, 'state': specs})
                     update['in_transit']['_delete'].append(cell_id)
@@ -242,6 +245,10 @@ class LymphNode(Process):
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_tcell_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
+                    if '_add' not in update['cells']:
+                        update['cells']['_add'] = []
+                    if '_delete' not in update['in_transit']:
+                        update['in_transit']['_delete'] = []
                     # arrive at lymph node
                     location = random_location(self.parameters['tumor_env_bounds'])
                     specs['boundary']['location'] = location

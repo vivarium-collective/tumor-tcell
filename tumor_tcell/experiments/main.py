@@ -483,6 +483,7 @@ def large_experiment(
         n_tcells=n_tcells,
         n_tumors=n_tumors,
         n_dendritic=n_dendritic,
+        n_tcells_lymph_node=n_tcells_lymph_node,
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
         tcells_total_PD1n=tcells_total_PD1n,
@@ -767,8 +768,6 @@ workflow_library = {
 
 # run with python tumor_tcell/experiments/main.py [workflow id]
 if __name__ == '__main__':
-    # lymph_node_experiment()
-
     Control(
         experiments=experiments_library,
         plots=plots_library,
