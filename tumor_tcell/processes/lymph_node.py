@@ -43,7 +43,7 @@ class LymphNode(Process):
     """
     defaults = {
         'time_step': TIMESTEP,
-        'tumor_env_bounds': remove_units(DEFAULT_BOUNDS),
+        'tumor_env_bounds': DEFAULT_BOUNDS,
         'time_dendritic_finds_tcell': 2.0,  # hours TODO - I don't think we use this
         'n_tcells_in_lymph_node': 3,  # number of cells in 3D LN structure. CD8+ T cells 12% of all cells, \
             # 5x10^6 cells/LN, so 600,000 T cells. 0.5% of those are antigen specific, so about 3000 T cells \
@@ -155,7 +155,7 @@ class LymphNode(Process):
 
             if cell_type == 't-cell' and dendritic_cells_present:
                 if cell_state == 'interacting':
-                    # interact with dendritic cells for 8 hours, then 12 hour activation delay, and then migrate to tumor
+                    # interact with dendritic cells for 8 hours, then 12 hour delay before migrating to tumor
                     prob_interaction_completion = probability_of_occurrence_within_interval(
                         timestep, self.parameters['expected_interaction_duration'])
                     if random.uniform(0, 1) < prob_interaction_completion:
@@ -174,6 +174,8 @@ class LymphNode(Process):
                             update['in_transit']['_add'] = []
                         if '_delete' not in update['lymph_node']:
                             update['lymph_node']['_delete'] = []
+
+                        specs['internal']['cell_state'] = 'PD1n'
                         # begin transit from lymph node
                         update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
                         update['lymph_node']['_delete'].append(cell_id)
@@ -190,7 +192,7 @@ class LymphNode(Process):
                 else:
                     # Calculate probability of finding/initializing interaction with dendritic cells
                     # TODO -- this should depend on dendritic cell being present. Not interacting alone
-                    prob_interaction = get_probability_timestep(
+                    prob_interaction = get_probability_timestep(   # TODO -- ERAN -- why not probability_of_occurrence_within_interval?
                         self.parameters['tcell_find_dendritic_time'],
                         10,  # 14400 6 hours (6*60*60 seconds) TODO - @John change back
                         timestep) #(Itano, 2003)
@@ -254,14 +256,6 @@ class LymphNode(Process):
                     specs['boundary']['location'] = location
                     update['cells']['_add'].append({'key': cell_id, 'state': specs})
                     update['in_transit']['_delete'].append(cell_id)
-
-
-        # print(f'STATES TUMOR ENV: {list(states["cells"].keys())}')
-        # print(f'STATES LN: {list(states["lymph_node"].keys())}')
-        # print(f'STATES IN TRANSIT: {list(states["in_transit"].keys())}')
-        # print(f'UPDATE TUMOR ENV: {update["cells"]}')
-        # print(f'UPDATE LN: {update["lymph_node"]}')
-        # print(f'UPDATE IN TRANSIT: {update["in_transit"]}')
 
         return update
 
