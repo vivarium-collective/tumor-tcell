@@ -314,6 +314,11 @@ def tumor_tcell_abm(
         dendritic = dendritic_composer.generate({'agent_id': agent_id})
         composite_model.merge(composite=dendritic, path=('agents', agent_id))
 
+    # add lymph node T cells
+    for agent_id in tcells_lymph_node.keys():
+        t_cell = t_cell_composer.generate({'agent_id': agent_id})
+        composite_model.merge(composite=t_cell, path=('lymph_node', agent_id))
+
     ###################################
     # Initialize the simulation state #
     ####################################
