@@ -109,6 +109,7 @@ class TCellProcess(Process):
         'mass': 2 * units.ng,
         'initial_PD1n': 0.8,
         'refractory_count_threshold': 3,  # assuming that cells have been stimulated twice already in culture
+        'external_molecules': ['IFNg', 'tumor_debris'],
         # and need 5 stimulations to become exhausted (Zhao, 2020)
 
         #Time before TCR downregulation
@@ -264,10 +265,11 @@ class TCellProcess(Process):
                         '_divider': 'split',
                     }},
                 'external': {
-                    'IFNg': {
+                    mol_id: {
                         '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
-                    }},
+                    } for mol_id in self.parameters['external_molecules']
+                },
             },
             'neighbors': {
                 'present': {

@@ -393,15 +393,17 @@ def tumor_tcell_abm(
             **initial_t_cells,
             **initial_tumors,
             **initial_dendritic
-        }}
+        }
+    }
 
     if lymph_nodes:
-        initial_t_cells = {
+        initial_t_cells_ln = {
             agent_id: {
                 'boundary': {
                     'cell_type': 't-cell',
                     'diameter': state.get('diameter', 7.5 * units.um),
-                    'velocity': state.get('velocity', 10.0 * units.um / units.min)},
+                    'velocity': state.get('velocity', 10.0 * units.um / units.min),
+                },
                 'internal': {   # TODO -- Is this added automatically when moved to tumor environment?
                     'cell_state': state.get('cell_state', None),
                     'velocity_timer': state.get('velocity_timer', 0),
@@ -411,7 +413,7 @@ def tumor_tcell_abm(
                         'PD1': state.get('PD1', None),
                         'TCR': state.get('TCR', 50000)}
                 }} for agent_id, state in tcells_lymph_node.items()}
-        initial_state['lymph_node'] = initial_t_cells
+        initial_state['lymph_node'] = initial_t_cells_ln
 
     ######################
     # Run the simulation #

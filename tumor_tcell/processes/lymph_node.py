@@ -169,16 +169,13 @@ class LymphNode(Process):
                     prob_migration = probability_of_occurrence_within_interval(
                         timestep, self.parameters['expected_delay_before_migration'])
                     if random.uniform(0, 1) < prob_migration:
-                        # TODO -- move it to "in transit", which should be relatively fast
-                        if '_add' not in update['in_transit']:
-                            update['in_transit']['_add'] = []
-                        if '_delete' not in update['lymph_node']:
-                            update['lymph_node']['_delete'] = []
-
-                        specs['internal']['cell_state'] = 'PD1n'
+                        if '_move' not in update['lymph_node']:
+                            update['lymph_node']['_move'] = []
+                        specs['internal']['cell_state'] = 'PD1n'  # TODO -- get this state passed to cell
                         # begin transit from lymph node
-                        update['in_transit']['_add'].append({'key': cell_id, 'state': specs})
-                        update['lymph_node']['_delete'].append(cell_id)
+                        update['lymph_node']['_move'].append({
+                            'source': cell_id,
+                            'target': 'in_transit'})
                     else:
                         # start dividing over next 12-18 hours. Probability of division goes up
                         prob_divide = probability_of_occurrence_within_interval(
@@ -215,13 +212,12 @@ class LymphNode(Process):
             cell_state = specs['internal']['cell_state']
             if cell_type == 'dendritic':
                 if cell_state == 'active':
-                    if '_add' not in update['in_transit']:
-                        update['in_transit']['_add'] = []
-                    if '_delete' not in update['cells']:
-                        update['cells']['_delete'] = []
+                    if '_move' not in update['cells']:
+                        update['cells']['_move'] = []
                     # begin transit from tumor environment
-                    update['in_transit']['_add'].append({'key': cell_id, 'state': specs})  # TODO -- do we need to bring the state in?
-                    update['cells']['_delete'].append(cell_id)
+                    update['cells']['_move'].append({
+                        'source': cell_id,
+                        'target': 'in_transit'})
 
         ##############
         # in transit #
@@ -235,27 +231,26 @@ class LymphNode(Process):
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_dendritic_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
-                    if '_add' not in update['lymph_node']:
-                        update['lymph_node']['_add'] = []
-                    if '_delete' not in update['in_transit']:
-                        update['in_transit']['_delete'] = []
+                    if '_move' not in update['in_transit']:
+                        update['in_transit']['_move'] = []
                     # arrive at lymph node
-                    update['lymph_node']['_add'].append({'key': cell_id, 'state': specs})
-                    update['in_transit']['_delete'].append(cell_id)
+                    update['in_transit']['_move'].append({
+                        'source': cell_id,
+                        'target': 'lymph_node'
+                    })
             if cell_type == 't-cell':
                 # t cells move from LN to tumor
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_tcell_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
-                    if '_add' not in update['cells']:
-                        update['cells']['_add'] = []
-                    if '_delete' not in update['in_transit']:
-                        update['in_transit']['_delete'] = []
+                    if '_move' not in update['in_transit']:
+                        update['in_transit']['_move'] = []
                     # arrive at lymph node
                     location = random_location(self.parameters['tumor_env_bounds'])
-                    specs['boundary']['location'] = location
-                    update['cells']['_add'].append({'key': cell_id, 'state': specs})
-                    update['in_transit']['_delete'].append(cell_id)
+                    specs['boundary']['location'] = location  # TODO -- need to add this location in move
+                    update['in_transit']['_move'].append({
+                        'source': cell_id,
+                        'target': 'cells'})
 
         return update
 
