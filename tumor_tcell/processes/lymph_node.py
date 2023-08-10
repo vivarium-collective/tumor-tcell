@@ -101,7 +101,17 @@ class LymphNode(Process):
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
                     'cell_type': {
                         '_default': DEFAULT_CELL_TYPE,
-                    }}}}
+                    }
+                },
+                # initialize the schema for neighbors so cells will have it when moving back to tumor
+                'neighbors': {
+                    'present': {'*': {'_default': 0.0}},
+                    'accept': {'*': {'_default': 0.0}},
+                    'transfer': {'*': {'_default': 0.0}},
+                    'receive': {'*': {'_default': 0.0}}
+                }
+            }
+        }
 
         # TODO -- reuse the schemas more instead of copying
         in_transit_schema = {
@@ -115,8 +125,10 @@ class LymphNode(Process):
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
                     'cell_type': {
                         '_default': DEFAULT_CELL_TYPE,
-                    }},
-        }}
+                    }
+                }
+            }
+        }
 
         return {
             'cells': tumor_env_schema,
