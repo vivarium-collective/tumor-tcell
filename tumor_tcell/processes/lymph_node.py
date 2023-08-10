@@ -101,7 +101,8 @@ class LymphNode(Process):
                     # cell_type must be either 'tumor', 't_cell', or 'dendritic'
                     'cell_type': {
                         '_default': DEFAULT_CELL_TYPE,
-                    }
+                    },
+                    # 'location': {'_default': [0.0, 0.0]}
                 },
                 # initialize the schema for neighbors so cells will have it when moving back to tumor
                 'neighbors': {
@@ -183,11 +184,13 @@ class LymphNode(Process):
                     if random.uniform(0, 1) < prob_migration:
                         if '_move' not in update['lymph_node']:
                             update['lymph_node']['_move'] = []
-                        specs['internal']['cell_state'] = 'PD1n'  # TODO -- get this state passed to cell
+                        # specs['internal']['cell_state'] = 'PD1n'  # TODO -- get this state passed to cell
                         # begin transit from lymph node
                         update['lymph_node']['_move'].append({
                             'source': cell_id,
-                            'target': 'in_transit'})
+                            'target': 'in_transit',
+                            'update': {'internal': {'cell_state': 'PD1n'}}
+                        })
                     else:
                         # start dividing over next 12-18 hours. Probability of division goes up
                         prob_divide = probability_of_occurrence_within_interval(
@@ -262,7 +265,9 @@ class LymphNode(Process):
                     specs['boundary']['location'] = location  # TODO -- need to add this location in move
                     update['in_transit']['_move'].append({
                         'source': cell_id,
-                        'target': 'cells'})
+                        'target': 'cells',
+                        'update': {'boundary': {'location': location}}
+                    })
 
         return update
 
