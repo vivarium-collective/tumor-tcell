@@ -57,6 +57,7 @@ TCELL_ID = 'tcell'
 DENDRITIC_ID = 'dendritic'
 TUMOR_ENV_ID = 'tumor_environment'
 LN_ID = 'lymph_node'
+TRANSIT_ID = 'in_transit'
 
 # parameters for toy experiments
 MEDIUM_BOUNDS = [90*units.um, 90*units.um]
@@ -265,6 +266,7 @@ def tumor_tcell_abm(
     else:
         environment_config['lymph_node'] = {'bounds': bounds}
         environment_config['tumor_env_id'] = TUMOR_ENV_ID
+        environment_config['ln_id'] = LN_ID
         environment_composer = TumorAndLymphNodeEnvironment(environment_config)
 
 
@@ -317,9 +319,12 @@ def tumor_tcell_abm(
         composite_model.merge(composite=dendritic, path=(TUMOR_ENV_ID, 'agents', agent_id))
 
     # add lymph node T cells
-    for agent_id in tcells_lymph_node.keys():
+    for index, agent_id in enumerate(tcells_lymph_node.keys()):
         t_cell = t_cell_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=t_cell, path=(LN_ID, 'agents', agent_id))
+        if index == 0:  # put first one in transit
+            composite_model.merge(composite=t_cell, path=(TRANSIT_ID, 'agents', agent_id))
+        else:
+            composite_model.merge(composite=t_cell, path=(LN_ID, 'agents', agent_id))
 
     ###################################
     # Initialize the simulation state #
@@ -329,7 +334,7 @@ def tumor_tcell_abm(
     initial_env_config = {
         TUMOR_ENV_ID: {
             'diffusion_field': {'uniform': 0.0}}}
-    initial_env = composite_model.initial_state(initial_env_config)
+    initial_state = composite_model.initial_state(initial_env_config)
 
     # initialize cell states
     initial_t_cells = {
@@ -390,37 +395,48 @@ def tumor_tcell_abm(
         } for agent_id, state in dendritic_cells.items()}
 
     # combine all the initial states together under the tumor environment
-    initial_state = {
-        TUMOR_ENV_ID: {
-            **initial_env,
-            'agents': {
+    initial_state[TUMOR_ENV_ID]['agents'].update({
                 **initial_t_cells,
                 **initial_tumors,
                 **initial_dendritic
-            }
-        }
-    }
+            })
 
     if lymph_nodes:
-        initial_t_cells_ln = {
-            agent_id: {
-                'boundary': {
-                    'cell_type': 't-cell',
-                    'diameter': state.get('diameter', 7.5 * units.um),
-                    'velocity': state.get('velocity', 10.0 * units.um / units.min),
-                },
-                'internal': {   # TODO -- Is this added automatically when moved to tumor environment?
-                    'cell_state': state.get('cell_state', None),
-                    'velocity_timer': state.get('velocity_timer', 0),
-                    'TCR_timer': state.get('TCR_timer', 0)},
-                'neighbors': {
-                    'present': {
-                        'PD1': state.get('PD1', None),
-                        'TCR': state.get('TCR', 50000)}
-                }} for agent_id, state in tcells_lymph_node.items()}
+        initial_t_cells_transit = {}
+        initial_t_cells_ln = {}
+        for region in [LN_ID, TRANSIT_ID]:
+            if region == LN_ID:
+                agents_dict = composite_model['processes']['lymph_node']['agents']
+                init_state_dict = initial_t_cells_transit
+            elif region == TRANSIT_ID:
+                agents_dict = composite_model['processes']['in_transit']['agents']
+                init_state_dict = initial_t_cells_ln
+
+            for agent_id, state in agents_dict.items():
+                init_state_dict[agent_id] = {
+                    'boundary': {
+                        'cell_type': 't-cell',
+                        'diameter': state.get('diameter', 7.5 * units.um),
+                        'velocity': state.get('velocity', 10.0 * units.um / units.min),
+                    },
+                    'internal': {   # TODO -- Is this added automatically when moved to tumor environment?
+                        'cell_state': state.get('cell_state', None),
+                        'velocity_timer': state.get('velocity_timer', 0),
+                        'TCR_timer': state.get('TCR_timer', 0)},
+                    'neighbors': {
+                        'present': {
+                            'PD1': state.get('PD1', None),
+                            'TCR': state.get('TCR', 50000)}
+                    }
+                }
 
         # the tumor environment gets nested alongside the lymph node
-        initial_state[LN_ID] = {'agents': initial_t_cells_ln}
+        initial_state[LN_ID] = {'agents': initial_t_cells_ln,
+                                # 'fields': {'None': 0.0},
+                                }
+        initial_state[TRANSIT_ID] = {'agents': initial_t_cells_transit,
+                                     # 'fields': {'None': 0.0}
+                                     }
 
     ######################
     # Run the simulation #
@@ -454,7 +470,7 @@ def tumor_tcell_abm(
     # run simulation and terminate upon reaching total_time or halt_threshold
     clock_start = clock.time()
     for time in tqdm(range(0, total_time, sim_step)):
-        n_agents = len(experiment.state.get_value()['agents'])
+        n_agents = len(experiment.state.get_value()[TUMOR_ENV_ID]['agents'])
         if n_agents < halt_threshold:
             experiment.update(sim_step)
         else:
