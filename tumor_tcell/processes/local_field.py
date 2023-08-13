@@ -68,6 +68,8 @@ class LocalField(Deriver):
 
 
     def next_update(self, timestep, states):
+        if not states:
+            return {}
         location = remove_units(states['location'])
         n_bins = states['dimensions']['n_bins']
         bounds = states['dimensions']['bounds']

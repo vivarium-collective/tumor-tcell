@@ -84,6 +84,7 @@ class TumorAndLymphNodeEnvironment(Composer):
     and also a 2nd nonspatial lymph node environment that cells can migrate to"""
     defaults = {
         'tumor_env_id': 'tumor_environment',
+        'ln_id': 'lymph_node',
         'neighbors_multibody': {
             'name': 'neighbors_multibody',
             'bounds': DEFAULT_BOUNDS,
@@ -129,8 +130,8 @@ class TumorAndLymphNodeEnvironment(Composer):
                 },
             },
             'lymph_node_transfer': {
-                'cells': ('agents',),
-                'lymph_node': ('lymph_node',),
+                'cells': (config['tumor_env_id'],),
+                'lymph_node': (config['ln_id'],),
                 'in_transit': ('in_transit',),
             }
         }
