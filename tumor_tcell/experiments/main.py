@@ -55,6 +55,8 @@ BOUNDS = [200 * units.um, 200 * units.um]
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
 DENDRITIC_ID = 'dendritic'
+TUMOR_ENV_ID = 'tumor_environment'
+LN_ID = 'lymph_node'
 
 # parameters for toy experiments
 MEDIUM_BOUNDS = [90*units.um, 90*units.um]
@@ -261,23 +263,23 @@ def tumor_tcell_abm(
     if not lymph_nodes:
         environment_composer = TumorMicroEnvironment(environment_config)
     else:
-        environment_config['lymph_node'] = {
-            'bounds': bounds,  # tumor environment bounds
-        }
+        environment_config['lymph_node'] = {'bounds': bounds}
+        environment_config['tumor_env_id'] = TUMOR_ENV_ID
         environment_composer = TumorAndLymphNodeEnvironment(environment_config)
 
-    ## process for logging the final time and state of agents
-    logger_config = {'time_step': time_step}
-    logger_composer = DeathLogger(logger_config)
 
     #######################################
     # Initialize the composite simulation #
     #######################################
 
     # make individual composites and merge them
-    composite_model = logger_composer.generate()
-    environment = environment_composer.generate()
-    composite_model.merge(composite=environment)
+    composite_model = environment_composer.generate()
+
+    ## process for logging the final time and state of agents
+    logger_config = {'time_step': time_step}
+    logger_composer = DeathLogger(logger_config)
+    logger = logger_composer.generate()
+    composite_model.merge(composite=logger, path=(TUMOR_ENV_ID,))
 
     # Make the cells
     if not tcells:
@@ -302,22 +304,22 @@ def tumor_tcell_abm(
     # add T cells to the composite
     for agent_id in tcells.keys():
         t_cell = t_cell_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=t_cell, path=('agents', agent_id))
+        composite_model.merge(composite=t_cell, path=(TUMOR_ENV_ID, 'agents', agent_id))
 
     # add tumors to the composite
     for agent_id in tumors.keys():
         tumor = tumor_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=tumor, path=('agents', agent_id))
+        composite_model.merge(composite=tumor, path=(TUMOR_ENV_ID, 'agents', agent_id))
 
     # add dendritic cells to the composite
     for agent_id in dendritic_cells.keys():
         dendritic = dendritic_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=dendritic, path=('agents', agent_id))
+        composite_model.merge(composite=dendritic, path=(TUMOR_ENV_ID, 'agents', agent_id))
 
     # add lymph node T cells
     for agent_id in tcells_lymph_node.keys():
         t_cell = t_cell_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=t_cell, path=('lymph_node', agent_id))
+        composite_model.merge(composite=t_cell, path=(LN_ID, 'agents', agent_id))
 
     ###################################
     # Initialize the simulation state #
@@ -325,7 +327,8 @@ def tumor_tcell_abm(
 
     # make the initial environment state
     initial_env_config = {
-        'diffusion_field': {'uniform': 0.0}}
+        TUMOR_ENV_ID: {
+            'diffusion_field': {'uniform': 0.0}}}
     initial_env = composite_model.initial_state(initial_env_config)
 
     # initialize cell states
@@ -386,13 +389,15 @@ def tumor_tcell_abm(
             },
         } for agent_id, state in dendritic_cells.items()}
 
-    # combine all the initial states together
+    # combine all the initial states together under the tumor environment
     initial_state = {
-        **initial_env,
-        'agents': {
-            **initial_t_cells,
-            **initial_tumors,
-            **initial_dendritic
+        TUMOR_ENV_ID: {
+            **initial_env,
+            'agents': {
+                **initial_t_cells,
+                **initial_tumors,
+                **initial_dendritic
+            }
         }
     }
 
@@ -413,7 +418,9 @@ def tumor_tcell_abm(
                         'PD1': state.get('PD1', None),
                         'TCR': state.get('TCR', 50000)}
                 }} for agent_id, state in tcells_lymph_node.items()}
-        initial_state['lymph_node'] = initial_t_cells_ln
+
+        # the tumor environment gets nested alongside the lymph node
+        initial_state[LN_ID] = {'agents': initial_t_cells_ln}
 
     ######################
     # Run the simulation #

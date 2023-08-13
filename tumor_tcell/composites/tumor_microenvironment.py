@@ -83,6 +83,7 @@ class TumorAndLymphNodeEnvironment(Composer):
     """This Composer will have a 2D environment like TumorMicroEnvironment,
     and also a 2nd nonspatial lymph node environment that cells can migrate to"""
     defaults = {
+        'tumor_env_id': 'tumor_environment',
         'neighbors_multibody': {
             'name': 'neighbors_multibody',
             'bounds': DEFAULT_BOUNDS,
@@ -104,24 +105,28 @@ class TumorAndLymphNodeEnvironment(Composer):
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
         diffusion_field = Fields(config['diffusion_field'])
-        lymph_node = LymphNode(config['lymph_node'])
+        lymph_node_transfer_process = LymphNode(config['lymph_node'])
 
         # make dictionary of processes
         return {
-            'neighbors_multibody': neighbors_multibody,
-            'diffusion_field': diffusion_field,
-            'lymph_node_transfer': lymph_node
+            config['tumor_env_id']: {
+                'neighbors_multibody': neighbors_multibody,
+                'diffusion_field': diffusion_field,
+            },
+            'lymph_node_transfer': lymph_node_transfer_process
         }
 
     def generate_topology(self, config):
         return {
-            'neighbors_multibody': {
-                'cells': ('agents',)
-            },
-            'diffusion_field': {
-                'cells': ('agents',),
-                'fields': ('fields',),
-                'dimensions': ('dimensions',),
+            config['tumor_env_id']: {
+                'neighbors_multibody': {
+                    'cells': ('agents',)
+                },
+                'diffusion_field': {
+                    'cells': ('agents',),
+                    'fields': ('fields',),
+                    'dimensions': ('dimensions',),
+                },
             },
             'lymph_node_transfer': {
                 'cells': ('agents',),

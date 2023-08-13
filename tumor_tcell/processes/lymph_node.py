@@ -76,77 +76,44 @@ class LymphNode(Process):
 
     def ports_schema(self):
 
-        tumor_env_schema = {
-            '*': {
-                'internal': {
-                    'cell_state': {
-                        '_default': 'inactive',
-                        '_updater': 'set'}},
-                'boundary': {
-                    # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {
-                        '_default': DEFAULT_CELL_TYPE},
-                    'location': {}
-                },
-        }}
-
-        lymph_node_schema = {
-            '*': {
-                'internal': {
-                    'cell_state': {
-                        '_default': 'inactive',
-                        '_updater': 'set'},
-                },
-                'boundary': {
-                    # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {
-                        '_default': DEFAULT_CELL_TYPE,
+        agents_schema = {
+            'agents': {
+                '*': {
+                    'internal': {
+                        'cell_state': {
+                            '_default': 'inactive',
+                            '_updater': 'set'}},
+                    'boundary': {
+                        # cell_type must be either 'tumor', 't_cell', or 'dendritic'
+                        'cell_type': {
+                            '_default': DEFAULT_CELL_TYPE
+                        },
+                        'location': {}
                     },
-                    # 'location': {'_default': [0.0, 0.0]}
-                },
-                # initialize the schema for neighbors so cells will have it when moving back to tumor
-                'neighbors': {
-                    'present': {'*': {'_default': 0.0}},
-                    'accept': {'*': {'_default': 0.0}},
-                    'transfer': {'*': {'_default': 0.0}},
-                    'receive': {'*': {'_default': 0.0}}
-                }
-            }
-        }
-
-        # TODO -- reuse the schemas more instead of copying
-        in_transit_schema = {
-            '*': {
-                'internal': {
-                    'cell_state': {
-                        '_default': 'inactive',
-                        '_updater': 'set'},
-                },
-                'boundary': {
-                    # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                    'cell_type': {
-                        '_default': DEFAULT_CELL_TYPE,
+                    # initialize the schema for neighbors so cells will have it when moving back to tumor
+                    'neighbors': {
+                        'present': {'*': {'_default': 0.0}},
+                        'accept': {'*': {'_default': 0.0}},
+                        'transfer': {'*': {'_default': 0.0}},
+                        'receive': {'*': {'_default': 0.0}}
                     }
                 }
             }
         }
-
         return {
-            'cells': tumor_env_schema,
-            'lymph_node': lymph_node_schema,
-            'in_transit': in_transit_schema
+            'cells': agents_schema,
+            'lymph_node': agents_schema,
+            'in_transit': agents_schema
         }
 
     def next_update(self, timestep, states):
-        microenvironment_cells = states['cells']
-        lymph_node_cells = states['lymph_node']
-        in_transit = states['in_transit']
+        microenvironment_cells = states['cells']['agents']
+        lymph_node_cells = states['lymph_node']['agents']
+        in_transit = states['in_transit']['agents']
 
-        update = {
-            'cells': {},
-            'lymph_node': {},
-            'in_transit': {}
-        }
+        cells_update = {}
+        in_transit_update = {}
+        lymph_node_update = {}
 
         ##############
         # lymph node #
@@ -173,7 +140,7 @@ class LymphNode(Process):
                         timestep, self.parameters['expected_interaction_duration'])
                     if random.uniform(0, 1) < prob_interaction_completion:
                         # first delay, then migrate
-                        update['lymph_node'][cell_id] = {
+                        lymph_node_update[cell_id] = {
                             'internal': {'cell_state': 'delay'}
                         }
 
@@ -182,13 +149,13 @@ class LymphNode(Process):
                     prob_migration = probability_of_occurrence_within_interval(
                         timestep, self.parameters['expected_delay_before_migration'])
                     if random.uniform(0, 1) < prob_migration:
-                        if '_move' not in update['lymph_node']:
-                            update['lymph_node']['_move'] = []
+                        if '_move' not in lymph_node_update:
+                            lymph_node_update['_move'] = []
                         # specs['internal']['cell_state'] = 'PD1n'  # TODO -- get this state passed to cell
                         # begin transit from lymph node
-                        update['lymph_node']['_move'].append({
+                        lymph_node_update['_move'].append({
                             'source': cell_id,
-                            'target': 'in_transit',
+                            'target': ('in_transit', 'agents',),
                             'update': {'internal': {'cell_state': 'PD1n'}}
                         })
                     else:
@@ -196,9 +163,9 @@ class LymphNode(Process):
                         prob_divide = probability_of_occurrence_within_interval(
                             timestep, self.parameters['expected_division_interval'])
                         if random.uniform(0, 1) < prob_divide:
-                            if cell_id not in update['lymph_node']:
-                                update['lymph_node'][cell_id] = {}
-                            update['lymph_node'][cell_id].update({
+                            if cell_id not in lymph_node_update:
+                                lymph_node_update[cell_id] = {}
+                            lymph_node_update[cell_id].update({
                                 'globals': {
                                     'divide': True}})
                 else:
@@ -210,7 +177,7 @@ class LymphNode(Process):
                         timestep) #(Itano, 2003)
                     if random.uniform(0, 1) < prob_interaction:
                         # this t-cell is now interacting
-                        update['lymph_node'][cell_id] = {
+                        lymph_node_update[cell_id] = {
                             'internal': {'cell_state': 'interacting'}
                         }
 
@@ -227,12 +194,13 @@ class LymphNode(Process):
             cell_state = specs['internal']['cell_state']
             if cell_type == 'dendritic':
                 if cell_state == 'active':
-                    if '_move' not in update['cells']:
-                        update['cells']['_move'] = []
+                    if '_move' not in cells_update:
+                        cells_update['_move'] = []
                     # begin transit from tumor environment
-                    update['cells']['_move'].append({
+                    cells_update['_move'].append({
                         'source': cell_id,
-                        'target': 'in_transit'})
+                        'target': ('in_transit', 'agents',),
+                    })
 
         ##############
         # in transit #
@@ -246,30 +214,34 @@ class LymphNode(Process):
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_dendritic_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
-                    if '_move' not in update['in_transit']:
-                        update['in_transit']['_move'] = []
+                    if '_move' not in in_transit_update:
+                        in_transit_update['_move'] = []
                     # arrive at lymph node
-                    update['in_transit']['_move'].append({
+                    in_transit_update['_move'].append({
                         'source': cell_id,
-                        'target': 'lymph_node'
+                        'target': ('lymph_node', 'agents',),
                     })
             if cell_type == 't-cell':
                 # t cells move from LN to tumor
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_tcell_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
-                    if '_move' not in update['in_transit']:
-                        update['in_transit']['_move'] = []
+                    if '_move' not in in_transit_update:
+                        in_transit_update['_move'] = []
                     # arrive at lymph node
                     location = random_location(self.parameters['tumor_env_bounds'])
                     specs['boundary']['location'] = location  # TODO -- need to add this location in move
-                    update['in_transit']['_move'].append({
+                    in_transit_update['_move'].append({
                         'source': cell_id,
-                        'target': 'cells',
+                        'target': ('cells', 'agents'),
                         'update': {'boundary': {'location': location}}
                     })
 
-        return update
+        return {
+            'cells': {'agents': cells_update},
+            'lymph_node': {'agents': in_transit_update},
+            'in_transit': {'agents': lymph_node_update},
+        }
 
 
 
