@@ -244,8 +244,6 @@ class LymphNode(Process):
                         'update': {'boundary': {'location': location}}
                     })
 
-        print('LN UPDATE SENT')
-
         return {
             'cells': {'agents': cells_update},
             'lymph_node': {'agents': lymph_node_update},
