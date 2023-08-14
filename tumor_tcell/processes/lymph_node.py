@@ -9,7 +9,8 @@ from vivarium.core.engine import pp, Engine
 from tumor_tcell.processes.t_cell import get_probability_timestep, TIMESTEP
 from vivarium.library.units import remove_units
 from tumor_tcell.library.location import random_location, DEFAULT_BOUNDS
-
+from tumor_tcell.processes.local_field import LENGTH_UNIT
+from tumor_tcell.processes.neighbors import DEFAULT_MASS_UNIT, DEFAULT_VELOCITY_UNIT
 
 DEFAULT_CELL_TYPE = 'default_cell_type'
 
@@ -85,10 +86,16 @@ class LymphNode(Process):
                             '_updater': 'set'}},
                     'boundary': {
                         # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                        'cell_type': {
-                            '_default': DEFAULT_CELL_TYPE
+                        'cell_type': {'_default': DEFAULT_CELL_TYPE},
+                        'diameter': {'_default': 1.0 * LENGTH_UNIT},
+                        'mass': {'_default': 1.0 * DEFAULT_MASS_UNIT},
+                        'velocity': {'_default': 0.0 * DEFAULT_VELOCITY_UNIT},
+                        'location': {
+                            '_default': [0.5 * bound for bound in self.parameters['tumor_env_bounds']],
+                            '_updater': 'set',
                         },
-                        'location': {}
+                        'external': {'IFNg': {'_default': 0.0}, 'tumor_debris': {'_default': 0.0}},  # TODO -- this should not be required here
+                        'death': {'_default': False}  # TODO -- this should not be required here
                     },
                     # initialize the schema for neighbors so cells will have it when moving back to tumor
                     'neighbors': {
@@ -154,7 +161,7 @@ class LymphNode(Process):
                         # specs['internal']['cell_state'] = 'PD1n'  # TODO -- get this state passed to cell
                         # begin transit from lymph node
                         lymph_node_update['_move'].append({
-                            'source': cell_id,
+                            'source': (cell_id,),
                             'target': ('in_transit', 'agents',),
                             'update': {'internal': {'cell_state': 'PD1n'}}
                         })
@@ -198,7 +205,7 @@ class LymphNode(Process):
                         cells_update['_move'] = []
                     # begin transit from tumor environment
                     cells_update['_move'].append({
-                        'source': cell_id,
+                        'source': (cell_id,),
                         'target': ('in_transit', 'agents',),
                     })
 
@@ -218,29 +225,31 @@ class LymphNode(Process):
                         in_transit_update['_move'] = []
                     # arrive at lymph node
                     in_transit_update['_move'].append({
-                        'source': cell_id,
+                        'source': (cell_id,),
                         'target': ('lymph_node', 'agents',),
                     })
             if cell_type == 't-cell':
-                # t cells move from LN to tumor
+                # tcells move from in_transit to tumor
                 prob_arrival = probability_of_occurrence_within_interval(
                     timestep, self.parameters['expected_tcell_transit_time'])
                 if random.uniform(0, 1) < prob_arrival:
                     if '_move' not in in_transit_update:
                         in_transit_update['_move'] = []
-                    # arrive at lymph node
+                    # arrive at tumor
                     location = random_location(self.parameters['tumor_env_bounds'])
                     specs['boundary']['location'] = location  # TODO -- need to add this location in move
                     in_transit_update['_move'].append({
-                        'source': cell_id,
+                        'source': (cell_id,),
                         'target': ('cells', 'agents'),
                         'update': {'boundary': {'location': location}}
                     })
 
+        print('LN UPDATE SENT')
+
         return {
             'cells': {'agents': cells_update},
-            'lymph_node': {'agents': in_transit_update},
-            'in_transit': {'agents': lymph_node_update},
+            'lymph_node': {'agents': lymph_node_update},
+            'in_transit': {'agents': in_transit_update},
         }
 
 
