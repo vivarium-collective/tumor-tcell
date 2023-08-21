@@ -21,6 +21,8 @@ import random
 import time as clock
 from tqdm import tqdm
 import math
+import os
+import pickle
 
 # vivarium-core imports
 from vivarium.core.engine import Engine, timestamp, pp
@@ -285,7 +287,7 @@ def tumor_tcell_abm(
     if not lymph_nodes:
         environment_composer = TumorMicroEnvironment(environment_config)
     else:
-        environment_config['lymph_node'] = {'bounds': bounds}
+        environment_config['lymph_node'] = {'tumor_env_bounds': bounds}
         environment_config['tumor_env_id'] = TUMOR_ENV_ID
         environment_config['ln_id'] = LN_ID
         environment_composer = TumorAndLymphNodeEnvironment(environment_config)
@@ -524,7 +526,7 @@ def large_experiment(
         bounds=FULL_BOUNDS,
         n_bins=[120, 120],  # 10 um bin size, usually 120 by 120
         halt_threshold=4000,  # 5000, #sqrt(halt_threshold)*15 <bounds, normally 5000
-        emitter='database',
+        emitter='timeseries',
         tumors_distance=tumors_distance,  # sqrt(n_tumors)*15(diameter)/2
         tcells_distance=tcells_distance,  # in or out (None) of the tumor
         tcells_excluded_distance=tcells_excluded_distance,  # for creating a ring around tumor
@@ -557,15 +559,15 @@ def lymph_node_experiment():
     return large_experiment(
         # TODO -- what initial states for the resubmission?
         n_tcells=2,  # 12
-        n_tumors=20,  # 1200
-        n_dendritic=20,  # 1200
-        n_tcells_lymph_node=20,
+        n_tumors=5,  # 1200
+        n_dendritic=5,  # 1200
+        n_tcells_lymph_node=5,
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
         dendritic_state_active=0.5,  # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=10000,  # TODO -- run this for 259200 (3 days)
+        total_time=1000,  # TODO -- run this for 259200 (3 days)
         field_molecules=['IFNg', 'tumor_debris'],
     )
 
@@ -585,33 +587,35 @@ def plots_suite(
         * fig2: tumor multi-generation timeseries plot
         * fig3: snapshot plot
     """
+    data_export = open(out_dir+'/data_export.pkl', 'wb')
+    pickle.dump(data, data_export)
+    data_export.close()
 
-    # separate out t cell and tumor data for the multi-generation plots
+    # Create dictionaries to store data for different compartments
     tcell_data = {}
     tumor_data = {}
     dendritic_data = {}
+
     for time, time_data in data.items():
-        if 'agents' not in time_data:
-            continue
-        all_agents_data = time_data['agents']
-        tcell_data[time] = {
-            'agents': {
-                agent_id: agent_data
-                for agent_id, agent_data in all_agents_data.items()
-                if TCELL_ID in agent_id}}
-        tumor_data[time] = {
-            'agents': {
-                agent_id: agent_data
-                for agent_id, agent_data in all_agents_data.items()
-                if TUMOR_ID in agent_id}}
-        dendritic_data[time] = {
-            'agents': {
-                agent_id: agent_data
-                for agent_id, agent_data in all_agents_data.items()
-                if DENDRITIC_ID in agent_id}}
-    # # get the final death log
-    # times_vector = list(data.keys())
-    # death_log = data[times_vector[-1]]['log']
+        # Iterate through compartments
+        for compartment, compartment_data in time_data.items():
+            if compartment == 'tumor_environment':
+                # if 'agents' in compartment_data:
+                all_agents_data = compartment_data['agents']
+
+                # Separate data based on agent type
+                tcell_data.setdefault(time, {'agents': {}})
+                tumor_data.setdefault(time, {'agents': {}})
+                dendritic_data.setdefault(time, {'agents': {}})
+
+                # Separate data for T cells, tumor cells, and dendritic cells
+                for agent_id, agent_data in all_agents_data.items():
+                    if TCELL_ID in agent_id:
+                        tcell_data[time]['agents'][agent_id] = agent_data
+                    elif TUMOR_ID in agent_id:
+                        tumor_data[time]['agents'][agent_id] = agent_data
+                    elif DENDRITIC_ID in agent_id:
+                        dendritic_data[time]['agents'][agent_id] = agent_data
 
     # make multi-gen plot for t cells and tumors
     plot_settings = {
