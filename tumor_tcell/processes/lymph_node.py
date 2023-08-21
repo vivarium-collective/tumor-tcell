@@ -83,26 +83,36 @@ class LymphNode(Process):
                     'internal': {
                         'cell_state': {
                             '_default': 'inactive',
-                            '_updater': 'set'}},
+                            '_updater': 'set',
+                            '_emit': True,}},
                     'boundary': {
                         # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                        'cell_type': {'_default': DEFAULT_CELL_TYPE},
-                        'diameter': {'_default': 1.0 * LENGTH_UNIT},
-                        'mass': {'_default': 1.0 * DEFAULT_MASS_UNIT},
-                        'velocity': {'_default': 0.0 * DEFAULT_VELOCITY_UNIT},
+                        'cell_type': {'_default': DEFAULT_CELL_TYPE,
+                                      '_emit': True,},
+                        'diameter': {'_default': 1.0 * LENGTH_UNIT,
+                                     '_emit': True,},
+                        'mass': {'_default': 1.0 * DEFAULT_MASS_UNIT,
+                                 '_emit': True,},
+                        'velocity': {'_default': 0.0 * DEFAULT_VELOCITY_UNIT,
+                                     '_emit': True,},
                         'location': {
                             '_default': [0.5 * bound for bound in self.parameters['tumor_env_bounds']],
                             '_updater': 'set',
+                            '_emit': True,
                         },
-                        'external': {'IFNg': {'_default': 0.0}, 'tumor_debris': {'_default': 0.0}},  # TODO -- this should not be required here
-                        'death': {'_default': False}  # TODO -- this should not be required here
+                        'external': {'IFNg': {'_default': 0.0,
+                                              '_emit': True,},
+                                     'tumor_debris': {'_default': 0.0,
+                                                      '_emit': True,},},  # TODO -- this should not be required here
+                        'death': {'_default': False,
+                                  '_emit': True,}  # TODO -- this should not be required here
                     },
                     # initialize the schema for neighbors so cells will have it when moving back to tumor
                     'neighbors': {
-                        'present': {'*': {'_default': 0.0}},
-                        'accept': {'*': {'_default': 0.0}},
-                        'transfer': {'*': {'_default': 0.0}},
-                        'receive': {'*': {'_default': 0.0}}
+                        'present': {'*': {'_default': 0.0, '_emit': True,}},
+                        'accept': {'*': {'_default': 0.0, '_emit': True,}},
+                        'transfer': {'*': {'_default': 0.0, '_emit': True,}},
+                        'receive': {'*': {'_default': 0.0, '_emit': True,}}
                     }
                 }
             }

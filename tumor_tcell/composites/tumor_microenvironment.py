@@ -94,7 +94,7 @@ class TumorAndLymphNodeEnvironment(Composer):
             'name': 'diffusion_field',
         },
         'lymph_node': {
-            'bounds': DEFAULT_BOUNDS,
+            'tumor_env_bounds': DEFAULT_BOUNDS,
         },
         '_schema': {},
     }
