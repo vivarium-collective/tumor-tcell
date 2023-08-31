@@ -1,0 +1,13 @@
+n_tcells: 2 
+n_tumors: 120 
+tumors_state_PDL1n: 0.5 
+tcells_state_PD1n:None 
+tcells_total_PD1n:1 
+total_time:100 
+time_step:60 
+sim_step:6000 
+bounds:[<Quantity(1200, 'micrometer')>, <Quantity(1200, 'micrometer')>] 
+n_bins:[120, 120] 
+halt_threshold:4000 
+tumors_distance:260 micrometer 
+tcells_distance: 250 micrometer 

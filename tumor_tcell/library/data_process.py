@@ -1,6 +1,6 @@
 import pandas as pd
 
-def data_to_dataframes(data):
+def data_to_dataframes(data, lymph_nodes=False):
 
     #Convert to initial dataframe
     df_data = pd.DataFrame(data)
@@ -151,7 +151,60 @@ def data_to_dataframes(data):
     total_col = [col for col in df_tumor_death.columns if 'total' in col]
     df_tumor_death['total_death'] = df_tumor_death[total_col].sum(axis=1)
 
-    return df_tumor_death, df_tcell_death, tumor_plot, tcell_plot
+    if lymph_nodes==True:
+        ###################################
+        # Subset only DC cells from all agents
+        df_dendritic_agents = df_agents_multi.iloc[
+                              df_agents_multi.index.get_level_values('cell').str.contains('dendritic'), :]
+
+        # Subset categories and recombine in T cells
+        df_dendritic_trans = df_dendritic_agents.T
+        dendritic_categories = []
+
+        # Extract each feature - boundary, internal, neighbors
+        for category in df_dendritic_trans.index.values:
+            df_boundary_sub = df_dendritic_trans.loc[category, :]
+            dendritic_boundary_dict = df_boundary_sub.to_dict()
+            df_boundary_sub2 = pd.DataFrame(dendritic_boundary_dict)
+            dendritic_categories.append(df_boundary_sub2.T)
+
+        # concatenate dataframes
+        dendritic_data = pd.concat(dendritic_categories, axis=1)
+
+        # reformat T cell data for plotting
+        dendritic_data['tumor_debris'] = dendritic_data['external'].apply(lambda x: x.get('tumor_debris'))
+        dendritic_data['X'] = dendritic_data['location'].apply(lambda x: x[0])
+        dendritic_data['Y'] = dendritic_data['location'].apply(lambda x: x[1])
+
+        # Only select columns of interest
+        dendritic_columns = ['cell_state', 'tumor_debris', 'X', 'Y']
+        dendritic_data_form = dendritic_data[dendritic_columns]
+        dendritic_data_form.index.set_names(names, inplace=True)
+
+        # reset index for plotting
+        dendritic_plot = dendritic_data_form.reset_index()
+
+        #get dendritic death stats
+        df_dendritic_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('dendritic'),:]
+
+        ########################################
+        ##Do for dendritic cells
+        # sort deaths by time
+        df_dendritic_death.sort_values(by=['time'], inplace=True)
+
+        # Get different death groupings and count total over time
+        death_types_list = list(df_dendritic_death['death'].unique())
+        for death_type in death_types_list:
+            df_dendritic_death[death_type] = df_dendritic_death['death'].apply(lambda x: 1 if x == death_type else 0)
+            df_dendritic_death['total_' + str(death_type)] = df_dendritic_death[death_type].cumsum()
+
+        # get total death count over time
+        total_col_t = [col for col in df_dendritic_death.columns if 'total' in col]
+        df_dendritic_death['total_death'] = df_dendritic_death[total_col_t].sum(axis=1)
+
+        return df_tumor_death, df_tcell_death, tumor_plot, tcell_plot, df_dendritic_death, dendritic_plot
+    else:
+        return df_tumor_death, df_tcell_death, tumor_plot, tcell_plot
 
 
 

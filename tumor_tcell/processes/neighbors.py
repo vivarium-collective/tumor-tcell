@@ -29,6 +29,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+from tumor_tcell.library.location import DEFAULT_BOUNDS, DEFAULT_LENGTH_UNIT
 # vivarium imports
 from tumor_tcell.library.pymunk_minimal import PymunkMinimal as Pymunk
 from vivarium.library.units import units, remove_units
@@ -40,10 +41,8 @@ from tumor_tcell import PROCESS_OUT_DIR
 
 
 NAME = 'neighbors'
-DEFAULT_LENGTH_UNIT = units.um
 DEFAULT_MASS_UNIT = units.ng
 DEFAULT_VELOCITY_UNIT = units.um / units.s
-DEFAULT_BOUNDS = [200 * DEFAULT_LENGTH_UNIT, 200 * DEFAULT_LENGTH_UNIT]
 
 # constants
 PI = math.pi

@@ -24,6 +24,7 @@ from vivarium.library.units import units, remove_units
 # processes
 from tumor_tcell.processes.neighbors import Neighbors
 from tumor_tcell.processes.fields import Fields
+from tumor_tcell.processes.lymph_node import LymphNode
 
 # plots
 from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
@@ -75,6 +76,64 @@ class TumorMicroEnvironment(Composer):
                 'fields': ('fields',),
                 'dimensions': ('dimensions',),
             },
+        }
+
+
+class TumorAndLymphNodeEnvironment(Composer):
+    """This Composer will have a 2D environment like TumorMicroEnvironment,
+    and also a 2nd nonspatial lymph node environment that cells can migrate to"""
+    defaults = {
+        'tumor_env_id': 'tumor_environment',
+        'ln_id': 'lymph_node',
+        'neighbors_multibody': {
+            'name': 'neighbors_multibody',
+            'bounds': DEFAULT_BOUNDS,
+            'jitter_force': 0,
+        },
+        'diffusion_field': {
+            'name': 'diffusion_field',
+        },
+        'lymph_node': {
+            'tumor_env_bounds': DEFAULT_BOUNDS,
+        },
+        '_schema': {},
+    }
+
+    def __init__(self, config=None):
+        super().__init__(config)
+
+    def generate_processes(self, config):
+        # initialize processes
+        neighbors_multibody = Neighbors(config['neighbors_multibody'])
+        diffusion_field = Fields(config['diffusion_field'])
+        lymph_node_transfer_process = LymphNode(config['lymph_node'])
+
+        # make dictionary of processes
+        return {
+            config['tumor_env_id']: {
+                'neighbors_multibody': neighbors_multibody,
+                'diffusion_field': diffusion_field,
+            },
+            'lymph_node_transfer': lymph_node_transfer_process
+        }
+
+    def generate_topology(self, config):
+        return {
+            config['tumor_env_id']: {
+                'neighbors_multibody': {
+                    'cells': ('agents',)
+                },
+                'diffusion_field': {
+                    'cells': ('agents',),
+                    'fields': ('fields',),
+                    'dimensions': ('dimensions',),
+                },
+            },
+            'lymph_node_transfer': {
+                'cells': (config['tumor_env_id'],),
+                'lymph_node': (config['ln_id'],),
+                'in_transit': ('in_transit',),
+            }
         }
 
 

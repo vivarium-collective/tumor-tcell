@@ -62,6 +62,40 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
     timestep_fraction = timestep / timescale
     return 1 - math.exp(-rate * timestep_fraction)
 
+
+# def get_probability_timestep(probability_parameter, interval_duration, expected_time):
+#     """
+#     Calculate the probability of an event occurring within a given
+#     time interval, given the average time between occurrences and
+#     the probability of an event occurring within that average time.
+#
+#     Args:
+#         interval_duration (float): The duration of the time interval
+#                                    in hours.
+#         expected_time (float): The average time between occurrences
+#                                of the event in hours.
+#         probability_parameter (float): The probability of the event occurring
+#                              within the expected time.
+#
+#     Returns:
+#         float: The probability of the event occurring within the
+#                interval_duration.
+#     """
+#     # Compute the average rate of occurrence
+#     lambda_ = -math.log(1 - probability_parameter) / expected_time
+#
+#     # Calculate the average rate of occurrence within the desired interval
+#     lambda_interval = lambda_ * interval_duration
+#
+#     # Compute the probability of no occurrence
+#     P_0 = math.exp(-lambda_interval)
+#
+#     # The probability of at least one occurrence is 1 - P(0)
+#     P_at_least_one = 1 - P_0
+#
+#     return P_at_least_one
+
+
 class TCellProcess(Process):
     """TCellProcess
 
@@ -75,6 +109,7 @@ class TCellProcess(Process):
         'mass': 2 * units.ng,
         'initial_PD1n': 0.8,
         'refractory_count_threshold': 3,  # assuming that cells have been stimulated twice already in culture
+        'external_molecules': ['IFNg', 'tumor_debris'],
         # and need 5 stimulations to become exhausted (Zhao, 2020)
 
         #Time before TCR downregulation
@@ -170,7 +205,7 @@ class TCellProcess(Process):
                 'PD1p_divide_count': {
                     '_default': 0,
                     '_updater': 'accumulate'},
-                'LN_no_migration': {
+                'LN_no_migration': {   # TODO (ERAN) -- can this be removed??
                     '_default': False,
                     '_divider': {
                         'divider': lymph_node_division,
@@ -230,10 +265,11 @@ class TCellProcess(Process):
                         '_divider': 'split',
                     }},
                 'external': {
-                    'IFNg': {
+                    mol_id: {
                         '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
-                    }},
+                    } for mol_id in self.parameters['external_molecules']
+                },
             },
             'neighbors': {
                 'present': {
@@ -309,7 +345,7 @@ class TCellProcess(Process):
                             'death': 'PD1p_apoptosis'}}
 
         # division
-        if cell_state == 'PD1n':
+        elif cell_state == 'PD1n':
             prob_divide = get_probability_timestep(
                 self.parameters['PD1n_growth_28hr'],
                 100800,  # 28 hours (28*60*60 seconds)
@@ -421,9 +457,10 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            if states['globals']['LN_no_migration']:
-                update['boundary'].update({
-                    'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+            # TODO (ERAN) -- safe to remove?
+            # if states['globals']['LN_no_migration']:
+            #     update['boundary'].update({
+            #         'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
 
             # Reset the velocity timer after refractory period
             elif velocity_timer >= self.parameters['PD1n_migration_refractory_time']:
@@ -484,9 +521,9 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            if states['globals']['LN_no_migration']:
-                update['boundary'].update({
-                    'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
+            # if states['globals']['LN_no_migration']:
+            #     update['boundary'].update({
+            #         'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
 
             # Reset the velocity timer after refractory period
             elif velocity_timer >= self.parameters['PD1p_migration_refractory_time']:
