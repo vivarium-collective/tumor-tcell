@@ -35,10 +35,11 @@ NAME = 'fields'
 # laplacian kernel for diffusion
 LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 AVOGADRO = constants.N_A
-CONCENTRATION_UNIT = units.ng /units.mL
+CONCENTRATION_UNIT = units.ng / units.mL
 LENGTH_UNIT = units.um
 DIFFUSION_RATES = {
     'IFNg': 1.25e-3 * units.cm * units.cm / units.day,  # 1.25e-3 cm^2/day (Liao, 2014)
+    'tumor_debris': 0.0864 * units.cm * units.cm / units.day,  # 10*10e-11 m^2/s (Krouglova, 2004)
 }
 
 

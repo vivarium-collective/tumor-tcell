@@ -21,9 +21,11 @@ import random
 import time as clock
 from tqdm import tqdm
 import math
+import os
+import pickle
 
 # vivarium-core imports
-from vivarium.core.engine import Engine, timestamp
+from vivarium.core.engine import Engine, timestamp, pp
 from vivarium.library.units import units, remove_units
 from vivarium.core.control import Control
 
@@ -31,12 +33,19 @@ from vivarium.core.control import Control
 from vivarium.plots.agents_multigen import plot_agents_multigen
 from tumor_tcell.plots.video import make_video
 from tumor_tcell.plots.snapshots import plot_snapshots, format_snapshot_data
+from vivarium.core.emitter import deserialize_value
+
 
 # tumor-tcell imports
 from tumor_tcell.composites.tumor_agent import TumorAgent
 from tumor_tcell.composites.t_cell_agent import TCellAgent
-from tumor_tcell.composites.tumor_microenvironment import TumorMicroEnvironment
+from tumor_tcell.composites.dendritic_agent import DendriticAgent
+from tumor_tcell.composites.tumor_microenvironment import (
+    TumorMicroEnvironment,
+    TumorAndLymphNodeEnvironment
+)
 from tumor_tcell.composites.death_logger import DeathLogger
+from tumor_tcell.library.location import random_location
 
 # default parameters
 PI = math.pi
@@ -47,6 +56,10 @@ BOUNDS = [200 * units.um, 200 * units.um]
 
 TUMOR_ID = 'tumor'
 TCELL_ID = 'tcell'
+DENDRITIC_ID = 'dendritic'
+TUMOR_ENV_ID = 'tumor_environment'
+LN_ID = 'lymph_node'
+TRANSIT_ID = 'in_transit'
 
 # parameters for toy experiments
 MEDIUM_BOUNDS = [90*units.um, 90*units.um]
@@ -56,13 +69,17 @@ TAG_COLORS = {
     ('internal', 'cell_state', 'PDL1p'): 'skyblue',
     ('internal', 'cell_state', 'PDL1n'): 'indianred',
     ('internal', 'cell_state', 'PD1p'): 'limegreen',
-    ('internal', 'cell_state', 'PD1n'): 'darkorange', }
+    ('internal', 'cell_state', 'PD1n'): 'darkorange',
+    ('internal', 'cell_state', 'inactive'): 'black',
+    ('internal', 'cell_state', 'active'): 'gray',
+}
 
 
 def get_tcells(
         number=1,
         relative_pd1n=0.2,
-        total_pd1n=None
+        total_pd1n=None,
+        added_identifier='',
 ):
     """
     make an initial state for any number of tcell instances,
@@ -72,7 +89,7 @@ def get_tcells(
     if total_pd1n:
         assert isinstance(total_pd1n, int)
         return {
-        '{}_{}'.format(TCELL_ID, n): {
+        f'{TCELL_ID}{added_identifier}_{n}': {
             'type': 'tcell',
             'cell_state': 'PD1n' if n < total_pd1n else 'PD1p',
             'TCR_timer': random.uniform(0, 5400),
@@ -83,7 +100,7 @@ def get_tcells(
     else:
         assert relative_pd1n <= 1.0
         return {
-        '{}_{}'.format(TCELL_ID, n): {
+        f'{TCELL_ID}{added_identifier}_{n}': {
             'type': 'tcell',
             'cell_state': 'PD1n' if random.uniform(0, 1) < relative_pd1n else 'PD1p',
             'TCR_timer': random.uniform(0, 5400),
@@ -107,66 +124,14 @@ def get_tumors(number=1, relative_pdl1n=0.5):
         } for n in range(number)}
 
 
-def random_location(
-        bounds,
-        center=None,
-        distance_from_center=None,
-        excluded_distance_from_center=None
-):
-    """
-    generate a single random location within `bounds`, and within `distance_from_center`
-    of a provided `center`. `excluded_distance_from_center` is an additional parameter
-    that leaves an empty region around the center point.
-    """
-    if distance_from_center and excluded_distance_from_center:
-        assert distance_from_center > excluded_distance_from_center, \
-            'distance_from_center must be greater than excluded_distance_from_center'
+def get_dendritic(number=1, dendritic_state_active=0.0):
+    return {
+        '{}_{}'.format(DENDRITIC_ID, n): {
+            'type': 'dendritic',
+            'cell_state': 'active' if random.uniform(0, 1) < dendritic_state_active else 'inactive',
+            'diameter': 10.0 * units.um,   # TODO -- don't hardcode this!
+        } for n in range(number)}
 
-    # get the center
-    if center:
-        center_x = center[0]
-        center_y = center[1]
-    else:
-        center_x = bounds[0]/2
-        center_y = bounds[1]/2
-
-    if distance_from_center:
-        if excluded_distance_from_center:
-            ring_size = distance_from_center - excluded_distance_from_center
-            distance = excluded_distance_from_center + ring_size * math.sqrt(random.random())
-        else:
-            distance = distance_from_center * math.sqrt(random.random())
-
-        angle = random.uniform(0, 2 * PI)
-        dy = math.sin(angle)*distance
-        dx = math.cos(angle)*distance
-        pos_x = center_x+dx
-        pos_y = center_y+dy
-
-    elif excluded_distance_from_center:
-        in_center = True
-        while in_center:
-            pos_x = random.uniform(0, bounds[0])
-            pos_y = random.uniform(0, bounds[1])
-            distance = (pos_x**2 + pos_y**2)**0.5
-            if distance > excluded_distance_from_center:
-                in_center = False
-    else:
-        pos_x = random.uniform(0, bounds[0])
-        pos_y = random.uniform(0, bounds[1])
-
-    return [pos_x, pos_y]
-
-
-
-def lymph_node_location(
-        bounds,
-        relative_position=[[0.95,1],[0.95,1]]
-):
-    """return random location within `relative_position` of the total environment `bounds`"""
-    return [
-        random.uniform(bounds[0]*relative_position[0][0], bounds[0]*relative_position[0][1]),
-        random.uniform(bounds[0]*relative_position[1][0], bounds[0]*relative_position[1][1])]
 
 def convert_to_hours(data):
     """Convert seconds to hours"""
@@ -184,6 +149,27 @@ DEFAULT_TUMORS = get_tumors(number=N_TUMORS)
 DEFAULT_TCELLS = get_tcells(number=N_TCELLS)
 
 
+def fill_initial_cell_state(state):
+    return {
+        'boundary': {
+            'cell_type': 't-cell',
+            'diameter': state.get('diameter', 7.5 * units.um),
+            'velocity': state.get('velocity', 10.0 * units.um / units.min),
+        },
+        'internal': {
+            'cell_state': state.get('cell_state', None),
+            'velocity_timer': state.get('velocity_timer', 0),
+            'TCR_timer': state.get('TCR_timer', 0)
+        },
+        'neighbors': {
+            'present': {
+                'PD1': state.get('PD1', 0),
+                'TCR': state.get('TCR', 50000)
+            }
+        }
+    }
+
+
 # The main simulation function
 def tumor_tcell_abm(
     bounds=BOUNDS,
@@ -192,11 +178,15 @@ def tumor_tcell_abm(
     field_molecules=['IFNg'],
     n_tumors=120,
     n_tcells=9,
+    n_dendritic=0,
+    n_tcells_lymph_node=3,
     tumors=None,
     tcells=None,
+    dendritic_cells=None,
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=0.8,
     tcells_total_PD1n=None,
+    dendritic_state_active=0.0,
     total_time=70000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
@@ -254,6 +244,7 @@ def tumor_tcell_abm(
 
     Note:
         * the `lymph_nodes` option has not been thoroughly tested.
+        TODO -- This should allow t cells to port in/out of the tumor, rather than having a descignated LN location. When in the T cell they present an antigen to recruite more T Cells.
     """
 
     ############################
@@ -274,6 +265,12 @@ def tumor_tcell_abm(
         'time_step': time_step}
     tumor_composer = TumorAgent(tumor_config)
 
+    ## Dendritic composer
+    dendritic_config = {
+        'dendritic_cell': {'_parallel': parallel},
+        'time_step': time_step}
+    dendritic_composer = DendriticAgent(dendritic_config)
+
     ## Environment composer
     environment_config = {
         'neighbors_multibody': {
@@ -287,11 +284,13 @@ def tumor_tcell_abm(
             'bounds': bounds,
             'n_bins': n_bins,
             'depth': depth}}
-    environment_composer = TumorMicroEnvironment(environment_config)
-
-    ## process for logging the final time and state of agents
-    logger_config = {'time_step': time_step}
-    logger_composer = DeathLogger(logger_config)
+    if not lymph_nodes:
+        environment_composer = TumorMicroEnvironment(environment_config)
+    else:
+        environment_config['lymph_node'] = {'tumor_env_bounds': bounds}
+        environment_config['tumor_env_id'] = TUMOR_ENV_ID
+        environment_config['ln_id'] = LN_ID
+        environment_composer = TumorAndLymphNodeEnvironment(environment_config)
 
 
     #######################################
@@ -299,9 +298,13 @@ def tumor_tcell_abm(
     #######################################
 
     # make individual composites and merge them
-    composite_model = logger_composer.generate()
-    environment = environment_composer.generate()
-    composite_model.merge(composite=environment)
+    composite_model = environment_composer.generate()
+
+    ## process for logging the final time and state of agents
+    logger_config = {'time_step': time_step}
+    logger_composer = DeathLogger(logger_config)
+    logger = logger_composer.generate()
+    composite_model.merge(composite=logger, path=(TUMOR_ENV_ID,))
 
     # Make the cells
     if not tcells:
@@ -309,21 +312,42 @@ def tumor_tcell_abm(
             number=n_tcells,
             relative_pd1n=tcells_state_PD1n,
             total_pd1n=tcells_total_PD1n)
+        if lymph_nodes:
+            tcells_lymph_node = get_tcells(
+                number=n_tcells_lymph_node,
+                relative_pd1n=1.0,
+                added_identifier='_LN'
+            )
     if not tumors:
         tumors = get_tumors(
             number=n_tumors,
             relative_pdl1n=tumors_state_PDL1n)
+    if not dendritic_cells:
+        dendritic_cells = get_dendritic(
+            number=n_dendritic, dendritic_state_active=dendritic_state_active)
 
     # add T cells to the composite
     for agent_id in tcells.keys():
         t_cell = t_cell_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=t_cell, path=('agents', agent_id))
+        composite_model.merge(composite=t_cell, path=(TUMOR_ENV_ID, 'agents', agent_id))
 
     # add tumors to the composite
     for agent_id in tumors.keys():
         tumor = tumor_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=tumor, path=('agents', agent_id))
+        composite_model.merge(composite=tumor, path=(TUMOR_ENV_ID, 'agents', agent_id))
 
+    # add dendritic cells to the composite
+    for agent_id in dendritic_cells.keys():
+        dendritic = dendritic_composer.generate({'agent_id': agent_id})
+        composite_model.merge(composite=dendritic, path=(TUMOR_ENV_ID, 'agents', agent_id))
+
+    # add lymph node T cells
+    for index, agent_id in enumerate(tcells_lymph_node.keys()):
+        t_cell = t_cell_composer.generate({'agent_id': agent_id})
+        if index == 0:  # put first one in transit
+            composite_model.merge(composite=t_cell, path=(TRANSIT_ID, 'agents', agent_id))
+        else:
+            composite_model.merge(composite=t_cell, path=(LN_ID, 'agents', agent_id))
 
     ###################################
     # Initialize the simulation state #
@@ -331,24 +355,23 @@ def tumor_tcell_abm(
 
     # make the initial environment state
     initial_env_config = {
-        'diffusion_field': {'uniform': 0.0}}
-    initial_env = composite_model.initial_state(initial_env_config)
+        TUMOR_ENV_ID: {
+            'diffusion_field': {'uniform': 0.0}}}
+    initial_state = composite_model.initial_state(initial_env_config)
 
     # initialize cell states
     initial_t_cells = {
         agent_id: {
             'boundary': {
+                'cell_type': 't-cell',
                 'location': state.get('location', random_location(
                     bounds,
                     center=tcell_center,
                     distance_from_center=tcells_distance,
                     excluded_distance_from_center=tcells_excluded_distance,
-                ) if not lymph_nodes else lymph_node_location(bounds)),
+                )),
                 'diameter': state.get('diameter', 7.5 * units.um),
                 'velocity': state.get('velocity', 10.0 * units.um/units.min)},
-            'globals': {
-                'LN_no_migration': lymph_nodes,
-            },
             'internal': {
                 'cell_state': state.get('cell_state', None),
                 'velocity_timer': state.get('velocity_timer', 0),
@@ -364,6 +387,7 @@ def tumor_tcell_abm(
             'internal': {
                 'cell_state': state.get('cell_state', None)},
             'boundary': {
+                'cell_type': 'tumor',
                 'location': state.get('location', random_location(
                     bounds,
                     center=tumors_center,
@@ -377,12 +401,43 @@ def tumor_tcell_abm(
                     'MHCI': state.get('MHCI', 1000)}
             }} for agent_id, state in tumors.items()}
 
-    # combine all the initial states together
-    initial_state = {
-        **initial_env,
-        'agents': {
-            **initial_t_cells, **initial_tumors}}
+    initial_dendritic = {
+        agent_id: {
+            'internal': {
+                'cell_state': state.get('cell_state', None)},
+            'boundary': {
+                'cell_type': 'dendritic',
+                'location': state.get('location', random_location(
+                    bounds,
+                    center=tumors_center,
+                    distance_from_center=tumors_distance,
+                    excluded_distance_from_center=tumors_excluded_distance)),
+                'diameter': state.get('diameter', 10 * units.um), #TODO - @Eran this should not be required
+                'velocity': state.get('velocity', 3.0 * units.um/units.min)
+            },
+        } for agent_id, state in dendritic_cells.items()}
 
+    # combine all the initial states together under the tumor environment
+    initial_state[TUMOR_ENV_ID]['agents'].update({
+                **initial_t_cells,
+                **initial_tumors,
+                **initial_dendritic
+            })
+
+    if lymph_nodes:
+        initial_t_cells_transit = {}
+        initial_t_cells_ln = {}
+        for region in [LN_ID, TRANSIT_ID]:
+            if region == LN_ID:
+                for agent_id, state in composite_model['processes']['lymph_node']['agents'].items():
+                    initial_t_cells_ln[agent_id] = fill_initial_cell_state(state)
+            elif region == TRANSIT_ID:
+                for agent_id, state in composite_model['processes']['in_transit']['agents'].items():
+                    initial_t_cells_transit[agent_id] = fill_initial_cell_state(state)
+
+        # the tumor environment gets nested alongside the lymph node
+        initial_state[LN_ID] = {'agents': initial_t_cells_ln}
+        initial_state[TRANSIT_ID] = {'agents': initial_t_cells_transit}
 
     ######################
     # Run the simulation #
@@ -416,7 +471,7 @@ def tumor_tcell_abm(
     # run simulation and terminate upon reaching total_time or halt_threshold
     clock_start = clock.time()
     for time in tqdm(range(0, total_time, sim_step)):
-        n_agents = len(experiment.state.get_value()['agents'])
+        n_agents = len(experiment.state.get_value()[TUMOR_ENV_ID]['agents'])
         if n_agents < halt_threshold:
             experiment.update(sim_step)
         else:
@@ -438,14 +493,18 @@ FULL_BOUNDS = [1200*units.um, 1200*units.um]
 def large_experiment(
         n_tcells=12,
         n_tumors=1200,
+        n_dendritic=0,
+        n_tcells_lymph_node=3,
         tcells_state_PD1n=None,
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=None,
+        dendritic_state_active=0.0,
         lymph_nodes=False,
         total_time=259200,
         tumors_distance=260 * units.um,  # sqrt(n_tumors)*15(diameter)/2
         tcells_distance=250 * units.um,  # in or out (None) of the tumor
         tcells_excluded_distance=240 * units.um,  # for creating a ring around tumor
+        field_molecules=['IFNg'],
 ):
     """
     Configurable large environment that has many tumors and t cells. Calls tumor_tcell_abm
@@ -454,9 +513,12 @@ def large_experiment(
     return tumor_tcell_abm(
         n_tcells=n_tcells,
         n_tumors=n_tumors,
+        n_dendritic=n_dendritic,
+        n_tcells_lymph_node=n_tcells_lymph_node,
         tcells_state_PD1n=tcells_state_PD1n,
         tumors_state_PDL1n=tumors_state_PDL1n,
         tcells_total_PD1n=tcells_total_PD1n,
+        dendritic_state_active=dendritic_state_active,
         total_time=total_time,
         time_step=TIMESTEP,
         sim_step=100*TIMESTEP,
@@ -464,11 +526,12 @@ def large_experiment(
         bounds=FULL_BOUNDS,
         n_bins=[120, 120],  # 10 um bin size, usually 120 by 120
         halt_threshold=4000,  # 5000, #sqrt(halt_threshold)*15 <bounds, normally 5000
-        emitter='database',
+        emitter='timeseries',
         tumors_distance=tumors_distance,  # sqrt(n_tumors)*15(diameter)/2
         tcells_distance=tcells_distance,  # in or out (None) of the tumor
         tcells_excluded_distance=tcells_excluded_distance,  # for creating a ring around tumor
         lymph_nodes=lymph_nodes,
+        field_molecules=field_molecules,
     )
 
 # Change experimental PD1 and PDL1 levels for full experiment
@@ -491,15 +554,21 @@ def tumor_microenvironment_experiment():
 def lymph_node_experiment():
     """
     WORK IN PROGRESS
+    TODO: this is going to be the LN simulation for the response to reviewers
     """
     return large_experiment(
-        n_tcells=12,
-        n_tumors=120,
-        tcells_state_PD1n=0.8,
+        # TODO -- what initial states for the resubmission?
+        n_tcells=2,  # 12
+        n_tumors=5,  # 1200
+        n_dendritic=5,  # 1200
+        n_tcells_lymph_node=5,
+        # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
-        tcells_total_PD1n=9,
+        tcells_total_PD1n=1,  # 9, 3
+        dendritic_state_active=0.5,  # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=60000,
+        total_time=1000,  # TODO -- run this for 259200 (3 days)
+        field_molecules=['IFNg', 'tumor_debris'],
     )
 
 
@@ -518,28 +587,35 @@ def plots_suite(
         * fig2: tumor multi-generation timeseries plot
         * fig3: snapshot plot
     """
+    data_export = open(out_dir+'/data_export.pkl', 'wb')
+    pickle.dump(data, data_export)
+    data_export.close()
 
-    # separate out t cell and tumor data for the multi-generation plots
+    # Create dictionaries to store data for different compartments
     tcell_data = {}
     tumor_data = {}
-    for time, time_data in data.items():
-        if 'agents' not in time_data:
-            continue
-        all_agents_data = time_data['agents']
-        tcell_data[time] = {
-            'agents': {
-                agent_id: agent_data
-                for agent_id, agent_data in all_agents_data.items()
-                if TCELL_ID in agent_id}}
-        tumor_data[time] = {
-            'agents': {
-                agent_id: agent_data
-                for agent_id, agent_data in all_agents_data.items()
-                if TUMOR_ID in agent_id}}
+    dendritic_data = {}
 
-    # # get the final death log
-    # times_vector = list(data.keys())
-    # death_log = data[times_vector[-1]]['log']
+    for time, time_data in data.items():
+        # Iterate through compartments
+        for compartment, compartment_data in time_data.items():
+            if compartment == 'tumor_environment':
+                # if 'agents' in compartment_data:
+                all_agents_data = compartment_data['agents']
+
+                # Separate data based on agent type
+                tcell_data.setdefault(time, {'agents': {}})
+                tumor_data.setdefault(time, {'agents': {}})
+                dendritic_data.setdefault(time, {'agents': {}})
+
+                # Separate data for T cells, tumor cells, and dendritic cells
+                for agent_id, agent_data in all_agents_data.items():
+                    if TCELL_ID in agent_id:
+                        tcell_data[time]['agents'][agent_id] = agent_data
+                    elif TUMOR_ID in agent_id:
+                        tumor_data[time]['agents'][agent_id] = agent_data
+                    elif DENDRITIC_ID in agent_id:
+                        dendritic_data[time]['agents'][agent_id] = agent_data
 
     # make multi-gen plot for t cells and tumors
     plot_settings = {
@@ -549,15 +625,18 @@ def plots_suite(
             ('boundary', 'location')]}
     fig1 = plot_agents_multigen(tcell_data, plot_settings, out_dir, TCELL_ID)
     fig2 = plot_agents_multigen(tumor_data, plot_settings, out_dir, TUMOR_ID)
-
+    if dendritic_data:
+        fig4 = plot_agents_multigen(dendritic_data, plot_settings, out_dir, DENDRITIC_ID)
+    else:
+        fig4=None
     # snapshots plot shows cells and chemical fields in space at different times
     # extract data
     agents, fields = format_snapshot_data(data)
 
     # make the plot
     fig3 = plot_snapshots(
-        bounds=remove_units(bounds),
-        agents=remove_units(agents),
+        bounds=remove_units(deserialize_value(bounds)),
+        agents=remove_units(deserialize_value(agents)),
         fields=fields,
         tag_colors=TAG_COLORS,
         n_snapshots=n_snapshots,
@@ -568,7 +647,7 @@ def plots_suite(
         field_label_size=48,
         time_display='hr')
 
-    return fig1, fig2, fig3
+    return fig1, fig2, fig3, fig4
 
 
 def make_snapshot_video(
@@ -584,8 +663,8 @@ def make_snapshot_video(
     step = math.ceil(n_times/n_steps)
 
     make_video(
-        data=remove_units(data),
-        bounds=remove_units(bounds),
+        data=remove_units(deserialize_value(data)),
+        bounds=remove_units(deserialize_value(bounds)),
         agent_shape='circle',
         tag_colors=TAG_COLORS,
         step=step,
@@ -596,14 +675,14 @@ def make_snapshot_video(
 
 
 # tests
-def test_medium_simulation():
-    # run a test confirming workflow #2 is running
-    Control(
-        experiments=experiments_library,
-        plots=plots_library,
-        workflows=workflow_library,
-        args=['-w', '2']
-    )
+# def test_medium_simulation():
+#     # run a test confirming workflow #2 is running
+#     Control(
+#         experiments=experiments_library,
+#         plots=plots_library,
+#         workflows=workflow_library,
+#         args=['-w', '2']
+#     )
 
 
 ######################################
