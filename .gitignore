@@ -6,3 +6,4 @@ out/*
 user/*
 .idea/
 tumor_tcell.egg-info/
+venv/
