@@ -143,25 +143,7 @@ def test_dendritic_agent(
 ):
     composite = Composite()
     for agent_id in agent_ids:
-        parameters = {
-            'agent_id': agent_id,
-            '_schema': {
-                'dendritic_cell': {
-                    'internal': {
-                        'cell_state': {'_emit': False},
-                        'velocity_timer': {'_emit': False}},
-                    'neighbors': {
-                        'present': {
-                            'TCR': {'_emit': False}},
-                        'transfer': {
-                            'cytotoxic_packets': {'_emit': False}}},
-                    'boundary': {
-                        'velocity': {'_emit': False},
-                        'external': {
-                            'IFNg': {'_emit': False}}},
-                    'globals': {
-                        'PD1n_divide_count': {'_emit': True},
-                        'PD1p_divide_count': {'_emit': True}}}}}
+        parameters = {'agent_id': agent_id}
 
         composer = DendriticAgent(parameters)
         agent = composer.generate(path=('agents', agent_id))
@@ -185,8 +167,6 @@ def test_dendritic_agent(
 
     # settings for simulation and plot
     initial = composite.initial_state()
-    for agent_id in agent_ids:
-        initial['agents'][agent_id]['internal']['cell_state'] = initial_agent_state  # set an initial state
 
     # make the experiment
     experiment = Engine(**{
