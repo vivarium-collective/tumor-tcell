@@ -587,6 +587,8 @@ def plots_suite(
         * fig2: tumor multi-generation timeseries plot
         * fig3: snapshot plot
     """
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
     data_export = open(out_dir+'/data_export.pkl', 'wb')
     pickle.dump(data, data_export)
     data_export.close()
