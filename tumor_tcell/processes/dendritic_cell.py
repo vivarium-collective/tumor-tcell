@@ -66,9 +66,9 @@ class DendriticCellProcess(Process):
         diffusion_radius = diffusion_area ** 0.5
         sphere_radius = self.parameters['diameter'] / 2 + diffusion_radius
         external_tumor_debris_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3
-        self.molar_available_tumor_debris = self.parameters['external_concentration_unit'] * \
+        self.molar_available_tumor_debris = (self.parameters['external_concentration_unit'] * \
                                             external_tumor_debris_available_volume * self.parameters['nAvagadro'] / \
-                                            self.parameters['tumor_debris_MW']
+                                            self.parameters['tumor_debris_MW']).to('count').magnitude
 
     def initial_state(self, config=None):
         return {
@@ -149,9 +149,7 @@ class DendriticCellProcess(Process):
         internal_tumor_debris = states['internal']['tumor_debris']  # counts
 
         # determine available tumor debris
-        available_tumor_debris = external_tumor_debris * self.molar_available_tumor_debris
-        available_tumor_debris_counts = available_tumor_debris.to('count').magnitude
-
+        available_tumor_debris_counts = external_tumor_debris * self.molar_available_tumor_debris
         # TODO -- we need to move available tumor debris to internal tumor debris
         # TODO - test out with experiment and also do calculation
 

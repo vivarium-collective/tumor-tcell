@@ -9,6 +9,7 @@ environmental state.
 """
 
 import numpy as np
+from scipy import constants
 
 from vivarium.core.process import Deriver
 from vivarium.library.units import units, remove_units
@@ -21,6 +22,7 @@ from vivarium_multibody.library.lattice_utils import (
 
 CONCENTRATION_UNIT = units.ng / units.mL  # alternative (units.mmol / units.L) concentration would not use molecular_weight
 LENGTH_UNIT = units.um
+UNITLESS_AVOGADRO = constants.N_A
 
 
 class LocalField(Deriver):
@@ -36,6 +38,10 @@ class LocalField(Deriver):
 
     def __init__(self, parameters=None):
         super().__init__(parameters)
+        self.conc_conversion = {}
+        for mol_id, mw in self.parameters['molecular_weight'].items():
+            self.conc_conversion[mol_id] = (units.mol / units.L * mw).to(
+                self.parameters['concentration_unit']).magnitude
 
     def ports_schema(self):
          return {
@@ -78,21 +84,16 @@ class LocalField(Deriver):
 
         # get bin
         bin_site = get_bin_site(location, n_bins, bounds)
-        bin_volume = get_bin_volume(n_bins, bounds, depth) * units.L
+        bin_volume_liters = get_bin_volume(n_bins, bounds, depth)
 
         # apply exchanges
         delta_fields = {}
         reset_exchanges = {}
-        for mol_id, value in exchanges.items():
+        for mol_id, counts in exchanges.items():
             delta_fields[mol_id] = np.zeros(
                 (n_bins[0], n_bins[1]), dtype=np.float64)
-            exchange = value * units.count
-            molecular_weight = self.parameters['molecular_weight'][mol_id]
-            concentration = count_to_concentration(exchange, bin_volume)
-            concentration = (concentration * molecular_weight).to(
-                self.parameters['concentration_unit'])
-
-            delta_fields[mol_id][bin_site[0], bin_site[1]] += concentration.magnitude
+            concentration = counts / (bin_volume_liters * UNITLESS_AVOGADRO) * self.conc_conversion[mol_id]
+            delta_fields[mol_id][bin_site[0], bin_site[1]] += concentration
             reset_exchanges[mol_id] = {
                 '_value': 0,
                 '_updater': 'set'}
