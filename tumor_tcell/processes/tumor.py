@@ -98,6 +98,9 @@ class TumorProcess(Process):
 
     def __init__(self, parameters=None):
         super().__init__(parameters)
+        self.IFNg_conc_to_count_conversion = (
+                self.parameters['external_concentration_unit'] * self.parameters['nAvagadro'] /
+                self.parameters['IFNg_MW'])
 
     def initial_state(self, config=None):
         if random.uniform(0, 1) < self.parameters['initial_PDL1n']:
@@ -216,22 +219,16 @@ class TumorProcess(Process):
 
         # determine available IFNg
         diameter = states['boundary']['diameter']  # (um)
-        diffusion_rate = self.parameters['diffusion']['IFNg']
-        mw = self.parameters['IFNg_MW']
-        navogadro = self.parameters['nAvagadro']
 
         # calculate diffusion distance in the timestep
-        diffusion_area= diffusion_rate * (timestep * units.s)
+        diffusion_area = self.parameters['diffusion']['IFNg'] * (timestep * units.s)
         diffusion_radius = diffusion_area ** 0.5
         # find total volume
         sphere_radius = diameter/2 + diffusion_radius
         external_IFNg_available_volume = 4/3 * self.parameters['pi'] * sphere_radius ** 3
 
         # external_IFNg_available_volume = self.parameters['external_IFNg_available_volume']
-        available_IFNg = external_IFNg * self.parameters['external_concentration_unit'] \
-                         * external_IFNg_available_volume * navogadro / mw
-
-        available_IFNg = available_IFNg.to('count').magnitude
+        available_IFNg = (external_IFNg * external_IFNg_available_volume * self.IFNg_conc_to_count_conversion).to('count').magnitude
 
         #TODO - test out with experiment and also do calculation
 
