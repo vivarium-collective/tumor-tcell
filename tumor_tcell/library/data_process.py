@@ -2,12 +2,20 @@ import pandas as pd
 
 def data_to_dataframes(data, lymph_nodes=False):
 
+    # Create a new dictionary with the 'tumor_environment' data based on restructuring
+    new_data = {}
+
+    for key, value in data.items():
+        # Extract 'tumor_environment' data and keep the outer structure
+        new_data[key] = value['tumor_environment']
+    new_data.keys()
+
     #Convert to initial dataframe
-    df_data = pd.DataFrame(data)
+    df_data = pd.DataFrame(new_data)
 
     #Extract agents from the data
     df_copy = df_data.copy()
-    df_agents = df_copy.iloc[0,:]
+    df_agents = df_copy.loc['agents']
     agents_dict = df_agents.to_dict()
 
     #reformat the dictionary into mulitiindexed dataframe
@@ -92,7 +100,7 @@ def data_to_dataframes(data, lymph_nodes=False):
 
     ################################
     ####Extract death log statistics
-    df_death = df_copy.iloc[1, :]
+    df_death = df_copy.loc['log']
     death_dict = df_death.to_dict()
 
     # reformat the dictionary into mulitiindexed dataframe

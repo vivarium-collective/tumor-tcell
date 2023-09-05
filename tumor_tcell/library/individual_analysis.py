@@ -33,13 +33,15 @@ def individual_analysis(analysis_dir, experiment_id, bounds, tcells=True, lymph_
     file_to_read = open("data_export.pkl", "rb")
     data = pickle.load(file_to_read)
 
-    # Write sim_config description to txt file
-    config_to_read = open("config_export.pkl", "rb")
-    sim_config = pickle.load(config_to_read)
-    config_file = open("sim_config.txt", "wt")
-    n = config_file.write(sim_config['description'])
-    config_file.close()
-    print(sim_config)
+    # Check if the file exists
+    if os.path.exists("config_export.pkl"):
+        # Write sim_config description to txt file
+        config_to_read = open("config_export.pkl", "rb")
+        sim_config = pickle.load(config_to_read)
+        config_file = open("sim_config.txt", "wt")
+        n = config_file.write(sim_config['description'])
+        config_file.close()
+        print(sim_config)
 
     #Plot the data using tumor-tcell experiment notebook and save in current directory
     fig1, fig2, fig3, fig4 = plots_suite(data, out_dir=figures_out_dir, bounds=[b * units.um for b in bounds])

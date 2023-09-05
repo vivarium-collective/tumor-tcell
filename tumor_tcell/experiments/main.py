@@ -180,9 +180,9 @@ def tumor_tcell_abm(
     n_tcells=9,
     n_dendritic=0,
     n_tcells_lymph_node=3,
-    tumors=None,
-    tcells=None,
-    dendritic_cells=None,
+    tumors=None, # @Eran - is this necessary?
+    tcells=None, # @Eran - is this necessary?
+    dendritic_cells=None, # @Eran - is this necessary?
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=0.8,
     tcells_total_PD1n=None,
