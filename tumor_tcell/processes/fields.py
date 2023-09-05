@@ -274,10 +274,11 @@ class Fields(Process):
         """ diffuse a single field """
         t = 0.0
         dt = min(timestep, self.diffusion_dt)
+        diffusion_rate_dt = diffusion_rate * dt
         while t < timestep:
             result = cv2.filter2D(field, -1, LAPLACIAN_2D)
             # result = convolve(field, LAPLACIAN_2D, mode='reflect')
-            field += diffusion_rate * dt * result
+            field += diffusion_rate_dt * result
             t += dt
         return field
 
