@@ -119,16 +119,16 @@ def data_to_dataframes(data, lymph_nodes=False):
     df_death_sub = df_death_multi[~(df_death_multi['death']==False)]
 
     if df_death_sub.empty:
-        return pd.DataFrame({}), pd.DataFrame({}), tumor_plot, tcell_plot
+        df_tcell_death = pd.DataFrame({})
+        df_tumor_death = pd.DataFrame({})
+    else:
+        # Only get the final log of the death than contains all the death information
+        df_last_death = df_death_sub.loc[df_death_sub.index.levels[0][-1]]
+        df_last_death['time'] = df_last_death['time'] / 3600
 
-    # Only get the final log of the death than contains all the death information
-    df_last_death = df_death_sub.loc[df_death_sub.index.levels[0][-1]]
-    df_last_death['time'] = df_last_death['time'] / 3600
-
-    # Subset only T cells from all agents
-    df_tcell_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tcell'), :]
-    df_tumor_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tumor'), :]
-
+        # Subset only T cells from all agents
+        df_tcell_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tcell'), :]
+        df_tumor_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tumor'), :]
 
     ########################################
     ##Do for T cells
@@ -192,8 +192,11 @@ def data_to_dataframes(data, lymph_nodes=False):
         # reset index for plotting
         dendritic_plot = dendritic_data_form.reset_index()
 
-        #get dendritic death stats
-        df_dendritic_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('dendritic'),:]
+        if df_death_sub.empty:
+            df_dendritic_death = pd.DataFrame({})
+        else:
+            #get dendritic death stats
+            df_dendritic_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('dendritic'),:]
 
         ########################################
         ##Do for dendritic cells

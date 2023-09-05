@@ -589,9 +589,9 @@ def plots_suite(
     """
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    data_export = open(out_dir+'/data_export.pkl', 'wb')
-    pickle.dump(data, data_export)
-    data_export.close()
+    # data_export = open(out_dir+'/data_export.pkl', 'wb')
+    # pickle.dump(data, data_export)
+    # data_export.close()
 
     # Create dictionaries to store data for different compartments
     tcell_data = {}
