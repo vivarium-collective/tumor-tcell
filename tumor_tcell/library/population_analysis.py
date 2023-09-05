@@ -31,19 +31,24 @@ def division_analysis(cell_plot):
     div_counts_T = Counter(div_list_T)
     divide_time_T = pd.DataFrame.from_dict(div_counts_T, orient='index').reset_index()
 
-    # convert to dataframe
-    column_names = ['time', 'counts']
-    divide_time_T.columns = column_names
+    if not divide_time_T.empty:
 
-    # divide counts by 2 because each daughter and original cell is counted twice
-    divide_time_T['counts'] = divide_time_T['counts'] / 2
+        # convert to dataframe
+        column_names = ['time', 'counts']
+        divide_time_T.columns = column_names
 
-    # add 0, 0 initial point
-    divide_time_T.loc[-1] = [0, 0]
-    divide_time_T.index = divide_time_T.index + 1  # shifting index
-    divide_time_T = divide_time_T.sort_values(by='time')
+        # divide counts by 2 because each daughter and original cell is counted twice
+        divide_time_T['counts'] = divide_time_T['counts'] / 2
 
-    # accumulate the counts as progresses
-    divide_time_T['total_division'] = divide_time_T.counts.cumsum()
+        # add 0, 0 initial point
+        divide_time_T.loc[-1] = [0, 0]
+        divide_time_T.index = divide_time_T.index + 1  # shifting index
+        divide_time_T = divide_time_T.sort_values(by='time')
+
+        # accumulate the counts as progresses
+        divide_time_T['total_division'] = divide_time_T.counts.cumsum()
+
+    else:
+        divide_time_T = pd.DataFrame()
 
     return divide_time_T

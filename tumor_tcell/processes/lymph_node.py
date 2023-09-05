@@ -57,7 +57,7 @@ class LymphNode(Process):
             # seen (Itano, 2003);;(Bousso, 2008)
         'expected_tcell_transit_time': 30,  # 3600 60*60. arrive in tumor environment after 1 hour of migration in,\ TODO - @John change back
             # efferent lymph to circulation (Hunter, 2016)
-        'expected_division_interval': 10,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \ TODO - @John change back
+        'expected_division_interval': 14400,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \ TODO - @John change back
             # 3*60*60=10800, (Mempel, 2004);(Bousso, 2008)
         'expected_interaction_duration': 20,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \ TODO - @John change back
             # 8 hours (Itano, 2003)

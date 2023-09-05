@@ -33,15 +33,15 @@ def individual_analysis(analysis_dir, experiment_id, bounds, tcells=True, lymph_
     file_to_read = open("data_export.pkl", "rb")
     data = pickle.load(file_to_read)
 
-    # Check if the file exists
-    if os.path.exists("config_export.pkl"):
-        # Write sim_config description to txt file
-        config_to_read = open("config_export.pkl", "rb")
-        sim_config = pickle.load(config_to_read)
-        config_file = open("sim_config.txt", "wt")
-        n = config_file.write(sim_config['description'])
-        config_file.close()
-        print(sim_config)
+    # # Check if the file exists
+    # if os.path.exists("config_export.pkl"):
+    #     # Write sim_config description to txt file
+    #     config_to_read = open("config_export.pkl", "rb")
+    #     sim_config = pickle.load(config_to_read)
+    #     config_file = open("sim_config.txt", "wt")
+    #     n = config_file.write(sim_config['description'])
+    #     config_file.close()
+    #     print(sim_config)
 
     #Plot the data using tumor-tcell experiment notebook and save in current directory
     fig1, fig2, fig3, fig4 = plots_suite(data, out_dir=figures_out_dir, bounds=[b * units.um for b in bounds])
@@ -57,8 +57,11 @@ def individual_analysis(analysis_dir, experiment_id, bounds, tcells=True, lymph_
         divide_time_T = division_analysis(tcell_plot)
         divide_time_tumor = division_analysis(tumor_plot)
 
-        division_plot(divide_data=divide_time_T, out_dir=figures_out_dir, save_name='Tcells')
-        division_plot(divide_data=divide_time_tumor, out_dir=figures_out_dir, save_name='Tumors')
+        if not divide_time_T.empty:
+            division_plot(divide_data=divide_time_T, out_dir=figures_out_dir, save_name='Tcells')
+
+        if not divide_time_tumor.empty:
+            division_plot(divide_data=divide_time_tumor, out_dir=figures_out_dir, save_name='Tumors')
 
         population_plot(population_data=tumor_plot, cell_states=['PDL1n', 'PDL1p'], out_dir=figures_out_dir,save_name='Tumors')
         population_plot(population_data=tcell_plot, cell_states=['PD1n', 'PD1p'], out_dir=figures_out_dir,save_name='Tcells')
