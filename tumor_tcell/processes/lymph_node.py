@@ -51,17 +51,17 @@ class LymphNode(Process):
             # within the lymph node that are reactive (total pool of cells that could proliferated/divide. \
             # - from data and divide 3000/1000 (1/1000th of space that we are simulating) = 3
         'tcell_find_dendritic_time': 0.95,  # 95% will find dendritic in 4 hrs (Itano, 2003);;(Bousso, 2008)
-        'expected_dendritic_transit_time': 20,  # 28800 8*60*60. 8 hour delay between the time that a dendritic \ TODO - @John change back
+        'expected_dendritic_transit_time': 28800,  # 28800 8*60*60. 8 hour delay between the time that a dendritic \ TODO - @John change back
             # cell leaves microenvironment until it is ready to interact with t cells in the LN and interact with \
             # T cells that take about 4 hours to find it for a total of 12 hours total until engagement is \
             # seen (Itano, 2003);;(Bousso, 2008)
-        'expected_tcell_transit_time': 30,  # 3600 60*60. arrive in tumor environment after 1 hour of migration in,\ TODO - @John change back
+        'expected_tcell_transit_time': 3600,  # 3600 60*60. arrive in tumor environment after 1 hour of migration in,\ TODO - @John change back
             # efferent lymph to circulation (Hunter, 2016)
         'expected_division_interval': 14400,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \ TODO - @John change back
             # 3*60*60=10800, (Mempel, 2004);(Bousso, 2008)
-        'expected_interaction_duration': 20,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \ TODO - @John change back
+        'expected_interaction_duration': 28800,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \ TODO - @John change back
             # 8 hours (Itano, 2003)
-        'expected_delay_before_migration': 40,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \ TODO - @John change back
+        'expected_delay_before_migration': 43200,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \ TODO - @John change back
             # complete before starting migration (Itano, 2003);(Bousso, 2008)
     }
 
@@ -190,7 +190,7 @@ class LymphNode(Process):
                     # TODO -- this should depend on dendritic cell being present. Not interacting alone
                     prob_interaction = get_probability_timestep(   # TODO -- ERAN -- why not probability_of_occurrence_within_interval?
                         self.parameters['tcell_find_dendritic_time'],
-                        10,  # 14400 6 hours (6*60*60 seconds) TODO - @John change back
+                        14400,  # 14400 6 hours (6*60*60 seconds) TODO - @John change back
                         timestep) #(Itano, 2003)
                     if random.uniform(0, 1) < prob_interaction:
                         # this t-cell is now interacting
