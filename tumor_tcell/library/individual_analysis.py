@@ -68,9 +68,12 @@ def individual_analysis(analysis_dir, experiment_id, bounds, tcells=True, lymph_
         population_plot(population_data=dendritic_plot, cell_states=['inactive', 'active'], out_dir=figures_out_dir,
                         save_name='Dendritic')
 
-        death_plot(death_data=df_tumor_death, out_dir=figures_out_dir, save_name='Tumors')
-        death_plot(death_data=df_tcell_death, out_dir=figures_out_dir, save_name='Tcells')
-        death_plot(death_data=df_dendritic_death, out_dir=figures_out_dir, save_name='Dendritic')
+        if not df_tumor_death.empty:
+            death_plot(death_data=df_tumor_death, out_dir=figures_out_dir, save_name='Tumors')
+        if not df_tcell_death.empty:
+            death_plot(death_data=df_tcell_death, out_dir=figures_out_dir, save_name='Tcells')
+        if not df_dendritic_death.empty:
+            death_plot(death_data=df_dendritic_death, out_dir=figures_out_dir, save_name='Dendritic')
 
         #Export the dataframes for analysis comparison to other experiments and not need to process again
         df_tumor_death['experiment_id'] = experiment_id
