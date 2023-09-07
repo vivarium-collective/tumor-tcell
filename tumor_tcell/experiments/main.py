@@ -16,7 +16,7 @@ Experiments can be triggered from the command line:
 You can find information on the different workflows by reading the comments included for each entry in `workflow_library`,
 at the bottom of this file.
 """
-
+import copy
 import random
 import time as clock
 from tqdm import tqdm
@@ -431,12 +431,13 @@ def tumor_tcell_abm(
         # fill initial state for cells in lymph node and in transit
         for region in [LN_ID, TRANSIT_ID]:
             if region == LN_ID:
-                for agent_id, state in composite_model['processes']['lymph_node']['agents'].items():
-                    initial_t_cells_ln[agent_id] = fill_initial_cell_state(state)
+                for agent_id in composite_model['processes']['lymph_node']['agents'].keys():
+                    config = {}
+                    initial_t_cells_ln[agent_id] = fill_initial_cell_state(config)
             elif region == TRANSIT_ID:
                 for agent_id, state in composite_model['processes']['in_transit']['agents'].items():
-                    state['cell_state'] = 'PD1n'  # set these cells initial cell_state to PD1n
-                    initial_t_cells_transit[agent_id] = fill_initial_cell_state(state)
+                    config = {'cell_state': 'PD1n'}
+                    initial_t_cells_transit[agent_id] = fill_initial_cell_state(config)
 
         # the tumor environment gets nested alongside the lymph node
         initial_state[LN_ID] = {'agents': initial_t_cells_ln}
