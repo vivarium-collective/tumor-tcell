@@ -98,9 +98,11 @@ class TumorProcess(Process):
 
     def __init__(self, parameters=None):
         super().__init__(parameters)
-        self.IFNg_conc_to_count_conversion = (
-                self.parameters['external_concentration_unit'] * self.parameters['nAvagadro'] /
-                self.parameters['IFNg_MW'])
+        self.IFNg_convert_to_counts_per_nanogram = (
+                self.parameters['nAvagadro'] / self.parameters['IFNg_MW']).to('1 / nanogram').magnitude
+        self.diffusion_micrometer_squared_per_second = {
+            mol_id: rate.to('micrometer ** 2 / second').magnitude
+            for mol_id, rate in self.parameters['diffusion'].items()}
 
     def initial_state(self, config=None):
         if random.uniform(0, 1) < self.parameters['initial_PDL1n']:
@@ -214,23 +216,19 @@ class TumorProcess(Process):
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
         cytotoxic_packets = states['neighbors']['receive']['cytotoxic_packets']
-        external_IFNg = states['boundary']['external']['IFNg']  # concentration
+        external_IFNg = states['boundary']['external']['IFNg']  # concentration  nanogram / milliliter
         internal_IFNg = states['internal']['IFNg']  # counts
 
         # determine available IFNg
-        diameter = states['boundary']['diameter']  # (um)
+        diameter = states['boundary']['diameter'].to('micrometer').magnitude  # micrometer
 
         # calculate diffusion distance in the timestep
-        diffusion_area = self.parameters['diffusion']['IFNg'] * (timestep * units.s)
-        diffusion_radius = diffusion_area ** 0.5
-        # find total volume
-        sphere_radius = diameter/2 + diffusion_radius
-        external_IFNg_available_volume = 4/3 * self.parameters['pi'] * sphere_radius ** 3
-
-        # external_IFNg_available_volume = self.parameters['external_IFNg_available_volume']
-        available_IFNg = (external_IFNg * external_IFNg_available_volume * self.IFNg_conc_to_count_conversion).to('count').magnitude
-
-        #TODO - test out with experiment and also do calculation
+        diffusion_area = self.diffusion_micrometer_squared_per_second['IFNg'] * timestep  # micrometers ** 2
+        diffusion_radius = diffusion_area ** 0.5  # micrometers
+        # find total volume around the tumor that has access to IFNg that has access within time interval
+        sphere_radius = diameter / 2 + diffusion_radius  # micrometers
+        external_IFNg_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3  # micrometer ** 3
+        available_IFNg = external_IFNg * external_IFNg_available_volume * self.IFNg_convert_to_counts_per_nanogram / 1e12  # counts
 
         ## Build up an update
         update = {'internal': {},
