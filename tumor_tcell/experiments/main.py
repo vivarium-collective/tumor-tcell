@@ -346,7 +346,7 @@ def tumor_tcell_abm(
         t_cell = t_cell_composer.generate({'agent_id': agent_id})
         if index == 0:  # put first one in transit
             composite_model.merge(composite=t_cell, path=(TRANSIT_ID, 'agents', agent_id))
-        else:
+        else:  # the rest go in the lymph node
             composite_model.merge(composite=t_cell, path=(LN_ID, 'agents', agent_id))
 
     ###################################
@@ -427,12 +427,15 @@ def tumor_tcell_abm(
     if lymph_nodes:
         initial_t_cells_transit = {}
         initial_t_cells_ln = {}
+
+        # fill initial state for cells in lymph node and in transit
         for region in [LN_ID, TRANSIT_ID]:
             if region == LN_ID:
                 for agent_id, state in composite_model['processes']['lymph_node']['agents'].items():
                     initial_t_cells_ln[agent_id] = fill_initial_cell_state(state)
             elif region == TRANSIT_ID:
                 for agent_id, state in composite_model['processes']['in_transit']['agents'].items():
+                    state['cell_state'] = 'PD1n'  # set these cells initial cell_state to PD1n
                     initial_t_cells_transit[agent_id] = fill_initial_cell_state(state)
 
         # the tumor environment gets nested alongside the lymph node
