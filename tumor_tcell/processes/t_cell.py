@@ -62,6 +62,27 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
     timestep_fraction = timestep / timescale
     return 1 - math.exp(-rate * timestep_fraction)
 
+def probability_of_occurrence_within_interval(interval_duration, expected_time):
+    """
+    Compute the probability that an event will occur at least once
+    within a given time interval.
+
+    This assumes the event follows a Poisson process, where the event
+    is expected to occur once every `expected_time` hours.
+
+    Args:
+        interval_duration (float): The duration of the time interval.
+        expected_time (float): The expected time between occurrences.
+
+    Returns:
+        float: The probability of the event occurring at least once
+               within the time interval.
+    """
+    lambda_ = interval_duration / expected_time
+    P_0 = math.exp(-lambda_)
+    P_at_least_one = 1 - P_0
+    return P_at_least_one
+
 
 # def get_probability_timestep(probability_parameter, interval_duration, expected_time):
 #     """
@@ -138,6 +159,7 @@ class TCellProcess(Process):
         'PD1n_growth_28hr': 0.90,  # 90% division in 28 hours (Petrovas 2007, Vodnala 2019)
         'PD1p_growth_28hr': 0.20,  # 20% division in 28 hours (Petrovas 2007, Vodnala 2019)
         'PD1n_divide_threshold': 5,  # counts for triggering division (Zhao, 2020)
+        'LymphNode_delay_growth': 1000, #division in 4 hours () #TODO @John change & add citation
 
         # migration
         'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
@@ -368,6 +390,20 @@ class TCellProcess(Process):
                     'globals': {
                         'divide': True,
                         'PD1p_divide_count': PD1p_divide_count}}
+
+        elif cell_state == 'delay':
+            # prob_divide = get_probability_timestep(
+            #     self.parameters['LymphNode_delay_growth'],
+            #     1000,  # 4 hours (4*60*60 seconds = 14400) #TODO - @John Change back
+            #     timestep)
+            prob_divide = probability_of_occurrence_within_interval(
+                timestep, self.parameters['LymphNode_delay_growth'])
+            if random.uniform(0, 1) < prob_divide:
+                return {
+                    'globals': {
+                        'divide': True,
+                    }
+                }
 
         ## Build up an update
         update = {

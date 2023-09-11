@@ -51,17 +51,17 @@ class LymphNode(Process):
             # within the lymph node that are reactive (total pool of cells that could proliferated/divide. \
             # - from data and divide 3000/1000 (1/1000th of space that we are simulating) = 3
         'tcell_find_dendritic_time': 0.95,  # 95% will find dendritic in 4 hrs (Itano, 2003);;(Bousso, 2008)
-        'expected_dendritic_transit_time': 360,  # 28800 8*60*60. 8 hour delay between the time that a dendritic \ TODO - @John change back
+        'expected_dendritic_transit_time': 28800,  # 28800 8*60*60. 8 hour delay between the time that a dendritic \
             # cell leaves microenvironment until it is ready to interact with t cells in the LN and interact with \
             # T cells that take about 4 hours to find it for a total of 12 hours total until engagement is \
             # seen (Itano, 2003);;(Bousso, 2008)
         'expected_tcell_transit_time': 3600,  # 3600 60*60. arrive in tumor environment after 1 hour of migration in,\
             # efferent lymph to circulation (Hunter, 2016)
-        'expected_division_interval': 360,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \ TODO - @John change back
+        'expected_division_interval': 14400,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \
             # 3*60*60=10800, (Mempel, 2004);(Bousso, 2008)
-        'expected_interaction_duration': 360,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \ TODO - @John change back
+        'expected_interaction_duration': 28800,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \
             # 8 hours (Itano, 2003)
-        'expected_delay_before_migration': 43200,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \
+        'expected_delay_before_migration': 3000,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \ TODO - @John change back
             # complete before starting migration (Itano, 2003);(Bousso, 2008)
     }
 
@@ -175,16 +175,7 @@ class LymphNode(Process):
                             'target': ('in_transit', 'agents',),
                             'update': {'internal': {'cell_state': 'PD1n'}}
                         })
-                    else:
-                        # start dividing over next 12-18 hours. Probability of division goes up
-                        prob_divide = probability_of_occurrence_within_interval(
-                            timestep, self.parameters['expected_division_interval'])
-                        if random.uniform(0, 1) < prob_divide:
-                            if cell_id not in lymph_node_update:
-                                lymph_node_update[cell_id] = {}
-                            lymph_node_update[cell_id].update({
-                                'globals': {
-                                    'divide': True}})
+
                 else:
                     # Calculate probability of finding/initializing interaction with dendritic cells
                     # TODO -- this should depend on dendritic cell being present. Not interacting alone
