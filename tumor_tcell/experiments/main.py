@@ -562,16 +562,16 @@ def lymph_node_experiment():
     """
     return large_experiment(
         # TODO -- what initial states for the resubmission?
-        n_tcells=2,  # 12
+        n_tcells=3,  # 12
         n_tumors=5,  # 1200
-        n_dendritic=5,  # 1200
+        n_dendritic=6,  # 1200
         n_tcells_lymph_node=3,
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
         dendritic_state_active=0.5,  # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=3000,  # TODO -- run this for 259200 (3 days)
+        total_time=24000,  # TODO -- run this for 259200 (3 days)
         field_molecules=['IFNg', 'tumor_debris'],
     )
 

@@ -61,7 +61,7 @@ class LymphNode(Process):
             # 3*60*60=10800, (Mempel, 2004);(Bousso, 2008)
         'expected_interaction_duration': 28800,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \
             # 8 hours (Itano, 2003)
-        'expected_delay_before_migration': 3000,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \ TODO - @John change back
+        'expected_delay_before_migration': 43200,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \
             # complete before starting migration (Itano, 2003);(Bousso, 2008)
     }
 
@@ -181,7 +181,7 @@ class LymphNode(Process):
                     # TODO -- this should depend on dendritic cell being present. Not interacting alone
                     prob_interaction = get_probability_timestep(   # TODO -- ERAN -- why not probability_of_occurrence_within_interval?
                         self.parameters['tcell_find_dendritic_time'],
-                        360,  # 14400 6 hours (6*60*60 seconds) TODO - @John change back
+                        14400,  # 14400 6 hours (6*60*60 seconds)
                         timestep) #(Itano, 2003)
                     if random.uniform(0, 1) < prob_interaction:
                         # this t-cell is now interacting
