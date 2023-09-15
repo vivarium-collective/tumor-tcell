@@ -176,22 +176,22 @@ def tumor_tcell_abm(
     n_bins=NBINS,
     depth=DEPTH,
     field_molecules=['IFNg'],
-    n_tumors=120,
+    n_tumors=20,
     n_tcells=9,
     n_dendritic=0,
-    n_tcells_lymph_node=3,
+    n_tcells_lymph_node=0,
     tumors=None, # @Eran - is this necessary?
     tcells=None, # @Eran - is this necessary?
     dendritic_cells=None, # @Eran - is this necessary?
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=0.8,
     tcells_total_PD1n=None,
-    dendritic_state_active=0.0,
-    total_time=70000,
+    dendritic_state_active=0.5,
+    total_time=6000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
-    emit_step=1,
+    emit_step=10*TIMESTEP,
     emitter='timeseries',
     parallel=False,
     tumors_distance=None,
@@ -335,19 +335,19 @@ def tumor_tcell_abm(
     for agent_id in tumors.keys():
         tumor = tumor_composer.generate({'agent_id': agent_id})
         composite_model.merge(composite=tumor, path=(TUMOR_ENV_ID, 'agents', agent_id))
+    if lymph_nodes:
+        # add dendritic cells to the composite
+        for agent_id in dendritic_cells.keys():
+            dendritic = dendritic_composer.generate({'agent_id': agent_id})
+            composite_model.merge(composite=dendritic, path=(TUMOR_ENV_ID, 'agents', agent_id))
 
-    # add dendritic cells to the composite
-    for agent_id in dendritic_cells.keys():
-        dendritic = dendritic_composer.generate({'agent_id': agent_id})
-        composite_model.merge(composite=dendritic, path=(TUMOR_ENV_ID, 'agents', agent_id))
-
-    # add lymph node T cells
-    for index, agent_id in enumerate(tcells_lymph_node.keys()):
-        t_cell = t_cell_composer.generate({'agent_id': agent_id})
-        if index == 0:  # put first one in transit
-            composite_model.merge(composite=t_cell, path=(TRANSIT_ID, 'agents', agent_id))
-        else:  # the rest go in the lymph node
-            composite_model.merge(composite=t_cell, path=(LN_ID, 'agents', agent_id))
+        # add lymph node T cells
+        for index, agent_id in enumerate(tcells_lymph_node.keys()):
+            t_cell = t_cell_composer.generate({'agent_id': agent_id})
+            if index == 0:  # put first one in transit
+                composite_model.merge(composite=t_cell, path=(TRANSIT_ID, 'agents', agent_id))
+            else:  # the rest go in the lymph node
+                composite_model.merge(composite=t_cell, path=(LN_ID, 'agents', agent_id))
 
     ###################################
     # Initialize the simulation state #
@@ -564,14 +564,14 @@ def lymph_node_experiment():
         # TODO -- what initial states for the resubmission?
         n_tcells=3,  # 12
         n_tumors=5,  # 1200
-        n_dendritic=6,  # 1200
+        n_dendritic=0,  # 1200
         n_tcells_lymph_node=3,
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
         dendritic_state_active=0.5,  # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=24000,  # TODO -- run this for 259200 (3 days)
+        total_time=6000,  # TODO -- run this for 259200 (3 days)
         field_molecules=['IFNg', 'tumor_debris'],
     )
 

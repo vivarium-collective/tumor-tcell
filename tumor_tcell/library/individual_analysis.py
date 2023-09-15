@@ -65,30 +65,37 @@ def individual_analysis(analysis_dir, experiment_id, bounds, tcells=True, lymph_
 
         population_plot(population_data=tumor_plot, cell_states=['PDL1n', 'PDL1p'], out_dir=figures_out_dir,save_name='Tumors')
         population_plot(population_data=tcell_plot, cell_states=['PD1n', 'PD1p'], out_dir=figures_out_dir,save_name='Tcells')
-        population_plot(population_data=dendritic_plot, cell_states=['inactive', 'active'], out_dir=figures_out_dir,
+
+        if lymph_nodes:
+            population_plot(population_data=dendritic_plot, cell_states=['inactive', 'active'], out_dir=figures_out_dir,
                         save_name='Dendritic')
+            if not df_dendritic_death.empty:
+                death_plot(death_data=df_dendritic_death, out_dir=figures_out_dir, save_name='Dendritic')
 
         if not df_tumor_death.empty:
             death_plot(death_data=df_tumor_death, out_dir=figures_out_dir, save_name='Tumors')
         if not df_tcell_death.empty:
             death_plot(death_data=df_tcell_death, out_dir=figures_out_dir, save_name='Tcells')
-        if not df_dendritic_death.empty:
-            death_plot(death_data=df_dendritic_death, out_dir=figures_out_dir, save_name='Dendritic')
+
 
         #Export the dataframes for analysis comparison to other experiments and not need to process again
         df_tumor_death['experiment_id'] = experiment_id
         df_tcell_death['experiment_id'] = experiment_id
-        df_dendritic_death['experiment_id'] = experiment_id
         tumor_plot['experiment_id'] = experiment_id
         tcell_plot['experiment_id'] = experiment_id
-        dendritic_plot['experiment_id'] = experiment_id
+
+        if lymph_nodes:
+            df_dendritic_death['experiment_id'] = experiment_id
+            dendritic_plot['experiment_id'] = experiment_id
 
         df_tumor_death.to_csv('tumor_death.csv')
         df_tcell_death.to_csv('tcell_death.csv')
-        df_dendritic_death.to_csv('dendritic_death.csv')
         tumor_plot.to_csv('tumor_plot.csv')
         tcell_plot.to_csv('tcell_plot.csv')
-        dendritic_plot.to_csv('dendritic_plot.csv')
+
+        if lymph_nodes:
+            df_dendritic_death.to_csv('dendritic_death.csv')
+            dendritic_plot.to_csv('dendritic_plot.csv')
     else:
         # Population analysis
         df_tumor_death, tumor_plot = control_data_to_dataframes(data)
