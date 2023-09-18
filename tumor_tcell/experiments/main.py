@@ -176,18 +176,18 @@ def tumor_tcell_abm(
     n_bins=NBINS,
     depth=DEPTH,
     field_molecules=['IFNg'],
-    n_tumors=20,
-    n_tcells=9,
+    n_tumors=30,
+    n_tcells=30,
     n_dendritic=0,
-    n_tcells_lymph_node=0,
+    n_tcells_lymph_node=3,
     tumors=None, # @Eran - is this necessary?
     tcells=None, # @Eran - is this necessary?
     dendritic_cells=None, # @Eran - is this necessary?
     tumors_state_PDL1n=0.5,
-    tcells_state_PD1n=0.8,
-    tcells_total_PD1n=None,
+    tcells_state_PD1n=None,
+    tcells_total_PD1n=9,
     dendritic_state_active=0.5,
-    total_time=6000,
+    total_time=60000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
     halt_threshold=300,  # stop simulation at this number
     time_step=TIMESTEP,
@@ -200,7 +200,7 @@ def tumor_tcell_abm(
     tcells_excluded_distance=None,
     tumors_center=None,
     tcell_center=None,
-    lymph_nodes=False,
+    lymph_nodes=True, #TODO @John - change back to False
 ):
     """ Tumor-Tcell simulation
 
@@ -562,16 +562,16 @@ def lymph_node_experiment():
     """
     return large_experiment(
         # TODO -- what initial states for the resubmission?
-        n_tcells=3,  # 12
-        n_tumors=5,  # 1200
-        n_dendritic=0,  # 1200
+        n_tcells=11,  # 12
+        n_tumors=20,  # 1200
+        n_dendritic=2,  # 1200
         n_tcells_lymph_node=3,
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,
         tcells_total_PD1n=1,  # 9, 3
         dendritic_state_active=0.5,  # This should be changed to 0 after check that is working
         lymph_nodes=True,
-        total_time=6000,  # TODO -- run this for 259200 (3 days)
+        total_time=120000,  # TODO -- run this for 259200 (3 days)
         field_molecules=['IFNg', 'tumor_debris'],
     )
 

@@ -369,7 +369,7 @@ class TCellProcess(Process):
                             'death': 'PD1p_apoptosis'}}
 
         # division
-        elif cell_state == 'PD1n':
+        if cell_state == 'PD1n':
             prob_divide = get_probability_timestep(
                 self.parameters['PD1n_growth_28hr'],
                 100800,  # 28 hours (28*60*60 seconds)

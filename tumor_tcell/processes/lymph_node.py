@@ -51,7 +51,7 @@ class LymphNode(Process):
             # within the lymph node that are reactive (total pool of cells that could proliferated/divide. \
             # - from data and divide 3000/1000 (1/1000th of space that we are simulating) = 3
         'tcell_find_dendritic_time': 0.95,  # 95% will find dendritic in 4 hrs (Itano, 2003);;(Bousso, 2008)
-        'expected_dendritic_transit_time': 60,  # Assuming that some DCs already present within lymph node 28800 8*60*60. \
+        'expected_dendritic_transit_time': 28800,  # Assuming that some DCs already primed/heading to lymph node 28800 8*60*60. \
             # 8 hour delay between the time that a dendritic \
             # cell leaves microenvironment until it is ready to interact with t cells in the LN and interact with \
             # T cells that take about 4 hours to find it for a total of 12 hours total until engagement is \
