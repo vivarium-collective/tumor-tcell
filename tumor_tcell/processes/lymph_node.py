@@ -238,7 +238,10 @@ class LymphNode(Process):
                     if '_move' not in in_transit_update:
                         in_transit_update['_move'] = []
                     # arrive at tumor
-                    location = random_location(self.parameters['tumor_env_bounds'])
+                    location = random_location(bounds=self.parameters['tumor_env_bounds'],
+                                               center=None,
+                                               distance_from_center=self.parameters['tumor_env_bounds'][0]/5,
+                                               excluded_distance_from_center=None,)
                     specs['boundary']['location'] = location  # TODO -- need to add this location in move
                     in_transit_update['_move'].append({
                         'source': (cell_id,),
