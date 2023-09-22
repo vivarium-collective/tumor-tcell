@@ -30,6 +30,7 @@ class DendriticCellProcess(Process):
         *
     """
     defaults = {
+        'time_step': TIMESTEP,
         'mass': 2.0 * units.ng,  # TODO
         'diameter': 10.0 * units.um,  # * units.um, (Morefield, 2005)
         'velocity': 3.0,  # * units.um/units.min,  # when inactive 2-5 um/min, \
@@ -101,11 +102,11 @@ class DendriticCellProcess(Process):
                 'cell_state_count': {
                     '_default': 0,
                     '_updater': 'accumulate'},  # counts how many total cell in a given time. Might not be needed.
-                'lymph_node_timer': {
-                    # counts how long in lymph node, high value increases chance of migration back to tumor
-                    '_default': 0,  # TODO -- does the LN time this, or do the cells?
-                    '_emit': True,
-                    '_updater': 'accumulate'},
+                # 'lymph_node_timer': {
+                #     # counts how long in lymph node, high value increases chance of migration back to tumor
+                #     '_default': 0,  # TODO -- does the LN time this, or do the cells?
+                #     '_emit': True,
+                #     '_updater': 'accumulate'},
             },
             'boundary': {
                 'cell_type': {
@@ -122,9 +123,20 @@ class DendriticCellProcess(Process):
                 'external': {
                     'tumor_debris': {
                         '_default': 0.0,  # TODO: units.ng / units.mL
-                        '_emit': True},
-                    'lymph_node': {
-                        '_default': False}}},  # this is True when in the lymph node, begins counter for how long.
+                        '_emit': True
+                    },
+                    # 'lymph_node': {    # this is True when in the lymph node, begins counter for how long.
+                    #     '_default': False
+                    # },
+                },
+                'exchange': {
+                    'tumor_debris': {
+                        '_default': 0,
+                        '_updater': 'accumulate',
+                        '_divider': 'split',
+                    },
+                },
+            },
             'neighbors': {  # this is only for presenting in the lymph node, not in the tumor "arena"
                 'present': {
                     'PDL1': {
@@ -197,6 +209,7 @@ class DendriticCellProcess(Process):
 
         # behavior
         # uptake locally available tumor debris in the environment
+        # TODO -- make sure exchange is working correctly.
         tumor_debris_uptake = min(
             int(self.parameters['tumor_debris_uptake'] * timestep),
             int(available_tumor_debris_counts))  # TODO -- check this

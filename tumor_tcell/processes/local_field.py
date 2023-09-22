@@ -11,7 +11,7 @@ environmental state.
 import numpy as np
 from scipy import constants
 
-from vivarium.core.process import Deriver
+from vivarium.core.process import Step
 from vivarium.library.units import units, remove_units
 
 from vivarium_multibody.library.lattice_utils import (
@@ -25,7 +25,8 @@ LENGTH_UNIT = units.um
 UNITLESS_AVOGADRO = constants.N_A
 
 
-class LocalField(Deriver):
+class LocalField(Step):
+    """Take exchanges and apply them to a field at the agents location"""
 
     name = 'local_field'
     defaults = {

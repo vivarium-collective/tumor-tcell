@@ -564,7 +564,7 @@ def lymph_node_experiment():
         # TODO -- what initial states for the resubmission?
         n_tcells=11,  # 12
         n_tumors=12,  # 1200
-        n_dendritic=0,  # 1200
+        n_dendritic=1,  # 1200
         n_tcells_lymph_node=4,
         # tcells_state_PD1n=0.8, # Set exact numbers instead with tcells_total_PD1n
         tumors_state_PDL1n=0.5,

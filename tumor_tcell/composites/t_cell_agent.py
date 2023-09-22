@@ -37,6 +37,7 @@ class TCellAgent(Composer):
 
     name = NAME
     defaults = {
+        'time_step': TIMESTEP,
         'reuse_processes': False,
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
@@ -77,6 +78,7 @@ class TCellAgent(Composer):
 
     def __init__(self, config):
         super().__init__(config)
+        self.config['tcell']['time_step'] = self.config['time_step']
         self.processes_initialized = False
 
     def initialize_processes(self, config):

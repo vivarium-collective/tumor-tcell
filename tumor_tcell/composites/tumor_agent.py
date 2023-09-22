@@ -36,6 +36,7 @@ class TumorAgent(Composer):
 
     name = NAME
     defaults = {
+        'time_step': TIMESTEP,
         'reuse_processes': False,
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
@@ -73,6 +74,7 @@ class TumorAgent(Composer):
 
     def __init__(self, config):
         super().__init__(config)
+        self.config['tumor']['time_step'] = self.config['time_step']
         self.processes_initialized = False
 
     def initial_state(self, config=None):
