@@ -110,7 +110,7 @@ def get_tcells(
         } for n in range(number)}
 
 
-def get_tumors(number=1, relative_pdl1n=0.5):
+def get_tumors(number=1, relative_pdl1n=0.5, IFN_int_rate=21/60):
     """
     make an initial state for any number of tumor instances,
     with either PD1 negative (`PDL1n`) or PD1 positive (`PDL1p`) states determined by the parameter
@@ -121,6 +121,7 @@ def get_tumors(number=1, relative_pdl1n=0.5):
             'type': 'tumor',
             'cell_state': 'PDL1n' if random.uniform(0, 1) < relative_pdl1n else 'PDL1p',
             'diameter': 15 * units.um,
+            'internalization_IFNg_rate': IFN_int_rate,
         } for n in range(number)}
 
 
@@ -185,7 +186,7 @@ def tumor_tcell_abm(
     dendritic_cells=None, # @Eran - is this necessary?
     tumors_state_PDL1n=0.5,
     tcells_state_PD1n=None,
-    tcells_total_PD1n=9,
+    tcells_total_PD1n=24,
     dendritic_state_active=0.5,
     total_time=60000,
     sim_step=10*TIMESTEP,  # simulation increments at which halt_threshold is checked
@@ -201,6 +202,7 @@ def tumor_tcell_abm(
     tumors_center=None,
     tcell_center=None,
     lymph_nodes=True, #TODO @John - change back to False
+    IFN_int_rate_set = 21/60,
 ):
     """ Tumor-Tcell simulation
 
@@ -321,7 +323,8 @@ def tumor_tcell_abm(
     if not tumors:
         tumors = get_tumors(
             number=n_tumors,
-            relative_pdl1n=tumors_state_PDL1n)
+            relative_pdl1n=tumors_state_PDL1n,
+            IFN_int_rate = IFN_int_rate_set)
     if not dendritic_cells:
         dendritic_cells = get_dendritic(
             number=n_dendritic, dendritic_state_active=dendritic_state_active)
@@ -385,7 +388,9 @@ def tumor_tcell_abm(
     initial_tumors = {
         agent_id: {
             'internal': {
-                'cell_state': state.get('cell_state', None)},
+                'cell_state': state.get('cell_state', None),
+                'internalization_IFNg_rate': state.get('internalization_IFNg_rate', 21/60),
+            },
             'boundary': {
                 'cell_type': 'tumor',
                 'location': state.get('location', random_location(

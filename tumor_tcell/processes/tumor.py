@@ -148,7 +148,11 @@ class TumorProcess(Process):
                 },
                 'cell_state_count': {
                     '_default': 0,
-                    '_updater': 'accumulate'}
+                    '_updater': 'accumulate'
+                },
+                'internalization_IFNg_rate': {
+                    '_default': self.parameters['Max_IFNg_internalization'],
+                }
             },
             'boundary': {
                 'cell_type': {
@@ -218,6 +222,7 @@ class TumorProcess(Process):
         cytotoxic_packets = states['neighbors']['receive']['cytotoxic_packets']
         external_IFNg = states['boundary']['external']['IFNg']  # concentration  nanogram / milliliter
         internal_IFNg = states['internal']['IFNg']  # counts
+        internalization_IFNg_rate = states['internal']['internalization_IFNg_rate']
 
         # determine available IFNg
         diameter = states['boundary']['diameter'].to('micrometer').magnitude  # micrometer
@@ -302,7 +307,7 @@ class TumorProcess(Process):
                 'MHCI': MHCI})
 
             # uptake locally available IFNg in the environment
-            IFNg_degrade = min(int(self.parameters['Max_IFNg_internalization'] \
+            IFNg_degrade = min(int(internalization_IFNg_rate \
                                    / self.parameters['reduction_IFNg_internalization'] * timestep), int(available_IFNg))
 
             update['boundary'].update({
@@ -312,7 +317,7 @@ class TumorProcess(Process):
 
         elif new_cell_state == 'PDL1n':
             # degrade locally available IFNg in the environment
-            IFNg_degrade = min(int(self.parameters['Max_IFNg_internalization'] * timestep), int(available_IFNg))
+            IFNg_degrade = min(int(internalization_IFNg_rate * timestep), int(available_IFNg))
 
             update['boundary'].update({
                 'exchange': {'IFNg': -IFNg_degrade}})
