@@ -73,7 +73,7 @@ class TumorProcess(Process):
         # PDL1p no growth - Cells arrested, do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # IFNg Internalization
-        'Max_IFNg_internalization': 21/60,  # number of IFNg 1250 molecules/cell/hr degraded conv to seconds (A. Celada, 1987)
+        'Max_IFNg_internalization': 31/60,  # number of IFNg 1860 molecules/cell/hr degraded conv to seconds (A. Celada, 1987)
         # volume to convert counts to available IFNg molecules able to be internalized based on the diffusion
         # coefficient and timestep of 60s
         'diffusion': DIFFUSION_RATES,
