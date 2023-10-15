@@ -254,10 +254,14 @@ def format_snapshot_data(data):
     agents = {}
     fields = {}
     for time, time_data in data.items():
-        for compartment, compartment_data in time_data.items():
-            if compartment == 'tumor_environment':
-                agents[time] = compartment_data['agents']
-                fields[time] = compartment_data['fields']
+        if 'agents' in time_data:
+            agents[time] = time_data['agents']
+            fields[time] = time_data['fields']
+        else:
+            for compartment, compartment_data in time_data.items():
+                if compartment == 'tumor_environment':
+                    agents[time] = compartment_data['agents']
+                    fields[time] = compartment_data['fields']
     return agents, fields
 
 

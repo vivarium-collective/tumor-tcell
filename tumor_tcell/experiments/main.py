@@ -307,6 +307,8 @@ def tumor_tcell_abm(
     composite_model.merge(composite=logger, path=(TUMOR_ENV_ID,))
 
     # Make the cells
+    tcells = {}
+    tcells_lymph_node = {}
     if not tcells:
         tcells = get_tcells(
             number=n_tcells,
@@ -579,7 +581,7 @@ def lymph_node_experiment():
 def plots_suite(
         data,
         out_dir=None,
-        bounds=BOUNDS,
+        bounds=None,
         n_snapshots=8,
         final_time=None,
 ):
@@ -591,6 +593,7 @@ def plots_suite(
         * fig2: tumor multi-generation timeseries plot
         * fig3: snapshot plot
     """
+    bounds = bounds or BOUNDS
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     # data_export = open(out_dir+'/data_export.pkl', 'wb')
