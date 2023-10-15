@@ -39,7 +39,6 @@ from vivarium.core.composition import process_in_experiment
 # directories
 from tumor_tcell import PROCESS_OUT_DIR
 
-
 NAME = 'neighbors'
 DEFAULT_MASS_UNIT = units.ng
 DEFAULT_VELOCITY_UNIT = units.um / units.s
@@ -56,21 +55,25 @@ def daughter_locations(mother_location, state):
     mother_y = mother_location[1]
     locations = []
     for daughter in range(2):
-        location = [mother_x + random.gauss(0, 0.1)*mother_diameter, mother_y + random.gauss(0, 0.1)*mother_diameter]
+        location = [mother_x + random.gauss(0, 0.1) * mother_diameter,
+                    mother_y + random.gauss(0, 0.1) * mother_diameter]
         locations.append(location)
     return locations
+
 
 def sphere_volume_from_diameter(diameter):
     """Given a diameter for a sphere, return the volume"""
     radius = diameter / 2
-    volume = 4 / 3 * (PI * radius**3)
+    volume = 4 / 3 * (PI * radius ** 3)
     return volume
+
 
 def make_random_position(bounds):
     """Return a random position with the [x, y] bounds"""
     return [
         np.random.uniform(0, bound.magnitude) * bound.units
         for bound in bounds]
+
 
 def add_to_dict(dict, added):
     for k, v in added.items():
@@ -79,6 +82,7 @@ def add_to_dict(dict, added):
         else:
             dict[k] = v
     return dict
+
 
 def remove_from_dict(dict, removed):
     for k, v in removed.items():
@@ -145,7 +149,7 @@ class Neighbors(Process):
             'bounds': [
                 b.to(self.length_unit).magnitude
                 for b in parameters['bounds']],
-            'physics_dt': min(timestep/10, 0.1)}
+            'physics_dt': min(timestep / 10, 0.1)}
         self.physics = Pymunk(multibody_config)
 
         # interactive plot for visualization
@@ -271,7 +275,8 @@ class Neighbors(Process):
         """
         for bodies_id, specs in bodies.items():
             # convert location
-            bodies[bodies_id]['boundary']['location'] = [loc.to(self.length_unit).magnitude for loc in specs['boundary']['location']]
+            bodies[bodies_id]['boundary']['location'] = [loc.to(self.length_unit).magnitude for loc in
+                                                         specs['boundary']['location']]
             # convert diameter
             bodies[bodies_id]['boundary']['diameter'] = specs['boundary']['diameter'].to(self.length_unit).magnitude
             # convert mass
@@ -359,8 +364,8 @@ class Neighbors(Process):
 
         xl = self.remove_length_units(bounds[0])
         yl = self.remove_length_units(bounds[1])
-        plt.xlim([-xl, 2*xl])
-        plt.ylim([-yl, 2*yl])
+        plt.xlim([-xl, 2 * xl])
+        plt.ylim([-yl, 2 * yl])
         plt.draw()
         plt.pause(0.01)
 
@@ -368,7 +373,9 @@ class Neighbors(Process):
 # configs
 DEFAULT_DIAMETER = 7.5 * DEFAULT_LENGTH_UNIT
 
+
 def single_cell_config(config):
+    """return config dict for a single cell"""
     # cell dimensions
     diameter = DEFAULT_DIAMETER
     volume = sphere_volume_from_diameter(diameter)
@@ -402,6 +409,7 @@ def cell_body_config(config):
 class InvokeUpdate(object):
     def __init__(self, update):
         self.update = update
+
     def get(self, timeout=0):
         return self.update
 
@@ -410,6 +418,7 @@ default_gd_config = {'bounds': DEFAULT_BOUNDS}
 default_gd_config.update(cell_body_config({
     'bounds': DEFAULT_BOUNDS,
     'cell_ids': ['1', '2']}))
+
 
 def test_growth_division(config=default_gd_config, settings={}):
     initial_cells_state = config['cells']
@@ -426,7 +435,7 @@ def test_growth_division(config=default_gd_config, settings={}):
                 'diameter': {
                     '_updater': 'set',
                     '_divider': 'split'},
-                }})
+            }})
     experiment.state._apply_subschemas()
 
     # get initial cell state
@@ -489,6 +498,7 @@ def test_growth_division(config=default_gd_config, settings={}):
     experiment.end()
     return experiment.emitter.get_data()
 
+
 def multibody_neighbors_workflow(
         config={}, out_dir='out', filename='neighbors'):
     n_cells = 2
@@ -512,7 +522,6 @@ def multibody_neighbors_workflow(
         'cell_ids': cell_ids}
     gd_config.update(cell_body_config(body_config))
     gd_data = test_growth_division(gd_config, settings)
-
 
 
 if __name__ == '__main__':

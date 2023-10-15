@@ -139,10 +139,13 @@ class DendriticAgent(Composer):
 # tests
 def test_dendritic_agent(
         total_time=1000,
-        agent_ids=['0'],
+        agent_ids=None,
         agent_timeline=None,
         initial_agent_state='PD1n',
 ):
+    """run a test on dendritic cell agents"""
+    if agent_ids is None:
+        agent_ids = ['0']
     composite = Composite()
     for agent_id in agent_ids:
         parameters = {'agent_id': agent_id}
@@ -191,6 +194,7 @@ def test_dendritic_agent(
 
 
 def run_agent(out_dir='out'):
+    """run one agent and plot results"""
     agent_ids = ['0', '1']
     agent_timeline = []
     data = test_dendritic_agent(

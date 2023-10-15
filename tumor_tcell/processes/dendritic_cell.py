@@ -14,7 +14,7 @@ from vivarium.plots.simulation_output import plot_simulation_output
 from vivarium.library.units import units
 from vivarium.processes.timeline import TimelineProcess
 
-from tumor_tcell.processes.fields import DIFFUSION_RATES  # , CONCENTRATION_UNIT
+from tumor_tcell.processes.fields import DIFFUSION_RATES
 from tumor_tcell.processes.tumor import get_probability_timestep
 
 TIMESTEP = 60  # seconds
@@ -102,11 +102,6 @@ class DendriticCellProcess(Process):
                 'cell_state_count': {
                     '_default': 0,
                     '_updater': 'accumulate'},  # counts how many total cell in a given time. Might not be needed.
-                # 'lymph_node_timer': {
-                #     # counts how long in lymph node, high value increases chance of migration back to tumor
-                #     '_default': 0,  # TODO -- does the LN time this, or do the cells?
-                #     '_emit': True,
-                #     '_updater': 'accumulate'},
             },
             'boundary': {
                 'cell_type': {

@@ -7,7 +7,6 @@ import random
 from vivarium.core.process import Process
 from vivarium.core.engine import pp, Engine
 from tumor_tcell.processes.t_cell import get_probability_timestep, TIMESTEP
-from vivarium.library.units import remove_units
 from tumor_tcell.library.location import random_location, DEFAULT_BOUNDS
 from tumor_tcell.processes.local_field import LENGTH_UNIT
 from tumor_tcell.processes.neighbors import DEFAULT_MASS_UNIT, DEFAULT_VELOCITY_UNIT
@@ -258,6 +257,7 @@ class LymphNode(Process):
 
 
 def test_lymph_node():
+    """run a test for moving cells between the lymph node and tumor environment"""
     simtime = 1000000
     init_state = {
         'cells': {
