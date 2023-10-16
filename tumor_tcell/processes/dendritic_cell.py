@@ -1,7 +1,7 @@
 """
-==============
+======================
 Dendritic Cell Process
-==============
+======================
 """
 
 import random
@@ -27,7 +27,11 @@ class DendriticCellProcess(Process):
     """DendriticCellProcess
 
     References:
-        *
+        * Morefield, 2005
+        * Lammermann, 2008
+        * Naik, 2008
+        * Yang, 2006
+        * Apetoh, 2007
     """
     defaults = {
         'time_step': TIMESTEP,
@@ -67,9 +71,9 @@ class DendriticCellProcess(Process):
         diffusion_radius = diffusion_area ** 0.5
         sphere_radius = self.parameters['diameter'] / 2 + diffusion_radius
         external_tumor_debris_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3
-        self.molar_available_tumor_debris = (self.parameters['external_concentration_unit'] * \
-                                            external_tumor_debris_available_volume * self.parameters['nAvagadro'] / \
-                                            self.parameters['tumor_debris_MW']).to('count').magnitude
+        self.molar_available_tumor_debris = (self.parameters['external_concentration_unit'] *
+                                             external_tumor_debris_available_volume * self.parameters['nAvagadro'] /
+                                             self.parameters['tumor_debris_MW']).to('count').magnitude
 
     def initial_state(self, config=None):
         return {
@@ -82,7 +86,7 @@ class DendriticCellProcess(Process):
                 'death': {
                     '_default': False,
                     '_emit': True,
-                    '_updater': 'set'},  # nice to have. Need mechanism that turns death on. Low probability threshold?
+                    '_updater': 'set'},
                 'divide': {
                     '_default': False,
                     '_updater': 'set'},
@@ -91,23 +95,20 @@ class DendriticCellProcess(Process):
                     '_updater': 'accumulate'}},  # used to count number of divisions over time.
             'internal': {
                 'cell_state': {
-                    '_default': 'inactive',
+                    '_default': 'inactive',  # either 'activate' or 'inactive'
                     '_emit': True,
-                    '_updater': 'set',
-                },  # either 'activate' or 'inactive'
+                    '_updater': 'set'},
                 'tumor_debris': {
                     '_default': 0,
                     '_updater': 'accumulate',
                     '_emit': True},
                 'cell_state_count': {
-                    '_default': 0,
-                    '_updater': 'accumulate'},  # counts how many total cell in a given time. Might not be needed.
-            },
+                    '_default': 0,  # counts how many total cell in a given time. Might not be needed.
+                    '_updater': 'accumulate'}},
             'boundary': {
                 'cell_type': {
                     '_value': 'dendritic',
                     '_emit': True, },
-                # Might be needed for neighbors, but really for the experimenters to quantify
                 'mass': {
                     '_value': self.parameters['mass']},
                 'diameter': {
@@ -118,37 +119,26 @@ class DendriticCellProcess(Process):
                 'external': {
                     'tumor_debris': {
                         '_default': 0.0,  # TODO: units.ng / units.mL
-                        '_emit': True
-                    },
-                    # 'lymph_node': {    # this is True when in the lymph node, begins counter for how long.
-                    #     '_default': False
-                    # },
-                },
+                        '_emit': True}},
                 'exchange': {
                     'tumor_debris': {
                         '_default': 0,
                         '_updater': 'accumulate',
-                        '_divider': 'split',
-                    },
-                },
-            },
-            'neighbors': {  # this is only for presenting in the lymph node, not in the tumor "arena"
+                        '_divider': 'split'}}},
+            'neighbors': {
                 'present': {
                     'PDL1': {
                         '_default': 0,
                         '_updater': 'set'},
                     'MHCI': {
-                        '_default': 0,  # high level for activation, should come from environment
+                        '_default': 0,
                         '_updater': 'set',
                         '_emit': True}},
                 'accept': {
                     'PD1': {'_default': 0},
                     'TCR': {
                         '_default': 0,
-                        '_emit': True
-                    }
-                }
-            }}
+                        '_emit': True}}}}
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
@@ -184,7 +174,7 @@ class DendriticCellProcess(Process):
                         'PDL1n_divide_count': PDL1n_divide_count
                     }}
 
-        ## Build up an update
+        # Build up an update
         update = {
             'internal': {},
             'boundary': {},
@@ -208,10 +198,8 @@ class DendriticCellProcess(Process):
         tumor_debris_uptake = min(
             int(self.parameters['tumor_debris_uptake'] * timestep),
             int(available_tumor_debris_counts))  # TODO -- check this
-        update['boundary'].update(
-            {'exchange': {'tumor_debris': -tumor_debris_uptake}})
-        update['internal'].update({
-            'tumor_debris': tumor_debris_uptake})
+        update['boundary'].update({'exchange': {'tumor_debris': -tumor_debris_uptake}})
+        update['internal'].update({'tumor_debris': tumor_debris_uptake})
 
         if new_cell_state == 'active':
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
