@@ -7,7 +7,7 @@ The tumor process is focused on two states of a tumor: proliferative with low le
 of immune molecules (MHCI and PDL1) and quiescent with high levels of immune molecules
 (MHCI and PDL1). Its transition from the proliferative state is dependent on the level
 of interferon gamma it is exposed to coming from the T cells. Both tumor types can be
-killed by recieving cytotoxic packets from the T cells.
+killed by receiving cytotoxic packets from the T cells.
 
 This process can be run on its own from the command line. There are three simulation
 options: "single", "batch" and "timeline". Single simulates the process on its own
@@ -36,12 +36,12 @@ from vivarium.plots.simulation_output import plot_simulation_output
 from tumor_tcell import PROCESS_OUT_DIR
 from tumor_tcell.processes.fields import DIFFUSION_RATES, CONCENTRATION_UNIT
 
-
 NAME = 'Tumor'
 TIMESTEP = 60
-CONCENTRATION_UNIT_CONVERSION = 1 #ng/mL
+CONCENTRATION_UNIT_CONVERSION = 1  # ng/mL
 AVOGADRO = constants.N_A
 PI = constants.pi
+
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
     """transition probability as function of time"""
@@ -73,27 +73,28 @@ class TumorProcess(Process):
         # PDL1p no growth - Cells arrested, do not divide (data, Thibaut 2020, Hoekstra 2020)
 
         # IFNg Internalization
-        'Max_IFNg_internalization': 31/60,  # number of IFNg 1860 molecules/cell/hr degraded conv to seconds (A. Celada, 1987)
+        'Max_IFNg_internalization': 31 / 60,  # number of IFNg 1860 molecules/cell/hr degraded,
+        # converted to seconds (A. Celada, 1987)
         # volume to convert counts to available IFNg molecules able to be internalized based on the diffusion
         # coefficient and timestep of 60s
         'diffusion': DIFFUSION_RATES,
-        'external_IFNg_available_volume': 8.24*10 ** -8,  # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
-        #TODO - make this more general from timestep/diameter
-        #TODO - Use a global IFNg MW (also use in local fields)
-        #TODO - synchronize expected concentration units with local fields
+        'external_IFNg_available_volume': 8.24 * 10 ** -8,  # in mL 12 um +diameter of 15 um = 4/3*pi*(27 um)^3
+        # TODO - make this more general from timestep/diameter
+        # TODO - Use a global IFNg MW (also use in local fields)
+        # TODO - synchronize expected concentration units with local fields
         'external_concentration_unit': CONCENTRATION_UNIT,
         'pi': PI,
         'nAvagadro': AVOGADRO / units.mol,  # count / mol, #TODO convert back from ng
-        'IFNg_MW': 17000 * units.g/units.mol,  # g/mol
-        'IFNg_threshold': 15000,  # calculated from home data of incubating 1 ng/mL for 20 mL and 20x10^6 cells and half-life
+        'IFNg_MW': 17000 * units.g / units.mol,  # g/mol
+        'IFNg_threshold': 15000,  # calculated from data of incubating 1 ng/mL for 20 mL and 20x10^6 cells and half-life
         'reduction_IFNg_internalization': 2,  # based on data from (Ersvaer, 2007) & (Darzi, 2017)
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4,
         'PDL1p_MHCI_equilibrium': 5e4,
 
-        #Total tumor debris to release
-        'tumor_debris_amount': 1.4e15, #Molecules per cell (Apetoh, 2007)
+        # Total tumor debris to release
+        'tumor_debris_amount': 1.4e15,  # Molecules per cell (Apetoh, 2007)
     }
 
     def __init__(self, parameters=None):
@@ -111,13 +112,8 @@ class TumorProcess(Process):
             initial_state = 'PDL1p'
 
         return {
-            'internal': {
-                'cell_state': initial_state,
-            },
-            'boundary': {
-                'diameter': self.parameters['diameter']
-            },
-        }
+            'internal': {'cell_state': initial_state},
+            'boundary': {'diameter': self.parameters['diameter']}}
 
     def ports_schema(self):
         initial_cell_state = 'PDL1n' if random.uniform(0, 1) < self.parameters['initial_PDL1n'] else 'PDL1p'
@@ -132,86 +128,58 @@ class TumorProcess(Process):
                     '_updater': 'set'},
                 'PDL1n_divide_count': {
                     '_default': 0,
-                    '_updater': 'accumulate'}
-            },
+                    '_updater': 'accumulate'}},
             'internal': {
                 'cell_state': {
                     '_default': initial_cell_state,
                     '_emit': True,
-                    '_updater': 'set'
-                },
+                    '_updater': 'set'},
                 'IFNg': {
                     '_default': 0,
                     '_emit': True,
                     '_divider': 'split',
-                    '_updater': 'accumulate'
-                },
+                    '_updater': 'accumulate'},
                 'cell_state_count': {
                     '_default': 0,
-                    '_updater': 'accumulate'}
-            },
+                    '_updater': 'accumulate'}},
             'boundary': {
-                'cell_type': {
-                    '_value': 'tumor'
-                },
-                'mass': {
-                    '_value': self.parameters['mass']
-                },
-                'diameter': {
-                    '_default': self.parameters['diameter']
-                },
+                'cell_type': {'_value': 'tumor'},
+                'mass': {'_value': self.parameters['mass']},
+                'diameter': {'_default': self.parameters['diameter']},
                 'velocity': {
                     '_default': 0.0 * units.um / units.s,
-                    '_updater': 'set',
-                },
+                    '_updater': 'set'},
                 'external': {
-                    'IFNg': {
+                    'IFNg': {  # cytokine changes tumor phenotype to MHCI+ and PDL1+
                         '_default': 0.0 * CONCENTRATION_UNIT_CONVERSION,
-                        '_emit': True,
-                    }},  # cytokine changes tumor phenotype to MHCI+ and PDL1+
+                        '_emit': True}},
                 'exchange': {
                     'IFNg': {
                         '_default': 0,  # counts
-                        '_updater': 'accumulate',
-                    },
+                        '_updater': 'accumulate'},
                     'tumor_debris': {
                         '_default': 0,
                         '_updater': 'accumulate',
-                        '_divider': 'split',
-                    },
-                },
-
-            },
+                        '_divider': 'split'}}},
             'neighbors': {
                 'present': {
-                    'PDL1': {
+                    'PDL1': {  # membrane protein, promotes T cell exhaustion and deactivation with PD1
                         '_default': 0,
-                        '_updater': 'set',
-                    },  # membrane protein, promotes T cell exhaustion and deactivation with PD1
-                    'MHCI': {
+                        '_updater': 'set'},
+                    'MHCI': {  # membrane protein, promotes Tumor death and T cell activation with TCR
                         '_default': 1000,
-                        '_updater': 'set',
-                    }  # membrane protein, promotes Tumor death and T cell activation with TCR
-                },
+                        '_updater': 'set'}},
                 'accept': {
-                    'PD1': {
-                        '_default': 0,
-                    },
+                    'PD1': {'_default': 0},
                     'TCR': {
                         '_default': 0,
-                        '_emit': True,
-                    }
-                },
+                        '_emit': True}},
                 'receive': {
-                    'cytotoxic_packets': {
+                    'cytotoxic_packets': {  # from T cells
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'accumulate',
-                        '_divider': 'split',
-                    }  # from T cells
-                }
-            }
-        }
+                        '_divider': 'split'}}}}
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
@@ -230,7 +198,7 @@ class TumorProcess(Process):
         external_IFNg_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3  # micrometer ** 3
         available_IFNg = external_IFNg * external_IFNg_available_volume * self.IFNg_convert_to_counts_per_nanogram / 1e12  # counts
 
-        ## Build up an update
+        # Build up an update
         update = {'internal': {},
                   'boundary': {},
                   'neighbors': {'present': {}, 'accept': {}, 'receive': {}}}
@@ -238,13 +206,12 @@ class TumorProcess(Process):
         # death by apoptosis
         prob_death = get_probability_timestep(
             self.parameters['death_apoptosis'],
-            432000,  #432000 5 days (5*24*60*60 seconds)
+            432000,  # 432000 5 days (5*24*60*60 seconds)
             timestep)
         if random.uniform(0, 1) < prob_death:
-            #if lymph_node == True:
             tumor_debris = self.parameters['tumor_debris_amount']
             return {
-                'boundary':{
+                'boundary': {
                     'exchange': {'tumor_debris': int(tumor_debris)}},
                 'globals': {
                     'death': 'apoptosis'}}
@@ -252,7 +219,7 @@ class TumorProcess(Process):
         if cytotoxic_packets >= self.parameters['cytotoxic_packet_threshold']:
             tumor_debris = self.parameters['tumor_debris_amount']
             return {
-                'boundary':{
+                'boundary': {
                     'exchange': {'tumor_debris': int(tumor_debris)}},
                 'globals': {
                     'death': 'Tcell_death'}}
@@ -268,12 +235,9 @@ class TumorProcess(Process):
                 return {
                     'globals': {
                         'divide': True,
-                        'PDL1n_divide_count': PDL1n_divide_count
-                    }
-                }
+                        'PDL1n_divide_count': PDL1n_divide_count}}
         elif cell_state == 'PDL1p':
             pass
-
 
         # state transition
         new_cell_state = cell_state
@@ -290,9 +254,6 @@ class TumorProcess(Process):
             cell_state_count = 0
 
         # behavior
-        MHCI = 1000
-        PDL1 = 0
-
         if new_cell_state == 'PDL1p':
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']
             MHCI = self.parameters['PDL1p_MHCI_equilibrium']
@@ -305,19 +266,15 @@ class TumorProcess(Process):
             IFNg_degrade = min(int(self.parameters['Max_IFNg_internalization'] \
                                    / self.parameters['reduction_IFNg_internalization'] * timestep), int(available_IFNg))
 
-            update['boundary'].update({
-                'exchange': {'IFNg': -IFNg_degrade}})
-            update['internal'].update({
-                'IFNg': IFNg_degrade})
+            update['boundary'].update({'exchange': {'IFNg': -IFNg_degrade}})
+            update['internal'].update({'IFNg': IFNg_degrade})
 
         elif new_cell_state == 'PDL1n':
             # degrade locally available IFNg in the environment
             IFNg_degrade = min(int(self.parameters['Max_IFNg_internalization'] * timestep), int(available_IFNg))
 
-            update['boundary'].update({
-                'exchange': {'IFNg': -IFNg_degrade}})
-            update['internal'].update({
-                'IFNg': IFNg_degrade})
+            update['boundary'].update({'exchange': {'IFNg': -IFNg_degrade}})
+            update['internal'].update({'IFNg': IFNg_degrade})
 
         return update
 
@@ -328,7 +285,7 @@ def get_timeline(
         number_steps=10):
     """Make a timeline that feeds input to the tumor process"""
 
-    interval = total_time/(number_steps*TIMESTEP)
+    interval = total_time / (number_steps * TIMESTEP)
 
     timeline = [
         (interval * 0 * TIMESTEP, {
@@ -389,7 +346,7 @@ def test_single_Tumor(
 ):
     """Run a single tumor process"""
 
-    Tumor_process = TumorProcess({})
+    tumor_process = TumorProcess({})
 
     if timeline is not None:
         settings = {
@@ -402,64 +359,42 @@ def test_single_Tumor(
             'time_step': time_step}
 
     # get initial state
-    settings['initial_state'] = Tumor_process.initial_state()
+    settings['initial_state'] = tumor_process.initial_state()
 
     # run experiment
-    timeseries = simulate_process(Tumor_process, settings)
+    timeseries = simulate_process(tumor_process, settings)
 
     # plot
     plot_settings = {'remove_zeros': False}
     plot_simulation_output(timeseries, plot_settings, out_dir, NAME + '_single')
 
+
 def test_batch_tumor(
-    total_time=43200,
-    time_step=TIMESTEP,
-    batch_size=2,
-    timeline=None,
-    out_dir='out'):
-
+        total_time=43200,
+        time_step=TIMESTEP,
+        batch_size=2,
+        timeline=None,
+        out_dir='out'):
     override_schema = {
-       '_schema': {
-          'internal': {
-              'cell_state_count': {
-                  '_emit': False
-              },
-              'cell_state': {
-                  '_emit': False
-              },
-
-          },
-          'globals': {
-                'death': {
-                   '_emit': True
-               }
-          },
-          'globals': {
-               'death': {
-                   '_emit': False
-               }
-          },
-          'neighbors': {
-               'present': {
-                   'PDL1': {
-                       '_emit': True
-                   },
-                   'MHCI': {
-                       '_emit': True
-                   },
-               },
-              'accept': {
-                  'TCR': {
-                      '_emit': False
-                  },
-              },
-          },
-       }
-    }
+        '_schema': {
+            'internal': {
+                'cell_state_count': {'_emit': False},
+                'cell_state': {'_emit': False}},
+            'globals': {
+                'death': {'_emit': True}},
+            'globals': {
+                'death': {'_emit': False}},
+            'neighbors': {
+                'present': {
+                    'PDL1': {'_emit': True},
+                    'MHCI': {'_emit': True}},
+                'accept': {
+                    'TCR': {'_emit': False}}}}}
 
     combined_raw_data = {}
     for single_idx in range(batch_size):
-        Tumor_process = TumorProcess(override_schema)
+
+        tumor_process = TumorProcess(override_schema)
         if timeline is not None:
             sim_settings = {
                 'timeline': {
@@ -473,10 +408,10 @@ def test_batch_tumor(
                 'return_raw_data': True}
 
         # get initial state
-        sim_settings['initial_state'] = Tumor_process.initial_state()
+        sim_settings['initial_state'] = tumor_process.initial_state()
 
         # run experiment
-        raw_data = simulate_process(Tumor_process, sim_settings)
+        raw_data = simulate_process(tumor_process, sim_settings)
         for time, time_data in raw_data.items():
             if time not in combined_raw_data:
                 combined_raw_data[time] = {'agents': {}}
