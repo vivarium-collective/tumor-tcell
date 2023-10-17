@@ -26,12 +26,7 @@ PI = constants.pi
 class DendriticCellProcess(Process):
     """DendriticCellProcess
 
-    References:
-        * Morefield, 2005
-        * Lammermann, 2008
-        * Naik, 2008
-        * Yang, 2006
-        * Apetoh, 2007
+    Determines behavior of the dendritic cells
     """
     defaults = {
         'time_step': TIMESTEP,
@@ -81,7 +76,10 @@ class DendriticCellProcess(Process):
                 'cell_type': 'dendritic'}}
 
     def ports_schema(self):
+        """defines the ports and schema for the dendritic cell process"""
+
         return {
+            # globals port
             'globals': {
                 'death': {
                     '_default': False,
@@ -93,6 +91,8 @@ class DendriticCellProcess(Process):
                 'divide_count': {
                     '_default': 0,
                     '_updater': 'accumulate'}},  # used to count number of divisions over time.
+
+            # internal port
             'internal': {
                 'cell_state': {
                     '_default': 'inactive',  # either 'activate' or 'inactive'
@@ -105,6 +105,8 @@ class DendriticCellProcess(Process):
                 'cell_state_count': {
                     '_default': 0,  # counts how many total cell in a given time. Might not be needed.
                     '_updater': 'accumulate'}},
+
+            # boundary port
             'boundary': {
                 'cell_type': {
                     '_value': 'dendritic',
@@ -125,6 +127,8 @@ class DendriticCellProcess(Process):
                         '_default': 0,
                         '_updater': 'accumulate',
                         '_divider': 'split'}}},
+
+            # neighbors port
             'neighbors': {
                 'present': {
                     'PDL1': {
@@ -141,14 +145,15 @@ class DendriticCellProcess(Process):
                         '_emit': True}}}}
 
     def next_update(self, timestep, states):
+        """calculates an update for the dendritic cell process"""
+
+        # retrieve relevant states through the ports
         cell_state = states['internal']['cell_state']
         external_tumor_debris = states['boundary']['external']['tumor_debris']  # concentration
         internal_tumor_debris = states['internal']['tumor_debris']  # counts
 
         # determine available tumor debris
         available_tumor_debris_counts = external_tumor_debris * self.molar_available_tumor_debris
-        # TODO -- we need to move available tumor debris to internal tumor debris
-        # TODO - test out with experiment and also do calculation
 
         # death by apoptosis
         prob_death = get_probability_timestep(

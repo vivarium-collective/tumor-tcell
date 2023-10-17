@@ -53,8 +53,7 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
 class TumorProcess(Process):
     """TumorProcess
 
-    References:
-        *
+    Determines behavior of the tumor cells
     """
     name = NAME
     defaults = {
@@ -116,8 +115,13 @@ class TumorProcess(Process):
             'boundary': {'diameter': self.parameters['diameter']}}
 
     def ports_schema(self):
+        """defines the ports and schema for the tumor cell process"""
+
+        # randomly initialize cell state
         initial_cell_state = 'PDL1n' if random.uniform(0, 1) < self.parameters['initial_PDL1n'] else 'PDL1p'
+
         return {
+            # globals port
             'globals': {
                 'death': {
                     '_default': False,
@@ -129,6 +133,8 @@ class TumorProcess(Process):
                 'PDL1n_divide_count': {
                     '_default': 0,
                     '_updater': 'accumulate'}},
+
+            # internal port
             'internal': {
                 'cell_state': {
                     '_default': initial_cell_state,
@@ -142,6 +148,8 @@ class TumorProcess(Process):
                 'cell_state_count': {
                     '_default': 0,
                     '_updater': 'accumulate'}},
+
+            # boundary port
             'boundary': {
                 'cell_type': {'_value': 'tumor'},
                 'mass': {'_value': self.parameters['mass']},
@@ -161,6 +169,8 @@ class TumorProcess(Process):
                         '_default': 0,
                         '_updater': 'accumulate',
                         '_divider': 'split'}}},
+
+            # neighbors port
             'neighbors': {
                 'present': {
                     'PDL1': {  # membrane protein, promotes T cell exhaustion and deactivation with PD1
@@ -182,6 +192,9 @@ class TumorProcess(Process):
                         '_divider': 'split'}}}}
 
     def next_update(self, timestep, states):
+        """calculates an update for the tumor process"""
+
+        # retrieve relevant states through the ports
         cell_state = states['internal']['cell_state']
         cytotoxic_packets = states['neighbors']['receive']['cytotoxic_packets']
         external_IFNg = states['boundary']['external']['IFNg']  # concentration  nanogram / milliliter
@@ -283,7 +296,7 @@ class TumorProcess(Process):
 def get_timeline(
         total_time=129600,
         number_steps=10):
-    """Make a timeline that feeds input to the tumor process"""
+    """Make a timeline that feeds input to the tumor process. This is purely for testing."""
 
     interval = total_time / (number_steps * TIMESTEP)
 

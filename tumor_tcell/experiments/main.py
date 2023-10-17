@@ -284,7 +284,7 @@ def tumor_tcell_abm(
             'n_bins': n_bins,
             'depth': depth}}
     if not lymph_nodes:
-        environment_composer = TumorMicroEnvironment(environment_config)
+        environment_composer = TumorMicroEnvironment(environment_config)     # TODO (ERAN) -- make this match the new data structure.
     else:
         environment_config['lymph_node'] = {'tumor_env_bounds': bounds}
         environment_config['tumor_env_id'] = TUMOR_ENV_ID
@@ -801,6 +801,22 @@ workflow_library = {
         ],
     },
 }
+
+# def tryit():
+#     data, exp = large_experiment(
+#             n_tcells=1,
+#             n_tumors=0,
+#             n_dendritic=0,
+#             n_tcells_lymph_node=0,
+#             tumors_state_PDL1n=0.5,
+#             tcells_total_PD1n=8,
+#             dendritic_state_active=0.5,
+#             lymph_nodes=True,
+#             total_time=0,
+#             field_molecules=['IFNg', 'tumor_debris'],
+#             return_experiment=True,
+#         )
+
 
 # run with python tumor_tcell/experiments/main.py [workflow id]
 if __name__ == '__main__':
