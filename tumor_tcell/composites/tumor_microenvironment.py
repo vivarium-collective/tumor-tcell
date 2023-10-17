@@ -91,6 +91,7 @@ class TumorMicroEnvironment(Composer):
                     'fields': ('fields',),
                     'dimensions': ('dimensions',),
                 },
+                'agents': {}
             },
             config['ln_id']: {'agents': {}},
             config['in_transit_id']: {'agents': {}},
@@ -269,15 +270,16 @@ def test_microenvironment(
     initial_field = np.zeros((n_bins[0], n_bins[1]))
     initial_field[:, -1] = 100
     initial_state = {
-        'fields': {'IFNg': initial_field},
-        'agents': {}}
+        'tumor_environment': {
+            'fields': {'IFNg': initial_field},
+            'agents': {}}}
     if n_agents:
         agent_ids = [str(agent_id) for agent_id in range(n_agents)]
         body_config = {'agent_ids': agent_ids}
         if 'neighbors_multibody' in config and 'bounds' in config['neighbors_multibody']:
             body_config.update({'bounds': config['neighbors_multibody']['bounds']})
         initial_agents_state = agent_body_config(body_config)
-        initial_state.update({'agents': initial_agents_state})
+        initial_state['tumor_environment'].update({'agents': initial_agents_state})
 
     # configure experiment
     composite = compartment.generate()
@@ -290,7 +292,7 @@ def test_microenvironment(
     data = experiment.emitter.get_data_deserialized()
 
     # assert that the agent remains in the simulation until the end
-    assert len(data[end_time]['agents']) == n_agents
+    assert len(data[end_time]['tumor_environment']['agents']) == n_agents
     return data
 
 
