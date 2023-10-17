@@ -50,7 +50,7 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
     return 1 - math.exp(-rate * timestep_fraction)
 
 
-class TumorProcess(Process):
+class TumorCellProcess(Process):
     """TumorProcess
 
     Determines behavior of the tumor cells
@@ -359,7 +359,7 @@ def test_single_Tumor(
 ):
     """Run a single tumor process"""
 
-    tumor_process = TumorProcess({})
+    tumor_process = TumorCellProcess({})
 
     if timeline is not None:
         settings = {
@@ -407,7 +407,7 @@ def test_batch_tumor(
     combined_raw_data = {}
     for single_idx in range(batch_size):
 
-        tumor_process = TumorProcess(override_schema)
+        tumor_process = TumorCellProcess(override_schema)
         if timeline is not None:
             sim_settings = {
                 'timeline': {

@@ -22,7 +22,7 @@ from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.remove import Remove
 from vivarium.processes.timeline import TimelineProcess
-from tumor_tcell.processes.tumor import TumorProcess, TIMESTEP
+from tumor_tcell.processes.tumor import TumorCellProcess, TIMESTEP
 from tumor_tcell.processes.local_field import LocalField
 
 # directories/libraries
@@ -78,11 +78,11 @@ class TumorAgent(Composer):
         self.processes_initialized = False
 
     def initial_state(self, config=None):
-        process = TumorProcess()
+        process = TumorCellProcess()
         return process.initial_state(config)
 
     def initialize_processes(self, config):
-        self.tumor_process = TumorProcess(config['tumor'])
+        self.tumor_process = TumorCellProcess(config['tumor'])
         self.local_field = LocalField()
 
         if self.config['reuse_processes']:
