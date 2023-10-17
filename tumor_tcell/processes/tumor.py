@@ -51,7 +51,7 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
 
 
 class TumorCellProcess(Process):
-    """TumorProcess
+    """TumorCellProcess
 
     Determines behavior of the tumor cells
     """
