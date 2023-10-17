@@ -18,7 +18,6 @@ interactions with other cells.
 
     $ python tumor_tcell/processes/t_cell.py [--single, -s] [--batch, -b] [--timeline, -t]
 
-
 """
 
 import os
@@ -36,10 +35,10 @@ from vivarium.plots.simulation_output import plot_simulation_output
 # directories
 from tumor_tcell import PROCESS_OUT_DIR
 
-
 NAME = 'T_cell'
 TIMESTEP = 60  # seconds
 CONCENTRATION_UNIT = 1  # TODO: units.ng / units.mL
+
 
 def lymph_node_division(mother_value, **args):
     """Sets mother cell to true"""
@@ -48,13 +47,16 @@ def lymph_node_division(mother_value, **args):
     else:
         return [False, False]
 
+
 def assymetric_division(mother_value, **args):
     """One daughter value's count increases"""
-    return [mother_value+1, mother_value]
+    return [mother_value + 1, mother_value]
+
 
 def set_velocity_default(mother_value, **args):
     """Resets daughter velocities"""
-    return [10.0 * units.um/units.min, 10.0 * units.um/units.min]
+    return [10.0 * units.um / units.min, 10.0 * units.um / units.min]
+
 
 def get_probability_timestep(probability_parameter, timescale, timestep):
     """ transition probability as function of time """
@@ -63,44 +65,36 @@ def get_probability_timestep(probability_parameter, timescale, timestep):
     return 1 - math.exp(-rate * timestep_fraction)
 
 
-# def get_probability_timestep(probability_parameter, interval_duration, expected_time):
-#     """
-#     Calculate the probability of an event occurring within a given
-#     time interval, given the average time between occurrences and
-#     the probability of an event occurring within that average time.
-#
-#     Args:
-#         interval_duration (float): The duration of the time interval
-#                                    in hours.
-#         expected_time (float): The average time between occurrences
-#                                of the event in hours.
-#         probability_parameter (float): The probability of the event occurring
-#                              within the expected time.
-#
-#     Returns:
-#         float: The probability of the event occurring within the
-#                interval_duration.
-#     """
-#     # Compute the average rate of occurrence
-#     lambda_ = -math.log(1 - probability_parameter) / expected_time
-#
-#     # Calculate the average rate of occurrence within the desired interval
-#     lambda_interval = lambda_ * interval_duration
-#
-#     # Compute the probability of no occurrence
-#     P_0 = math.exp(-lambda_interval)
-#
-#     # The probability of at least one occurrence is 1 - P(0)
-#     P_at_least_one = 1 - P_0
-#
-#     return P_at_least_one
+def probability_of_occurrence_within_interval(interval_duration, expected_time):
+    """
+    Compute the probability that an event will occur at least once
+    within a given time interval.
+
+    This assumes the event follows a Poisson process, where the event
+    is expected to occur once every `expected_time` hours.
+
+    Args:
+        interval_duration (float): The duration of the time interval.
+        expected_time (float): The expected time between occurrences.
+
+    Returns:
+        float: The probability of the event occurring at least once
+               within the time interval.
+    """
+    lambda_ = interval_duration / expected_time
+    P_0 = math.exp(-lambda_)
+    P_at_least_one = 1 - P_0
+    return P_at_least_one
 
 
 class TCellProcess(Process):
     """TCellProcess
 
+    Determines behavior of the T cells
+
     References:
-        * Salerno, F., Paolini, N. A., Stark, R., von Lindern, M., & Wolkers, M. C. (2017). Distinct PKC-mediated posttranscriptional events set cytokine production kinetics in CD8+ T cells. Proceedings of the National Academy of Sciences, 114(36), 9677-9682.
+        * Salerno, F., Paolini, N. A., Stark, R., von Lindern, M., & Wolkers, M. C. (2017).
+        Distinct PKC-mediated posttranscriptional events set cytokine production kinetics in CD8+ T cells. PNAS
     """
     name = NAME
     defaults = {
@@ -112,13 +106,13 @@ class TCellProcess(Process):
         'external_molecules': ['IFNg', 'tumor_debris'],
         # and need 5 stimulations to become exhausted (Zhao, 2020)
 
-        #Time before TCR downregulation
+        # Time before TCR downregulation
         'activation_time': 21600,  # activation enables 6 hours of activation and production of cytokines
-        # before enters refractory state due to downregulation of TCR (Salerno, 2017), (Gallegos, 2016)
+        # before enters refractory state due to down-regulation of TCR (Salerno, 2017), (Gallegos, 2016)
         'activation_refractory_time': 43200,  # refractory period of 18 hours (plus original 6 h activation time)
         # after activation period with limited ability to produce cytokines and cytotoxic packets and to
         # interact with MHCI (Salerno, 2017), (Gallegos, 2016)
-        'TCR_downregulated': 0, # reduce TCR to 0 if activated more than 6 hours for another 18 hours
+        'TCR_downregulated': 0,  # reduce TCR to 0 if activated more than 6 hours for another 18 hours
         'TCR_upregulated': 50000,  # restore TCR after refractory period
 
         # death rates
@@ -128,8 +122,8 @@ class TCellProcess(Process):
         'death_PD1p_next_to_PDL1p_14hr': 0.475,  # 0.95 / 14 hrs (Dong 2002, Tang 2015)
 
         # production rates
-        'PD1n_IFNg_production': 1.62e4/3600,  # molecule counts/cell/second (Bouchnita 2017)
-        'PD1p_IFNg_production': 1.62e3/3600,  # molecule counts/cell/second (Zelinskyy, 2005)
+        'PD1n_IFNg_production': 1.62e4 / 3600,  # molecule counts/cell/second (Bouchnita 2017)
+        'PD1p_IFNg_production': 1.62e3 / 3600,  # molecule counts/cell/second (Zelinskyy, 2005)
         'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p
 
         'ligand_threshold': 1e4,  # molecules/neighbor cell needed to recognize ligands on positive cells
@@ -138,27 +132,31 @@ class TCellProcess(Process):
         'PD1n_growth_28hr': 0.90,  # 90% division in 28 hours (Petrovas 2007, Vodnala 2019)
         'PD1p_growth_28hr': 0.20,  # 20% division in 28 hours (Petrovas 2007, Vodnala 2019)
         'PD1n_divide_threshold': 5,  # counts for triggering division (Zhao, 2020)
+        'LymphNode_delay_growth': 32400,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \
+        # 4*60*60=14400, (Mempel, 2004);(Bousso, 2008)
 
         # migration
-        'PD1n_migration': 10.0 * units.um/units.min,  # um/minute (Boissonnas 2007)
-        'migration_MHCIp_tumor_dwell_velocity': 0.0 * units.um/units.min, #(Thibaut 2020)
-        'PD1n_migration_MHCIp_tumor_dwell_time': 25.0*60,  # minutes converted to seconds (Thibaut 2020)
-        'PD1p_migration': 5.0 * units.um/units.min,   # um/minute (Boissonnas 2007)
-        'PD1p_migration_MHCIp_tumor_dwell_time': 10.0*60,  # minutes converted to seconds (Thibaut 2020)
-        'PD1n_migration_refractory_time': 35.0 * 60,  # 25 minutes of refractory where not interact with tumor (Thibaut 2020)
-        'PD1p_migration_refractory_time': 20.0 * 60,  # 10 minutes of refractory where not interact with tumor (Thibaut 2020)
+        'PD1n_migration': 10.0 * units.um / units.min,  # um/minute (Boissonnas 2007)
+        'migration_MHCIp_tumor_dwell_velocity': 0.0 * units.um / units.min,  # (Thibaut 2020)
+        'PD1n_migration_MHCIp_tumor_dwell_time': 25.0 * 60,  # minutes converted to seconds (Thibaut 2020)
+        'PD1p_migration': 5.0 * units.um / units.min,  # um/minute (Boissonnas 2007)
+        'PD1p_migration_MHCIp_tumor_dwell_time': 10.0 * 60,  # minutes converted to seconds (Thibaut 2020)
+        'PD1n_migration_refractory_time': 35.0 * 60,  # 25 minutes of refractory, no tumor interaction (Thibaut 2020)
+        'PD1p_migration_refractory_time': 20.0 * 60,  # 10 minutes of refractory, no tumor interaction (Thibaut 2020)
 
         # killing
         # These values need to be multiplied by 100 to deal with timestep usually 0.4 packet/min
         # linear production over 4-6 hr up to a total of 102+-20 granules (Betts, 2004), (Zhang, 2006)
-        'cytotoxic_packet_production': 40/60,  # number of packets/min produced in T cells ##converted to packets/seconds
+        'cytotoxic_packet_production': 40 / 60,
+        # number of packets/min produced in T cells, converted to packets/seconds
         'PD1n_cytotoxic_packets_max': 10000,  # max number able to produce
         # 1:10 fold reduction of PD1+ T cell cytotoxic production (Zelinskyy, 2005)
         'PD1p_cytotoxic_packets_max': 1000,  # max number able to produce
-        # 4 fold reduction in production in T cells in contact with MHCI- tumor (Bohm, 1998), (Merritt, 2003)
+        # 4-fold reduction in production in T cells in contact with MHCI- tumor (Bohm, 1998), (Merritt, 2003)
         'MHCIn_reduction_production': 400,
         # Cytotoxic packet transfer rate for a minute time period
-        'cytotoxic_transfer_rate': 400,  #number of packets/min that can be transferred to tumor cells (Betts, 2004), (Zhang, 2006)
+        'cytotoxic_transfer_rate': 400,  # number of packets/min that can be transferred to tumor cells
+        # (Betts, 2004), (Zhang, 2006)
     }
 
     def __init__(self, parameters=None):
@@ -171,22 +169,20 @@ class TCellProcess(Process):
             initial_state = 'PD1p'
 
         return {
-            'internal': {
-                'cell_state': initial_state,
-            },
-            'boundary': {
-                'diameter': self.parameters['diameter']
-            },
+            'internal': {'cell_state': initial_state},
+            'boundary': {'diameter': self.parameters['diameter']},
             'neighbors': {
                 'present': {
-                    'TCR': 50000,
-                }
-            }
-        }
+                    'TCR': 50000}}}
 
     def ports_schema(self):
+        """defines the ports and schema for the T cell process"""
+
+        # randomly initialize cell state
         initial_cell_state = 'PD1n' if random.uniform(0, 1) < self.parameters['initial_PD1n'] else 'PD1p'
+
         return {
+            # globals port
             'globals': {
                 'death': {
                     '_default': False,
@@ -199,110 +195,86 @@ class TCellProcess(Process):
                     '_default': 0,
                     '_divider': {
                         'divider': assymetric_division,
-                        'config': {}
-                    },
+                        'config': {}},
                     '_updater': 'accumulate'},
                 'PD1p_divide_count': {
                     '_default': 0,
                     '_updater': 'accumulate'},
-                'LN_no_migration': {   # TODO (ERAN) -- can this be removed??
+                'LN_no_migration': {  # TODO (ERAN) -- can this be removed??
                     '_default': False,
                     '_divider': {
                         'divider': lymph_node_division,
-                        'config': {}}},
-            },
+                        'config': {}}}},
+
+            # internal port
             'internal': {
                 'cell_state': {
                     '_default': initial_cell_state,
                     '_emit': True,
-                    '_updater': 'set'
-                },
+                    '_updater': 'set'},
                 'cell_state_count': {
                     '_default': 0,
-                    '_updater': 'accumulate'
-                },
+                    '_updater': 'accumulate'},
                 'refractory_count': {
                     '_default': 0,
-                    '_updater': 'accumulate'
-                },
+                    '_updater': 'accumulate'},
                 'total_cytotoxic_packets': {
                     '_default': 0,
                     '_updater': 'accumulate',
-                    '_divider': 'split',
-                },
-                'TCR_timer': {
+                    '_divider': 'split'},
+                'TCR_timer': {  # affects TCR expression
                     '_default': 0,
-                    '_updater': 'accumulate',
-                },  # affects TCR expression
-                'velocity_timer': {
+                    '_updater': 'accumulate'},
+                'velocity_timer': {  # affects dwell time at tumor
                     '_default': 0,
                     '_emit': True,
-                    '_updater': 'accumulate',
-                },  # affects dwell time at tumor
-            },
+                    '_updater': 'accumulate'}},
+
+            # boundary port
             'boundary': {
-                'cell_type': {
-                    '_value': 't-cell'
-                },
-                'mass': {
-                    '_value': self.parameters['mass']
-                },
-                'diameter': {
-                    '_default': self.parameters['diameter'],
-                },
+                'cell_type': {'_value': 't-cell'},
+                'mass': {'_value': self.parameters['mass']},
+                'diameter': {'_default': self.parameters['diameter']},
                 'velocity': {
                     '_default': self.parameters['PD1n_migration'],
                     '_updater': 'set',
-                    '_divider': {
-                        'divider': set_velocity_default,
-                         },
-                    '_emit': True,
-                },
+                    '_divider': {'divider': set_velocity_default},
+                    '_emit': True},
                 'exchange': {
                     'IFNg': {
                         '_default': 0,
                         '_updater': 'accumulate',
-                        '_divider': 'split',
-                    }},
+                        '_divider': 'split'}},
                 'external': {
                     mol_id: {
                         '_default': 0.0 * CONCENTRATION_UNIT,
                         '_emit': True,
-                    } for mol_id in self.parameters['external_molecules']
-                },
-            },
+                    } for mol_id in self.parameters['external_molecules']}},
+
+            # neighbors port
             'neighbors': {
                 'present': {
-                    'PD1': {
+                    'PD1': {  # membrane protein, promotes T-cell death
                         '_default': 0,
-                        '_updater': 'set',
-                    },  # membrane protein, promotes T-cell death
-                    'TCR': {
+                        '_updater': 'set'},
+                    'TCR': {  # level of TCR that interacts with MHCI on tumor
                         '_default': 0,
                         '_emit': True,
-                        '_updater': 'set',
-                    }  # level of TCR that interacts with MHCI on tumor
-                },
+                        '_updater': 'set'}},
                 'accept': {
-                    'PDL1': {
-                        '_default': 0,
-                    },
-                    'MHCI': {
-                        '_default': 0,
-                    }
-                },
+                    'PDL1': {'_default': 0},
+                    'MHCI': {'_default': 0}},
                 'transfer': {
-                    'cytotoxic_packets': {
+                    'cytotoxic_packets': {  # release into the tumor cells
                         '_default': 0,
                         '_emit': True,
                         '_updater': 'accumulate',
-                        '_divider': 'split',
-                    }  # release into the tumor cells
-                }
-            }
-        }
+                        '_divider': 'split'}}}}
 
     def next_update(self, timestep, states):
+        """calculates an update for the T cell process"""
+
+        # retrieve relevant states through the ports
         cell_state = states['internal']['cell_state']
         PDL1 = states['neighbors']['accept']['PDL1']
         MHCI = states['neighbors']['accept']['MHCI']
@@ -345,17 +317,14 @@ class TCellProcess(Process):
                             'death': 'PD1p_apoptosis'}}
 
         # division
-        elif cell_state == 'PD1n':
+        if cell_state == 'PD1n':
             prob_divide = get_probability_timestep(
                 self.parameters['PD1n_growth_28hr'],
                 100800,  # 28 hours (28*60*60 seconds)
                 timestep)
             if random.uniform(0, 1) < prob_divide:
                 return {
-                    'globals': {
-                        'divide': True,
-                    }
-                }
+                    'globals': {'divide': True}}
 
         elif cell_state == 'PD1p':
             prob_divide = get_probability_timestep(
@@ -369,13 +338,19 @@ class TCellProcess(Process):
                         'divide': True,
                         'PD1p_divide_count': PD1p_divide_count}}
 
-        ## Build up an update
+        elif cell_state == 'delay':
+            prob_divide = probability_of_occurrence_within_interval(
+                timestep, self.parameters['LymphNode_delay_growth'])
+            if random.uniform(0, 1) < prob_divide:
+                return {'globals': {'divide': True}}
+
+        # Build up an update
         update = {
             'internal': {},
             'boundary': {},
             'neighbors': {'present': {}, 'accept': {}, 'transfer': {}}}
 
-        # TCR downregulation after 6 hours of activation
+        # TCR down-regulation after 6 hours of activation
         if TCR_timer > self.parameters['activation_time']:
             TCR = self.parameters['TCR_downregulated']
             update['neighbors']['present'].update({
@@ -404,14 +379,13 @@ class TCellProcess(Process):
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PD1n':
-            if refractory_count > self.parameters['refractory_count_threshold'] or\
+            if refractory_count > self.parameters['refractory_count_threshold'] or \
                     PD1n_divide_counts > self.parameters['PD1n_divide_threshold']:
-                #print('PD1n become PD1p!')
                 new_cell_state = 'PD1p'
                 cell_state_count = 1
                 update['internal'].update({
                     'cell_state': new_cell_state,
-                    'cell_state_count': cell_state_count,})
+                    'cell_state_count': cell_state_count, })
 
         elif cell_state == 'PD1p':
             cell_state_count = 0
@@ -428,7 +402,7 @@ class TCellProcess(Process):
                 update['internal'].update({
                     'velocity_timer': timestep})
 
-            # check conditional 4 fold reduction
+            # check conditional 4-fold reduction
             if MHCI >= self.parameters['ligand_threshold'] and TCR >= self.parameters['ligand_threshold']:
 
                 # Max production for both happens for PD1- T cells in contact with MHCI+ tumor
@@ -444,7 +418,7 @@ class TCellProcess(Process):
 
             elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
-                # 4 fold reduction in production in T cells in contact with MHCI- tumor
+                # 4-fold reduction in production in T cells in contact with MHCI- tumor
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1n_cytotoxic_packets_max']:
                     new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / self.parameters[
                         'MHCIn_reduction_production'] * timestep
@@ -457,26 +431,18 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            # TODO (ERAN) -- safe to remove?
-            # if states['globals']['LN_no_migration']:
-            #     update['boundary'].update({
-            #         'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
-
             # Reset the velocity timer after refractory period
             elif velocity_timer >= self.parameters['PD1n_migration_refractory_time']:
                 update['internal'].update({
                     'velocity_timer': {
                         '_updater': 'set',
-                        '_value': 0
-                    }
-                })
+                        '_value': 0}})
                 update['boundary'].update({
-                    'velocity': self.parameters['PD1n_migration']
-                })
+                    'velocity': self.parameters['PD1n_migration']})
             elif velocity_timer > self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1n_migration']})
-            elif velocity_timer > 0 and velocity_timer < self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']:
+            elif 0 < velocity_timer < self.parameters['PD1n_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
             elif velocity_timer == 0:
@@ -508,10 +474,10 @@ class TCellProcess(Process):
 
             elif MHCI > 0 and TCR >= self.parameters['ligand_threshold']:
 
-                # 4 fold reduction in production in T cells in contact with MHCI- tumor
+                # 4-old reduction in production in T cells in contact with MHCI- tumor
                 if states['internal']['total_cytotoxic_packets'] < self.parameters['PD1p_cytotoxic_packets_max']:
                     new_cytotoxic_packets = self.parameters['cytotoxic_packet_production'] / \
-                                        self.parameters['MHCIn_reduction_production'] * timestep
+                                            self.parameters['MHCIn_reduction_production'] * timestep
                     update['internal'].update({
                         'total_cytotoxic_packets': new_cytotoxic_packets})
 
@@ -521,25 +487,18 @@ class TCellProcess(Process):
                 update['boundary'].update({
                     'exchange': {'IFNg': int(IFNg)}})
 
-            # if states['globals']['LN_no_migration']:
-            #     update['boundary'].update({
-            #         'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
-
             # Reset the velocity timer after refractory period
             elif velocity_timer >= self.parameters['PD1p_migration_refractory_time']:
                 update['internal'].update({
                     'velocity_timer': {
                         '_updater': 'set',
-                        '_value': 0
-                    }
-                })
+                        '_value': 0}})
                 update['boundary'].update({
-                    'velocity': self.parameters['PD1p_migration']
-                })
+                    'velocity': self.parameters['PD1p_migration']})
             elif velocity_timer > self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['PD1p_migration']})
-            elif velocity_timer > 0 and velocity_timer < self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']:
+            elif 0 < velocity_timer < self.parameters['PD1p_migration_MHCIp_tumor_dwell_time']:
                 update['boundary'].update({
                     'velocity': self.parameters['migration_MHCIp_tumor_dwell_velocity']})
             elif velocity_timer == 0:
@@ -547,8 +506,9 @@ class TCellProcess(Process):
                     'velocity': self.parameters['PD1p_migration']})
 
         # keep cytotoxic transfer to max limit between tumor and T cells and remove from T cell total when transfer
-        max_cytotoxic_transfer = self.parameters['cytotoxic_transfer_rate'] - states['neighbors']['transfer']['cytotoxic_packets']
-        cytotoxic_transfer = min(max_cytotoxic_transfer,states['internal']['total_cytotoxic_packets'])
+        max_cytotoxic_transfer = self.parameters['cytotoxic_transfer_rate'] - states['neighbors']['transfer'][
+            'cytotoxic_packets']
+        cytotoxic_transfer = min(max_cytotoxic_transfer, states['internal']['total_cytotoxic_packets'])
         update['internal'].update({
             'cytotoxic_packets': -cytotoxic_transfer})
         update['neighbors']['transfer'].update({
@@ -561,10 +521,9 @@ class TCellProcess(Process):
 def get_timeline(
         total_time=200000,
         number_steps=10):
-
     interval = total_time / (number_steps * TIMESTEP)
 
-    timeline = [
+    timeline0 = [
         (interval * 0 * TIMESTEP, {
             ('neighbors', 'accept', 'PDL1'): 0.0,
             ('neighbors', 'accept', 'MHCI'): 0.0,
@@ -603,15 +562,14 @@ def get_timeline(
         }),
         (interval * 9 * TIMESTEP, {}),
     ]
-    return timeline
+    return timeline0
 
 
 def test_single_t_cell(
-    total_time=43200,
-    time_step=TIMESTEP,
-    timeline=None,
-    out_dir='out'):
-
+        total_time=43200,
+        time_step=TIMESTEP,
+        timeline=None,
+        out_dir='out'):
     t_cell_process = TCellProcess({})
     if timeline is not None:
         settings = {
@@ -630,21 +588,17 @@ def test_single_t_cell(
     timeseries = simulate_process(t_cell_process, settings)
 
     # plot
-    plot_settings = {
-        'remove_zeros': False
-    }
+    plot_settings = {'remove_zeros': False}
     plot_simulation_output(timeseries, plot_settings, out_dir, NAME + '_single')
 
 
-
 def test_batch_t_cell(
-    total_time=43200,
-    time_step=TIMESTEP,
-    batch_size=2,
-    timeline=None,
-    out_dir='out'
+        total_time=43200,
+        time_step=TIMESTEP,
+        batch_size=2,
+        timeline=None,
+        out_dir='out'
 ):
-
     tcell_override = {
         '_schema': {
             'globals': {

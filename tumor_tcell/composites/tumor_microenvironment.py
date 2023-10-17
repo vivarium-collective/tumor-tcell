@@ -40,6 +40,9 @@ class TumorMicroEnvironment(Composer):
     """
     name = NAME
     defaults = {
+        'tumor_env_id': 'tumor_environment',
+        'ln_id': 'lymph_node',
+        'in_transit_id': 'in_transit',
         'neighbors_multibody': {
             'name': 'neighbors_multibody',
             'bounds': DEFAULT_BOUNDS,
@@ -54,28 +57,44 @@ class TumorMicroEnvironment(Composer):
     def __init__(self, config=None):
         super().__init__(config)
 
-    def generate_processes(self, config):
+    def initial_state(self, config):
+        return {
+            config['tumor_env_id']: {},
+            config['ln_id']: {},
+            config['in_transit_id']: {},
+        }
 
+    def generate_processes(self, config):
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
         diffusion_field = Fields(config['diffusion_field'])
 
         # make dictionary of processes
         return {
-            'neighbors_multibody': neighbors_multibody,
-            'diffusion_field': diffusion_field,
+            config['tumor_env_id']: {
+                'neighbors_multibody': neighbors_multibody,
+                'diffusion_field': diffusion_field,
+                'agents': {},
+            },
+            config['ln_id']: {'agents': {}},
+            config['in_transit_id']: {'agents': {}},
         }
 
     def generate_topology(self, config):
         return {
-            'neighbors_multibody': {
-                'cells': ('agents',)
+            config['tumor_env_id']: {
+                'neighbors_multibody': {
+                    'cells': ('agents',)
+                },
+                'diffusion_field': {
+                    'cells': ('agents',),
+                    'fields': ('fields',),
+                    'dimensions': ('dimensions',),
+                },
+                'agents': {}
             },
-            'diffusion_field': {
-                'cells': ('agents',),
-                'fields': ('fields',),
-                'dimensions': ('dimensions',),
-            },
+            config['ln_id']: {'agents': {}},
+            config['in_transit_id']: {'agents': {}},
         }
 
 
@@ -85,6 +104,7 @@ class TumorAndLymphNodeEnvironment(Composer):
     defaults = {
         'tumor_env_id': 'tumor_environment',
         'ln_id': 'lymph_node',
+        'in_transit_id': 'in_transit',
         'neighbors_multibody': {
             'name': 'neighbors_multibody',
             'bounds': DEFAULT_BOUNDS,
@@ -102,6 +122,13 @@ class TumorAndLymphNodeEnvironment(Composer):
     def __init__(self, config=None):
         super().__init__(config)
 
+    def initial_state(self, config):
+        return {
+            config['tumor_env_id']: {},
+            config['ln_id']: {},
+            config['in_transit_id']: {},
+        }
+
     def generate_processes(self, config):
         # initialize processes
         neighbors_multibody = Neighbors(config['neighbors_multibody'])
@@ -111,9 +138,12 @@ class TumorAndLymphNodeEnvironment(Composer):
         # make dictionary of processes
         return {
             config['tumor_env_id']: {
+                'agents': {},
                 'neighbors_multibody': neighbors_multibody,
                 'diffusion_field': diffusion_field,
             },
+            config['ln_id']: {'agents': {}},
+            config['in_transit_id']: {'agents': {}},
             'lymph_node_transfer': lymph_node_transfer_process
         }
 
@@ -128,7 +158,10 @@ class TumorAndLymphNodeEnvironment(Composer):
                     'fields': ('fields',),
                     'dimensions': ('dimensions',),
                 },
+                'agents': {},
             },
+            config['ln_id']: {'agents': {}},
+            config['in_transit_id']: {'agents': {}},
             'lymph_node_transfer': {
                 'cells': (config['tumor_env_id'],),
                 'lymph_node': (config['ln_id'],),
@@ -192,6 +225,7 @@ def make_neighbors_config(
 
     return config
 
+
 def single_agent_config(config):
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -206,12 +240,14 @@ def single_agent_config(config):
         'mass': 1339 * units.fg,
     }}
 
+
 def agent_body_config(config):
     agent_ids = config['agent_ids']
     agent_config = {
         agent_id: single_agent_config(config)
         for agent_id in agent_ids}
     return agent_config
+
 
 def test_microenvironment(
         n_agents=1,
@@ -221,7 +257,6 @@ def test_microenvironment(
         diffusion=1e-1,
         end_time=10
 ):
-
     # configure the compartment
     config = make_neighbors_config(
         bounds=bounds,
@@ -235,15 +270,16 @@ def test_microenvironment(
     initial_field = np.zeros((n_bins[0], n_bins[1]))
     initial_field[:, -1] = 100
     initial_state = {
-        'fields': {'IFNg': initial_field},
-        'agents': {}}
+        'tumor_environment': {
+            'fields': {'IFNg': initial_field},
+            'agents': {}}}
     if n_agents:
         agent_ids = [str(agent_id) for agent_id in range(n_agents)]
         body_config = {'agent_ids': agent_ids}
         if 'neighbors_multibody' in config and 'bounds' in config['neighbors_multibody']:
             body_config.update({'bounds': config['neighbors_multibody']['bounds']})
         initial_agents_state = agent_body_config(body_config)
-        initial_state.update({'agents': initial_agents_state})
+        initial_state['tumor_environment'].update({'agents': initial_agents_state})
 
     # configure experiment
     composite = compartment.generate()
@@ -256,7 +292,7 @@ def test_microenvironment(
     data = experiment.emitter.get_data_deserialized()
 
     # assert that the agent remains in the simulation until the end
-    assert len(data[end_time]['agents']) == n_agents
+    assert len(data[end_time]['tumor_environment']['agents']) == n_agents
     return data
 
 

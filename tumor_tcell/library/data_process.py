@@ -2,12 +2,20 @@ import pandas as pd
 
 def data_to_dataframes(data, lymph_nodes=False):
 
+    # Create a new dictionary with the 'tumor_environment' data based on restructuring
+    new_data = {}
+
+    for key, value in data.items():
+        # Extract 'tumor_environment' data and keep the outer structure
+        new_data[key] = value['tumor_environment']
+    new_data.keys()
+
     #Convert to initial dataframe
-    df_data = pd.DataFrame(data)
+    df_data = pd.DataFrame(new_data)
 
     #Extract agents from the data
     df_copy = df_data.copy()
-    df_agents = df_copy.iloc[0,:]
+    df_agents = df_copy.loc['agents']
     agents_dict = df_agents.to_dict()
 
     #reformat the dictionary into mulitiindexed dataframe
@@ -92,7 +100,7 @@ def data_to_dataframes(data, lymph_nodes=False):
 
     ################################
     ####Extract death log statistics
-    df_death = df_copy.iloc[1, :]
+    df_death = df_copy.loc['log']
     death_dict = df_death.to_dict()
 
     # reformat the dictionary into mulitiindexed dataframe
@@ -111,45 +119,45 @@ def data_to_dataframes(data, lymph_nodes=False):
     df_death_sub = df_death_multi[~(df_death_multi['death']==False)]
 
     if df_death_sub.empty:
-        return pd.DataFrame({}), pd.DataFrame({}), tumor_plot, tcell_plot
+        df_tcell_death = pd.DataFrame({})
+        df_tumor_death = pd.DataFrame({})
+    else:
+        # Only get the final log of the death than contains all the death information
+        df_last_death = df_death_sub.loc[df_death_sub.index.levels[0][-1]]
+        df_last_death['time'] = df_last_death['time'] / 3600
 
-    # Only get the final log of the death than contains all the death information
-    df_last_death = df_death_sub.loc[df_death_sub.index.levels[0][-1]]
-    df_last_death['time'] = df_last_death['time'] / 3600
+        # Subset only T cells from all agents
+        df_tcell_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tcell'), :]
+        df_tumor_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tumor'), :]
 
-    # Subset only T cells from all agents
-    df_tcell_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tcell'), :]
-    df_tumor_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('tumor'), :]
+        ########################################
+        ##Do for T cells
+        # sort deaths by time
+        df_tcell_death.sort_values(by=['time'], inplace=True)
 
+        # Get different death groupings and count total over time
+        death_types_list = list(df_tcell_death['death'].unique())
+        for death_type in death_types_list:
+            df_tcell_death[death_type] = df_tcell_death['death'].apply(lambda x: 1 if x == death_type else 0)
+            df_tcell_death['total_' + str(death_type)] = df_tcell_death[death_type].cumsum()
 
-    ########################################
-    ##Do for T cells
-    # sort deaths by time
-    df_tcell_death.sort_values(by=['time'], inplace=True)
+        # get total death count over time
+        total_col_t = [col for col in df_tcell_death.columns if 'total' in col]
+        df_tcell_death['total_death'] = df_tcell_death[total_col_t].sum(axis=1)
 
-    # Get different death groupings and count total over time
-    death_types_list = list(df_tcell_death['death'].unique())
-    for death_type in death_types_list:
-        df_tcell_death[death_type] = df_tcell_death['death'].apply(lambda x: 1 if x == death_type else 0)
-        df_tcell_death['total_' + str(death_type)] = df_tcell_death[death_type].cumsum()
+        ##Do for Tumors
+        # sort deaths by time
+        df_tumor_death.sort_values(by=['time'], inplace=True)
 
-    # get total death count over time
-    total_col_t = [col for col in df_tcell_death.columns if 'total' in col]
-    df_tcell_death['total_death'] = df_tcell_death[total_col_t].sum(axis=1)
+        # Get different death groupings and count total over time
+        death_types_list = list(df_tumor_death['death'].unique())
+        for death_type in death_types_list:
+            df_tumor_death[death_type] = df_tumor_death['death'].apply(lambda x: 1 if x == death_type else 0)
+            df_tumor_death['total_' + str(death_type)] = df_tumor_death[death_type].cumsum()
 
-    ##Do for Tumors
-    # sort deaths by time
-    df_tumor_death.sort_values(by=['time'], inplace=True)
-
-    # Get different death groupings and count total over time
-    death_types_list = list(df_tumor_death['death'].unique())
-    for death_type in death_types_list:
-        df_tumor_death[death_type] = df_tumor_death['death'].apply(lambda x: 1 if x == death_type else 0)
-        df_tumor_death['total_' + str(death_type)] = df_tumor_death[death_type].cumsum()
-
-    # get total death count over time
-    total_col = [col for col in df_tumor_death.columns if 'total' in col]
-    df_tumor_death['total_death'] = df_tumor_death[total_col].sum(axis=1)
+        # get total death count over time
+        total_col = [col for col in df_tumor_death.columns if 'total' in col]
+        df_tumor_death['total_death'] = df_tumor_death[total_col].sum(axis=1)
 
     if lymph_nodes==True:
         ###################################
@@ -184,23 +192,26 @@ def data_to_dataframes(data, lymph_nodes=False):
         # reset index for plotting
         dendritic_plot = dendritic_data_form.reset_index()
 
-        #get dendritic death stats
-        df_dendritic_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('dendritic'),:]
+        if df_death_sub.empty:
+            df_dendritic_death = pd.DataFrame({})
+        else:
+            #get dendritic death stats
+            df_dendritic_death = df_last_death.iloc[df_last_death.index.get_level_values('cell').str.contains('dendritic'),:]
 
-        ########################################
-        ##Do for dendritic cells
-        # sort deaths by time
-        df_dendritic_death.sort_values(by=['time'], inplace=True)
+            ########################################
+            ##Do for dendritic cells
+            # sort deaths by time
+            df_dendritic_death.sort_values(by=['time'], inplace=True)
 
-        # Get different death groupings and count total over time
-        death_types_list = list(df_dendritic_death['death'].unique())
-        for death_type in death_types_list:
-            df_dendritic_death[death_type] = df_dendritic_death['death'].apply(lambda x: 1 if x == death_type else 0)
-            df_dendritic_death['total_' + str(death_type)] = df_dendritic_death[death_type].cumsum()
+            # Get different death groupings and count total over time
+            death_types_list = list(df_dendritic_death['death'].unique())
+            for death_type in death_types_list:
+                df_dendritic_death[death_type] = df_dendritic_death['death'].apply(lambda x: 1 if x == death_type else 0)
+                df_dendritic_death['total_' + str(death_type)] = df_dendritic_death[death_type].cumsum()
 
-        # get total death count over time
-        total_col_t = [col for col in df_dendritic_death.columns if 'total' in col]
-        df_dendritic_death['total_death'] = df_dendritic_death[total_col_t].sum(axis=1)
+            # get total death count over time
+            total_col_t = [col for col in df_dendritic_death.columns if 'total' in col]
+            df_dendritic_death['total_death'] = df_dendritic_death[total_col_t].sum(axis=1)
 
         return df_tumor_death, df_tcell_death, tumor_plot, tcell_plot, df_dendritic_death, dendritic_plot
     else:

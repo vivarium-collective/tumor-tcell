@@ -1,5 +1,10 @@
 """
-Lymph Node Environment Process
+===========================
+Lymph Node Transfer Process
+===========================
+
+This process moves cell agents between the tumor micro-environment and the lymph nodes (LN), and mediates interactions
+between T cells and dendritic cells in the LN
 """
 
 import math
@@ -7,7 +12,6 @@ import random
 from vivarium.core.process import Process
 from vivarium.core.engine import pp, Engine
 from tumor_tcell.processes.t_cell import get_probability_timestep, TIMESTEP
-from vivarium.library.units import remove_units
 from tumor_tcell.library.location import random_location, DEFAULT_BOUNDS
 from tumor_tcell.processes.local_field import LENGTH_UNIT
 from tumor_tcell.processes.neighbors import DEFAULT_MASS_UNIT, DEFAULT_VELOCITY_UNIT
@@ -32,15 +36,14 @@ def probability_of_occurrence_within_interval(interval_duration, expected_time):
                within the time interval.
     """
     lambda_ = interval_duration / expected_time
-    P_0 = math.exp(-lambda_)
-    P_at_least_one = 1 - P_0
-    return P_at_least_one
+    p_0 = math.exp(-lambda_)
+    p_at_least_one = 1 - p_0
+    return p_at_least_one
 
 
 class LymphNode(Process):
-    """Enable exchange of Dendritic cells between location,
-    interaction of T cells and Dendritic cells,
-    and T cells leaving to the environment
+    """Enable exchange of Dendritic cells between locations, interaction of T cells and Dendritic cells, and T cells
+    leaving to the tumor micro-environment
     """
     defaults = {
         'time_step': TIMESTEP,
@@ -51,18 +54,19 @@ class LymphNode(Process):
             # within the lymph node that are reactive (total pool of cells that could proliferated/divide. \
             # - from data and divide 3000/1000 (1/1000th of space that we are simulating) = 3
         'tcell_find_dendritic_time': 0.95,  # 95% will find dendritic in 4 hrs (Itano, 2003);;(Bousso, 2008)
-        'expected_dendritic_transit_time': 20,  # 28800 8*60*60. 8 hour delay between the time that a dendritic \ TODO - @John change back
+        'expected_dendritic_transit_time': 28800,  # Assuming that some DCs already primed/heading to lymph node 28800 8*60*60. \
+            # 8 hour delay between the time that a dendritic \
             # cell leaves microenvironment until it is ready to interact with t cells in the LN and interact with \
             # T cells that take about 4 hours to find it for a total of 12 hours total until engagement is \
             # seen (Itano, 2003);;(Bousso, 2008)
-        'expected_tcell_transit_time': 30,  # 3600 60*60. arrive in tumor environment after 1 hour of migration in,\ TODO - @John change back
+        'expected_tcell_transit_time': 3600,  # 3600 60*60. arrive in tumor environment after 1 hour of migration in,\
             # efferent lymph to circulation (Hunter, 2016)
-        'expected_division_interval': 10,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \ TODO - @John change back
-            # 3*60*60=10800, (Mempel, 2004);(Bousso, 2008)
-        'expected_interaction_duration': 20,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \ TODO - @John change back
+        # 'expected_division_interval': 14400,  # 14400 divide approximately every 4 hours, or 5-6 times in 24 hours. \
+        #     # 3*60*60=10800, (Mempel, 2004);(Bousso, 2008)
+        'expected_interaction_duration': 28800,  # 28800 8*60*60 t cells interact with dendritic cells for approximately \
             # 8 hours (Itano, 2003)
-        'expected_delay_before_migration': 40,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \ TODO - @John change back
-            # complete before starting migration (Itano, 2003);(Bousso, 2008)
+        'expected_delay_before_migration': 43200,  # 43200 12*60*60. t cells wait approx 12 hours after interaction is \
+            # complete before starting migration (Itano, 2003); (Bousso, 2008)
     }
 
     def __init__(self, parameters=None):
@@ -84,39 +88,33 @@ class LymphNode(Process):
                         'cell_state': {
                             '_default': 'inactive',
                             '_updater': 'set',
-                            '_emit': True,}},
+                            '_emit': True}},
                     'boundary': {
-                        # cell_type must be either 'tumor', 't_cell', or 'dendritic'
-                        'cell_type': {'_default': DEFAULT_CELL_TYPE,
-                                      '_emit': True,},
+                        'cell_type': {'_default': DEFAULT_CELL_TYPE,  # must be either 'tumor', 't_cell', or 'dendritic'
+                                      '_emit': True},
                         'diameter': {'_default': 1.0 * LENGTH_UNIT,
-                                     '_emit': True,},
+                                     '_emit': True},
                         'mass': {'_default': 1.0 * DEFAULT_MASS_UNIT,
-                                 '_emit': True,},
+                                 '_emit': True},
                         'velocity': {'_default': 0.0 * DEFAULT_VELOCITY_UNIT,
-                                     '_emit': True,},
+                                     '_emit': True},
                         'location': {
                             '_default': [0.5 * bound for bound in self.parameters['tumor_env_bounds']],
                             '_updater': 'set',
-                            '_emit': True,
-                        },
+                            '_emit': True},
                         'external': {'IFNg': {'_default': 0.0,
-                                              '_emit': True,},
-                                     'tumor_debris': {'_default': 0.0,
-                                                      '_emit': True,},},  # TODO -- this should not be required here
-                        'death': {'_default': False,
-                                  '_emit': True,}  # TODO -- this should not be required here
-                    },
+                                              '_emit': True},
+                                     'tumor_debris': {'_default': 0.0,  # TODO -- this should not be required here
+                                                      '_emit': True}},
+                        'death': {'_default': False,  # TODO -- this should not be required here
+                                  '_emit': True}},
                     # initialize the schema for neighbors so cells will have it when moving back to tumor
                     'neighbors': {
-                        'present': {'*': {'_default': 0.0, '_emit': True,}},
-                        'accept': {'*': {'_default': 0.0, '_emit': True,}},
-                        'transfer': {'*': {'_default': 0.0, '_emit': True,}},
-                        'receive': {'*': {'_default': 0.0, '_emit': True,}}
-                    }
-                }
-            }
-        }
+                        'present': {'*': {'_default': 0.0, '_emit': True}},
+                        'accept': {'*': {'_default': 0.0, '_emit': True}},
+                        'transfer': {'*': {'_default': 0.0, '_emit': True}},
+                        'receive': {'*': {'_default': 0.0, '_emit': True}}}}}}
+
         return {
             'cells': agents_schema,
             'lymph_node': agents_schema,
@@ -152,7 +150,7 @@ class LymphNode(Process):
 
             if cell_type == 't-cell' and dendritic_cells_present:
                 if cell_state == 'interacting':
-                    # interact with dendritic cells for 8 hours, then 12 hour delay before migrating to tumor
+                    # interact with dendritic cells for 8 hours, then 12-hour delay before migrating to tumor
                     prob_interaction_completion = probability_of_occurrence_within_interval(
                         timestep, self.parameters['expected_interaction_duration'])
                     if random.uniform(0, 1) < prob_interaction_completion:
@@ -168,35 +166,22 @@ class LymphNode(Process):
                     if random.uniform(0, 1) < prob_migration:
                         if '_move' not in lymph_node_update:
                             lymph_node_update['_move'] = []
-                        # specs['internal']['cell_state'] = 'PD1n'  # TODO -- get this state passed to cell
                         # begin transit from lymph node
                         lymph_node_update['_move'].append({
                             'source': (cell_id,),
                             'target': ('in_transit', 'agents',),
-                            'update': {'internal': {'cell_state': 'PD1n'}}
-                        })
-                    else:
-                        # start dividing over next 12-18 hours. Probability of division goes up
-                        prob_divide = probability_of_occurrence_within_interval(
-                            timestep, self.parameters['expected_division_interval'])
-                        if random.uniform(0, 1) < prob_divide:
-                            if cell_id not in lymph_node_update:
-                                lymph_node_update[cell_id] = {}
-                            lymph_node_update[cell_id].update({
-                                'globals': {
-                                    'divide': True}})
+                            'update': {'internal': {'cell_state': 'PD1n'}}})
+
                 else:
                     # Calculate probability of finding/initializing interaction with dendritic cells
                     # TODO -- this should depend on dendritic cell being present. Not interacting alone
-                    prob_interaction = get_probability_timestep(   # TODO -- ERAN -- why not probability_of_occurrence_within_interval?
+                    prob_interaction = get_probability_timestep(  # TODO -- ERAN -- why not probability_of_occurrence_within_interval?
                         self.parameters['tcell_find_dendritic_time'],
-                        10,  # 14400 6 hours (6*60*60 seconds) TODO - @John change back
-                        timestep) #(Itano, 2003)
+                        14400,  # 14400 6 hours (6*60*60 seconds)
+                        timestep)  # (Itano, 2003)
                     if random.uniform(0, 1) < prob_interaction:
                         # this t-cell is now interacting
-                        lymph_node_update[cell_id] = {
-                            'internal': {'cell_state': 'interacting'}
-                        }
+                        lymph_node_update[cell_id] = {'internal': {'cell_state': 'interacting'}}
 
         #####################
         # tumor environment #
@@ -236,8 +221,8 @@ class LymphNode(Process):
                     # arrive at lymph node
                     in_transit_update['_move'].append({
                         'source': (cell_id,),
-                        'target': ('lymph_node', 'agents',),
-                    })
+                        'target': ('lymph_node', 'agents',)})
+
             if cell_type == 't-cell':
                 # tcells move from in_transit to tumor
                 prob_arrival = probability_of_occurrence_within_interval(
@@ -246,23 +231,25 @@ class LymphNode(Process):
                     if '_move' not in in_transit_update:
                         in_transit_update['_move'] = []
                     # arrive at tumor
-                    location = random_location(self.parameters['tumor_env_bounds'])
+                    location = random_location(bounds=self.parameters['tumor_env_bounds'],
+                                               center=None,
+                                               distance_from_center=self.parameters['tumor_env_bounds'][0]/5,
+                                               excluded_distance_from_center=None,)
                     specs['boundary']['location'] = location  # TODO -- need to add this location in move
                     in_transit_update['_move'].append({
                         'source': (cell_id,),
                         'target': ('cells', 'agents'),
-                        'update': {'boundary': {'location': location}}
-                    })
+                        'update': {'boundary': {'location': location}}})
 
         return {
             'cells': {'agents': cells_update},
             'lymph_node': {'agents': lymph_node_update},
-            'in_transit': {'agents': in_transit_update},
-        }
+            'in_transit': {'agents': in_transit_update}}
 
 
 
 def test_lymph_node():
+    """run a test for moving cells between the lymph node and tumor environment"""
     simtime = 1000000
     init_state = {
         'cells': {

@@ -23,13 +23,13 @@ if [ ! -z "$(git status --untracked-files=no --porcelain)" ]; then
     exit 1
 fi
 
-# Check that we are on master
-branch="$(git rev-parse --abbrev-ref HEAD)"
-if [ "$branch" != "master" ]; then
-    echo "You are on $branch but should be on master for releases."
-    echo "Aborting."
-    exit 1
-fi
+## Check that we are on master
+#branch="$(git rev-parse --abbrev-ref HEAD)"
+#if [ "$branch" != "master" ]; then
+#    echo "You are on $branch but should be on master for releases."
+#    echo "Aborting."
+#    exit 1
+#fi
 
 # Create and push git tag
 git tag -m "Version v$version" "v$version"

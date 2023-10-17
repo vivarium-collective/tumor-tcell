@@ -10,3 +10,4 @@ venv/
 .python-version
 __pycache__/
 dist/
+.ipynb_checkpoints/*

@@ -1,7 +1,7 @@
 """
-==============
+======================
 Dendritic Cell Process
-==============
+======================
 """
 
 import random
@@ -14,7 +14,7 @@ from vivarium.plots.simulation_output import plot_simulation_output
 from vivarium.library.units import units
 from vivarium.processes.timeline import TimelineProcess
 
-from tumor_tcell.processes.fields import DIFFUSION_RATES  # , CONCENTRATION_UNIT
+from tumor_tcell.processes.fields import DIFFUSION_RATES
 from tumor_tcell.processes.tumor import get_probability_timestep
 
 TIMESTEP = 60  # seconds
@@ -26,10 +26,10 @@ PI = constants.pi
 class DendriticCellProcess(Process):
     """DendriticCellProcess
 
-    References:
-        *
+    Determines behavior of the dendritic cells
     """
     defaults = {
+        'time_step': TIMESTEP,
         'mass': 2.0 * units.ng,  # TODO
         'diameter': 10.0 * units.um,  # * units.um, (Morefield, 2005)
         'velocity': 3.0,  # * units.um/units.min,  # when inactive 2-5 um/min, \
@@ -48,7 +48,7 @@ class DendriticCellProcess(Process):
         'divide_time': 5 * 24 * 60 * 60,  # 5 days (*24*60*60 seconds) (data)
 
         # transitions
-        'internal_tumor_debris_threshold': 40,  # 415000 This is in counts # (Yang, 2006) TODO - @John change back
+        'internal_tumor_debris_threshold': 415000,  # 415000 This is in counts # (Yang, 2006)
 
         # membrane equilibrium amounts
         'PDL1p_PDL1_equilibrium': 5e4,
@@ -66,9 +66,9 @@ class DendriticCellProcess(Process):
         diffusion_radius = diffusion_area ** 0.5
         sphere_radius = self.parameters['diameter'] / 2 + diffusion_radius
         external_tumor_debris_available_volume = 4 / 3 * self.parameters['pi'] * sphere_radius ** 3
-        self.molar_available_tumor_debris = self.parameters['external_concentration_unit'] * \
-                                            external_tumor_debris_available_volume * self.parameters['nAvagadro'] / \
-                                            self.parameters['tumor_debris_MW']
+        self.molar_available_tumor_debris = (self.parameters['external_concentration_unit'] *
+                                             external_tumor_debris_available_volume * self.parameters['nAvagadro'] /
+                                             self.parameters['tumor_debris_MW']).to('count').magnitude
 
     def initial_state(self, config=None):
         return {
@@ -76,42 +76,41 @@ class DendriticCellProcess(Process):
                 'cell_type': 'dendritic'}}
 
     def ports_schema(self):
+        """defines the ports and schema for the dendritic cell process"""
+
         return {
+            # globals port
             'globals': {
                 'death': {
                     '_default': False,
                     '_emit': True,
-                    '_updater': 'set'},  # nice to have. Need mechanism that turns death on. Low probability threshold?
+                    '_updater': 'set'},
                 'divide': {
                     '_default': False,
                     '_updater': 'set'},
                 'divide_count': {
                     '_default': 0,
                     '_updater': 'accumulate'}},  # used to count number of divisions over time.
+
+            # internal port
             'internal': {
                 'cell_state': {
-                    '_default': 'inactive',
+                    '_default': 'inactive',  # either 'activate' or 'inactive'
                     '_emit': True,
-                    '_updater': 'set',
-                },  # either 'activate' or 'inactive'
+                    '_updater': 'set'},
                 'tumor_debris': {
                     '_default': 0,
                     '_updater': 'accumulate',
                     '_emit': True},
                 'cell_state_count': {
-                    '_default': 0,
-                    '_updater': 'accumulate'},  # counts how many total cell in a given time. Might not be needed.
-                'lymph_node_timer': {
-                    # counts how long in lymph node, high value increases chance of migration back to tumor
-                    '_default': 0,  # TODO -- does the LN time this, or do the cells?
-                    '_emit': True,
-                    '_updater': 'accumulate'},
-            },
+                    '_default': 0,  # counts how many total cell in a given time. Might not be needed.
+                    '_updater': 'accumulate'}},
+
+            # boundary port
             'boundary': {
                 'cell_type': {
                     '_value': 'dendritic',
                     '_emit': True, },
-                # Might be needed for neighbors, but really for the experimenters to quantify
                 'mass': {
                     '_value': self.parameters['mass']},
                 'diameter': {
@@ -122,38 +121,39 @@ class DendriticCellProcess(Process):
                 'external': {
                     'tumor_debris': {
                         '_default': 0.0,  # TODO: units.ng / units.mL
-                        '_emit': True},
-                    'lymph_node': {
-                        '_default': False}}},  # this is True when in the lymph node, begins counter for how long.
-            'neighbors': {  # this is only for presenting in the lymph node, not in the tumor "arena"
+                        '_emit': True}},
+                'exchange': {
+                    'tumor_debris': {
+                        '_default': 0,
+                        '_updater': 'accumulate',
+                        '_divider': 'split'}}},
+
+            # neighbors port
+            'neighbors': {
                 'present': {
                     'PDL1': {
                         '_default': 0,
                         '_updater': 'set'},
                     'MHCI': {
-                        '_default': 0,  # high level for activation, should come from environment
+                        '_default': 0,
                         '_updater': 'set',
                         '_emit': True}},
                 'accept': {
                     'PD1': {'_default': 0},
                     'TCR': {
                         '_default': 0,
-                        '_emit': True
-                    }
-                }
-            }}
+                        '_emit': True}}}}
 
     def next_update(self, timestep, states):
+        """calculates an update for the dendritic cell process"""
+
+        # retrieve relevant states through the ports
         cell_state = states['internal']['cell_state']
         external_tumor_debris = states['boundary']['external']['tumor_debris']  # concentration
         internal_tumor_debris = states['internal']['tumor_debris']  # counts
 
         # determine available tumor debris
-        available_tumor_debris = external_tumor_debris * self.molar_available_tumor_debris
-        available_tumor_debris_counts = available_tumor_debris.to('count').magnitude
-
-        # TODO -- we need to move available tumor debris to internal tumor debris
-        # TODO - test out with experiment and also do calculation
+        available_tumor_debris_counts = external_tumor_debris * self.molar_available_tumor_debris
 
         # death by apoptosis
         prob_death = get_probability_timestep(
@@ -179,7 +179,7 @@ class DendriticCellProcess(Process):
                         'PDL1n_divide_count': PDL1n_divide_count
                     }}
 
-        ## Build up an update
+        # Build up an update
         update = {
             'internal': {},
             'boundary': {},
@@ -199,13 +199,12 @@ class DendriticCellProcess(Process):
 
         # behavior
         # uptake locally available tumor debris in the environment
+        # TODO -- make sure exchange is working correctly.
         tumor_debris_uptake = min(
             int(self.parameters['tumor_debris_uptake'] * timestep),
             int(available_tumor_debris_counts))  # TODO -- check this
-        update['boundary'].update(
-            {'exchange': {'tumor_debris': -tumor_debris_uptake}})
-        update['internal'].update({
-            'tumor_debris': tumor_debris_uptake})
+        update['boundary'].update({'exchange': {'tumor_debris': -tumor_debris_uptake}})
+        update['internal'].update({'tumor_debris': tumor_debris_uptake})
 
         if new_cell_state == 'active':
             PDL1 = self.parameters['PDL1p_PDL1_equilibrium']

@@ -22,7 +22,7 @@ from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.remove import Remove
 from vivarium.processes.timeline import TimelineProcess
-from tumor_tcell.processes.tumor import TumorProcess, TIMESTEP
+from tumor_tcell.processes.tumor import TumorCellProcess, TIMESTEP
 from tumor_tcell.processes.local_field import LocalField
 
 # directories/libraries
@@ -36,6 +36,7 @@ class TumorAgent(Composer):
 
     name = NAME
     defaults = {
+        'time_step': TIMESTEP,
         'reuse_processes': False,
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
@@ -73,14 +74,15 @@ class TumorAgent(Composer):
 
     def __init__(self, config):
         super().__init__(config)
+        self.config['tumor']['time_step'] = self.config['time_step']
         self.processes_initialized = False
 
     def initial_state(self, config=None):
-        process = TumorProcess()
+        process = TumorCellProcess()
         return process.initial_state(config)
 
     def initialize_processes(self, config):
-        self.tumor_process = TumorProcess(config['tumor'])
+        self.tumor_process = TumorCellProcess(config['tumor'])
         self.local_field = LocalField()
 
         if self.config['reuse_processes']:
@@ -145,10 +147,13 @@ class TumorAgent(Composer):
 # tests
 def test_tumor_agent(
         total_time=1000,
-        agent_ids=['0'],
+        agent_ids=None,
         agent_timeline=None,
         initial_agent_state='PDL1n',
 ):
+    """run a test on tumor agents"""
+    if agent_ids is None:
+        agent_ids = ['0']
     composite = Composite()
     for agent_id in agent_ids:
         parameters = {
@@ -215,6 +220,7 @@ def test_tumor_agent(
 
 
 def run_agent(out_dir='out'):
+    """run one agent and plot results"""
     agent_ids = ['0', '1']
     agent_timeline = []
     data = test_tumor_agent(

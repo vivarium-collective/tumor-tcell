@@ -8,13 +8,12 @@ Diffuses and decays molecular concentrations in a 2D field.
 
 import os
 import copy
-
+import cv2
 import numpy as np
 from scipy import constants
-from scipy.ndimage import convolve
+# from scipy.ndimage import convolve
 
 from vivarium.core.serialize import Quantity
-
 from vivarium.core.process import Process
 from vivarium.core.composition import simulate_process
 from vivarium.library.units import units, remove_units
@@ -275,8 +274,11 @@ class Fields(Process):
         """ diffuse a single field """
         t = 0.0
         dt = min(timestep, self.diffusion_dt)
+        diffusion_rate_dt = diffusion_rate * dt
         while t < timestep:
-            field += diffusion_rate * dt * convolve(field, LAPLACIAN_2D, mode='reflect')
+            result = cv2.filter2D(field, -1, LAPLACIAN_2D)
+            # result = convolve(field, LAPLACIAN_2D, mode='reflect')
+            field += diffusion_rate_dt * result
             t += dt
         return field
 
