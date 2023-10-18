@@ -13,6 +13,8 @@ integrated with multiplexed imaging datasets for initialization of the model and
 ### Static notebooks:
  * [Model Tutorial](https://nbviewer.org/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/tumor_tcell_model.ipynb):
  Introduces the model, including the different functions and their interactions.
+ * [Vivarium diagrams](https://nbviewer.org/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/diagrams.ipynb):
+ Introduces the Vivarium processes, composites, and the full ABM as process bigraph diagrams.
  * [Killing Experiments](https://nbviewer.org/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/Killing%20Experiments.ipynb):
  A notebook for modeling in-vitro killing experiments that can be run from a machine with the repository installed locally. 
  
