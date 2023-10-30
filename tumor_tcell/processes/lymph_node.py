@@ -175,13 +175,10 @@ class LymphNode(Process):
                 else:
                     # Calculate probability of finding/initializing interaction with dendritic cells
                     # TODO -- this should depend on dendritic cell being present. Not interacting alone
-                    prob_interaction = probability_of_occurrence_within_interval(
-                        timestep,  # (Itano, 2003)
-                        self.parameters['tcell_find_dendritic_time'])
-                    # prob_interaction = get_probability_timestep(
-                    #     self.parameters['tcell_find_dendritic_time'],
-                    #     14400,  # 14400 6 hours (6*60*60 seconds)
-                    #     timestep)  # (Itano, 2003)
+                    prob_interaction = get_probability_timestep(
+                        self.parameters['tcell_find_dendritic_time'],
+                        14400,  # 14400 6 hours (6*60*60 seconds)
+                        timestep)  # (Itano, 2003)
                     if random.uniform(0, 1) < prob_interaction:
                         # this t-cell is now interacting
                         lymph_node_update[cell_id] = {'internal': {'cell_state': 'interacting'}}
