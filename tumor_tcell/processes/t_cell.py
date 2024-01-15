@@ -109,7 +109,8 @@ class TCellProcess(Process):
         # Time before TCR downregulation
         'activation_time': 21600,  # activation enables 6 hours of activation and production of cytokines
         # before enters refractory state due to down-regulation of TCR (Salerno, 2017), (Gallegos, 2016)
-        'activation_refractory_time': 43200,  # refractory period of 18 hours (plus original 6 h activation time)
+        # 'activation_refractory_time': 43200,  # refractory period of 12 hours (plus original 6 h activation time)
+        'refractory_time': 21600,  # refractory period of 6 hours (Salerno, 2017), (Gallegos, 2016)
         # after activation period with limited ability to produce cytokines and cytotoxic packets and to
         # interact with MHCI (Salerno, 2017), (Gallegos, 2016)
         'TCR_downregulated': 0,  # reduce TCR to 0 if activated more than 6 hours for another 18 hours
@@ -222,9 +223,9 @@ class TCellProcess(Process):
                     '_default': 0,
                     '_updater': 'accumulate',
                     '_divider': 'split'},
-                'TCR_timer': {  # affects TCR expression
-                    '_default': 0,
-                    '_updater': 'accumulate'},
+                # 'TCR_timer': {  # affects TCR expression
+                #     '_default': 0,
+                #     '_updater': 'accumulate'},
                 'velocity_timer': {  # affects dwell time at tumor
                     '_default': 0,
                     '_emit': True,
@@ -278,7 +279,7 @@ class TCellProcess(Process):
         cell_state = states['internal']['cell_state']
         PDL1 = states['neighbors']['accept']['PDL1']
         MHCI = states['neighbors']['accept']['MHCI']
-        TCR_timer = states['internal']['TCR_timer']
+        # TCR_timer = states['internal']['TCR_timer']
         velocity_timer = states['internal']['velocity_timer']
         TCR = states['neighbors']['present']['TCR']
         refractory_count = states['internal']['refractory_count']
@@ -350,31 +351,28 @@ class TCellProcess(Process):
             'boundary': {},
             'neighbors': {'present': {}, 'accept': {}, 'transfer': {}}}
 
-        # TCR down-regulation after 6 hours of activation
-        if TCR_timer > self.parameters['activation_time']:
-            TCR = self.parameters['TCR_downregulated']
-            update['neighbors']['present'].update({
-                'TCR': TCR})
-
-        # update the TCR_timer for each timestep in contact with MHCI or during refractory period regardless
+        # update the TCR presentation when MHCI is present above the ligand_threshold
         if MHCI > self.parameters['ligand_threshold']:
-            update['internal'].update({
-                'TCR_timer': timestep})
-        elif TCR_timer > self.parameters['activation_time']:
-            update['internal'].update({
-                'TCR_timer': timestep})
+            # TCR down-regulation after 6 hours of activation
+            prob_activation = probability_of_occurrence_within_interval(timestep, self.parameters['activation_time'])
+            if random.uniform(0, 1) < prob_activation:
+                TCR = self.parameters['TCR_downregulated']
+                update['neighbors']['present'].update({
+                    'TCR': TCR})
 
-        # After the refractory period is over then
-        if TCR_timer > self.parameters['activation_refractory_time']:
-            TCR = self.parameters['TCR_upregulated']
-            update['internal'].update({
-                'TCR_timer': -self.parameters['activation_refractory_time'],
-                'total_cytotoxic_packets': -states['internal']['total_cytotoxic_packets']})
-            update['neighbors']['present'].update({
-                'TCR': TCR})
-            refractory_count_add = 1
-            update['internal'].update({
-                'refractory_count': refractory_count_add})
+        # activate refractory period
+        if TCR < self.parameters['TCR_upregulated']:
+            prob_refractory = probability_of_occurrence_within_interval(timestep, self.parameters['refractory_time'])
+            if random.uniform(0,1) < prob_refractory:
+                TCR = self.parameters['TCR_upregulated']
+                update['internal'].update({
+                    'total_cytotoxic_packets': -states['internal']['total_cytotoxic_packets']})
+                update['neighbors']['present'].update({
+                    'TCR': TCR})
+                refractory_count_add = 1
+                update['internal'].update({
+                    'refractory_count': refractory_count_add})
+
 
         # state transition
         new_cell_state = cell_state
@@ -608,8 +606,9 @@ def test_batch_t_cell(
                 'cell_state': {'_emit': False},
                 'refractory_count': {'_emit': True},
                 'total_cytotoxic_packets': {'_emit': True},
-                'TCR_timer': {'_emit': True},
-                'velocity_timer': {'_emit': False}},
+                # 'TCR_timer': {'_emit': True},
+                'velocity_timer': {'_emit': False}
+            },
             'neighbors': {
                 'present': {
                     'PD1': {'_emit': True}},
