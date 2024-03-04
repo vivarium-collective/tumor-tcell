@@ -8,7 +8,7 @@ with open("README.md", 'r') as readme:
 
 setup(
     name='tumor-tcell',
-    version='0.0.47',
+    version='1.0.0',
     packages=[
         'tumor_tcell',
         'tumor_tcell.composites',
@@ -18,7 +18,7 @@ setup(
         'tumor_tcell.plots',
     ],
     author='John Hickey, Eran Agmon',
-    author_email='jwhickey@stanford.edu, agmon@uchc.edu',
+    author_email='john.hickey@duke.edu, agmon@uchc.edu',
     url='https://github.com/vivarium-collective/tumor-tcell',
     license='MIT',
     entry_points={
@@ -28,7 +28,7 @@ setup(
     package_data={},
     include_package_data=True,
     install_requires=[
-        'vivarium-core>=1.6.0',
+        'vivarium-core==1.6.0',
         'vivarium-multibody==0.0.12',
         'tqdm',
         'opencv-python',

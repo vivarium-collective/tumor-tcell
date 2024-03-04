@@ -8,6 +8,19 @@ interactions with both membrane bound and soluble factors (e.g., cytokines, cyto
 environment. Particularly this model is useful for testing variations in T cell immunotherapies and we have 
 integrated with multiplexed imaging datasets for initialization of the model and also verifying expected behavior.
 
+## Citing This Work
+
+If you use this model in your research, please cite our accompanying paper:
+
+Hickey, J. W., Agmon, E., Horowitz, N., Lamore, M., Sunwoo, J. B., Covert, M., & Nolan, G. P. (In Press). 
+Integrating Multiplexed Imaging and Multiscale Modeling Identifies Tumor Phenotype Transformation as a Critical 
+Component of Therapeutic T Cell Efficacy. Cell Systems.
+
+The figures in the paper were generated using version 1.0.0 of this model, available on PyPI. The notebooks and figures 
+present in this readme were produced using an earlier version, 0.0.28, which is consistent with the simulations 
+described in the paper when the lymph node interactions are turned off in version 1.0.0.
+
+
 ## Notebook Tutorials
 
 ### Static notebooks:
@@ -17,11 +30,6 @@ integrated with multiplexed imaging datasets for initialization of the model and
  Introduces the Vivarium processes, composites, and the full ABM as process bigraph diagrams.
  * [Killing Experiments](https://nbviewer.org/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/Killing%20Experiments.ipynb):
  A notebook for modeling in-vitro killing experiments that can be run from a machine with the repository installed locally. 
- 
-### Colab notebooks:
-This Model Tutorial can be altered by the user in a online environment and used to run experiments:
- * [Model Tutorial](https://colab.research.google.com/github/vivarium-collective/tumor-tcell/blob/master/jupyter_notebooks/tumor_tcell_model.ipynb) 
-
 
 ## Description of models
 
