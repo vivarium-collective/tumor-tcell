@@ -12,13 +12,13 @@ integrated with multiplexed imaging datasets for initialization of the model and
 
 If you use this model in your research, please cite our accompanying paper:
 
-Hickey, J. W., Agmon, E., Horowitz, N., Lamore, M., Sunwoo, J. B., Covert, M., & Nolan, G. P. (In Press). 
-Integrating Multiplexed Imaging and Multiscale Modeling Identifies Tumor Phenotype Transformation as a Critical 
-Component of Therapeutic T Cell Efficacy. Cell Systems.
+> Hickey, J. W., Agmon, E., Horowitz, N., Lamore, M., Sunwoo, J. B., Covert, M., & Nolan, G. P. (In Press). 
+> *Integrating Multiplexed Imaging and Multiscale Modeling Identifies Tumor Phenotype Transformation as a Critical 
+> Component of Therapeutic T Cell Efficacy*. Cell Systems.
 
-The figures in the paper were generated using version 1.0.0 of this model, available on PyPI. The notebooks and figures 
-present in this readme were produced using an earlier version, 0.0.28, which is consistent with the simulations 
-described in the paper when the lymph node interactions are turned off in version 1.0.0.
+The figures in the paper were generated using version `1.0.0` of this model, [available on PyPI](https://pypi.org/project/tumor-tcell/1.0.0/). 
+The notebooks and figures present in this README were produced using an earlier version, `0.0.28`, which is consistent 
+with the simulations described in the paper when the lymph node interactions are turned off in version `1.0.0`.
 
 
 ## Notebook Tutorials
